@@ -16,7 +16,7 @@ for x = xSlices
     cP = parseContours(c);
     
     % plot the contours    
-    cellfun(@(yz)plot3(x*ones(1,size(yz,2)), yz(1,:), yz(2,:), 'Color', [0 0 0 0.3]), cP);    
+    cellfun(@(yz)plot3(x*ones(1,size(yz,2))-origin(1), yz(1,:)-origin(3), yz(2,:)-origin(2), 'Color', [0 0 0 0.3]), cP);    
 end
 
 % repeat for the other two directions
@@ -43,7 +43,7 @@ for x = xSlices
     cP = parseContours(c);
     
     % plot the contours    
-    cellfun(@(yz)plot3(yz(2,:), x*ones(1,size(yz,2)), yz(1,:),  'Color', [0 0 0 0.3]), cP);    
+    cellfun(@(yz)plot3(yz(2,:)-origin(1), x*ones(1,size(yz,2))-origin(3), yz(1,:)-origin(2),  'Color', [0 0 0 0.3]), cP);    
 end
 
 xlabel('x'); ylabel('y'); zlabel('z');
