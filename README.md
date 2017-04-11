@@ -21,6 +21,7 @@ The original volume has numbers that correspond to the "id" field in the structu
 
 ## (unsorted comments)
 ## Plot wire mesh of brain (example usage in script_sliceMovie)
+```
 bregma = allenCCFbregma();
 isBrain = av>1; % >0 for original av, >1 for by_index
 gridIn3D(double(isBrain), 0.5, 50, bregma);
@@ -29,3 +30,4 @@ set(gca, 'ZDir', 'reverse')
 axis equal
 axis off
 view([-30    25]);
+```
