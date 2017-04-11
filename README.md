@@ -18,3 +18,14 @@ You also need the data files. See //zserver/Lab/Atlas/allenCCF or, if you don't 
 ## Note about annotation volume
 The original volume has numbers that correspond to the "id" field in the structure tree, but since I wanted to make a colormap for these, I re-indexed the annotation volume by the row number of the structure tree. So in this version the values correspond to "index"+1. This also allows using uint16 datatype, cutting file size in half. See setup_utils.m.
 
+
+## (unsorted comments)
+## Plot wire mesh of brain (example usage in script_sliceMovie)
+bregma = allenCCFbregma();
+isBrain = av>1; % >0 for original av, >1 for by_index
+gridIn3D(double(isBrain), 0.5, 50, bregma);
+axis vis3d
+set(gca, 'ZDir', 'reverse')
+axis equal
+axis off
+view([-30    25]);
