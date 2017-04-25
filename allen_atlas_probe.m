@@ -10,13 +10,15 @@ function allen_atlas_probe(tv,av,st)
 % - live manupulator update
 % - bregma-lambda scaling and angle adjustment
 % - mouse over structure names?
+%
+% FROM ALLEN ATLAS: looks like bregma about 250 um behind current
 
 % Initialize gui_data structure
 gui_data = struct;
 
 % Allen CCF-bregma transform (this is total estimate)
 % [AP,DV,ML,angle]
-bregma = [550,0,570,0];
+bregma = [450,0,570,0];
 
 % If not already loaded in, load in atlas
 if nargin < 3
@@ -65,13 +67,13 @@ probe_ref_vector = [probe_ref_top',probe_ref_bottom'];
 probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vector(3,:), ...
     'linewidth',1.5,'color','r','linestyle','--');
 
-probe_length = 382.0; % IMEC phase 3
+probe_length = 382.0; % IMEC phase 3 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
 probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','g','linestyle','-');
 
 % Set up the text to display coordinates
-probe_coordinates_text = uicontrol('Style','text','String','asdf', ...
+probe_coordinates_text = uicontrol('Style','text','String','', ...
     'Units','normalized','Position',[0,0.95,0.4,0.05], ...
     'BackgroundColor','w','HorizontalAlignment','left','FontSize',12);
 
@@ -436,7 +438,7 @@ probe_brain_idx = find(probe_profile > 1,1);
 probe_brain_intersect =[xcoords(probe_brain_idx),ycoords(probe_brain_idx),zcoords(probe_brain_idx)]';
 
 % Get position of brain intersect relative to bregma
-probe_bregma_coordinate = round((gui_data.bregma(1,3)' - probe_brain_intersect(1:2))*10);
+probe_bregma_coordinate = round((gui_data.bregma([1,3])' - probe_brain_intersect(1:2))*10);
 
 % Get the depth of the bottom of the probe (sign: hack by z offset)
 probe_depth = round(sqrt(sum((probe_brain_intersect - probe_vector(:,2)).^2))*10)* ...
