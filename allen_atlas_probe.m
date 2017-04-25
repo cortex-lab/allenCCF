@@ -1,5 +1,5 @@
-function allen_atlas_probe(tv,av,st,bregma)
-% allen_browser_test_gui(tv,av,st,bregma)
+function allen_atlas_probe(tv,av,st)
+% allen_browser_test_gui(tv,av,st)
 %
 % This gui is for looking at trajectories in the brain with the Allen CCF
 % 
@@ -19,7 +19,7 @@ gui_data = struct;
 bregma = [550,0,570,0];
 
 % If not already loaded in, load in atlas
-if nargin < 4
+if nargin < 3
     cd('C:\Users\Andrew\OneDrive for Business\Documents\Atlases\AllenCCF')
     tv = readNPY('template_volume_10um.npy'); % grey-scale "background signal intensity"
     av = readNPY('annotation_volume_10um_by_index.npy'); % the number at each pixel labels the area, see note below
