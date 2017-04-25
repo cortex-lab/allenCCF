@@ -18,7 +18,7 @@ gui_data = struct;
 
 % Allen CCF-bregma transform (this is total estimate)
 % [AP,DV,ML,angle]
-bregma = [450,0,570,0];
+bregma = [540,0,570,0];
 
 % If not already loaded in, load in atlas
 if nargin < 3
