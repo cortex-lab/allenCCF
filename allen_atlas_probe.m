@@ -7,11 +7,8 @@ function allen_atlas_probe(tv,av,st)
 %
 % TO DO: 
 % - actual coordinates in bregma (they're off from Paxinos to some degree)
-% - live manupulator update
 % - bregma-lambda scaling and angle adjustment
 % - mouse over structure names?
-%
-% FROM ALLEN ATLAS: looks like bregma about 250 um behind current
 
 % Initialize gui_data structure
 gui_data = struct;
@@ -76,7 +73,7 @@ probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewid
 
 % Set up the text to display coordinates
 probe_coordinates_text = uicontrol('Style','text','String','', ...
-    'Units','normalized','Position',[0,0.95,0.4,0.05], ...
+    'Units','normalized','Position',[0,0.95,1,0.05], ...
     'BackgroundColor','w','HorizontalAlignment','left','FontSize',12);
 
 % Store data
@@ -86,6 +83,7 @@ gui_data.st = st; % Labels table
 gui_data.bregma = bregma; % Bregma for external referencing
 gui_data.probe_length = probe_length; % Length of probe
 gui_data.structure_plot_idx = []; % Plotted structures
+gui_data.probe_angle = [0;90]; % Probe angles in ML/DV
 
 %Store handles
 gui_data.handles.cortex_outline = brain_outline; 
@@ -124,7 +122,8 @@ fprintf(['Controls: \n' ...
     'b : toggle brain grid visibility \n' ...
     's : toggle brain slice visibility \n' ...
     '+/- : add 3D brain structure \n' ...
-    'm : toggle 3D brain structure visibility \n']);
+    'm : toggle 3D brain structure visibility \n' ...
+    'x : export probe coordinates to workspace \n']);
 
 end
 
@@ -242,6 +241,8 @@ switch eventdata.Key
     case 'a' 
         % Set probe angle
         set_probe_angle(probe_atlas_gui);
+        % Get updated guidata
+        gui_data = guidata(probe_atlas_gui);
         
     case 'add'
         % Add structure(s) to display
@@ -281,6 +282,12 @@ switch eventdata.Key
             gui_data.handles.structure_patch(remove_structures) = [];
         end
         
+    case 'x'
+        % Export the probe coordinates in Allen CCF to the workspace
+        probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+        probe_vector_ccf = round(probe_vector([1,3,2],:))'*10;
+        assignin('base','probe_vector_ccf',probe_vector_ccf)
+        disp('Copied probe vector coordinates to workspace');
 end
 
 % Upload gui_data
@@ -385,15 +392,16 @@ gui_data = guidata(probe_atlas_gui);
 % Prompt for angles
 prompt_text = {'Probe ML angle (relative to lambda -> bregma)', ....
     'Probe DV angle (relative to horizontal)'};
-probe_angles = ...
-    (cellfun(@str2num,inputdlg(prompt_text,'Enter probe angles',1,{'0','90'}))/360)*2*pi;
+probe_angle = ...
+    (cellfun(@str2num,inputdlg(prompt_text,'Enter probe angles',1, ...
+    {num2str(gui_data.probe_angle(1)),num2str(gui_data.probe_angle(2))}))/360)*2*pi;
 
 % Update the probe and trajectory reference (reset to bregma)
 [ap_max,dv_max,ml_max] = size(gui_data.tv);
 
 max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
 
-[x,y,z] = sph2cart(pi-probe_angles(1),probe_angles(2),max_ref_length);
+[x,y,z] = sph2cart(pi-probe_angle(1),probe_angle(2),max_ref_length);
 
 probe_ref_top = [gui_data.bregma(1),gui_data.bregma(3),0];
 probe_ref_bottom = probe_ref_top + [x,y,z];
@@ -408,12 +416,13 @@ probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
 set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
     'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
 
+% Upload gui_data
+gui_data.probe_angle = (probe_angle/(2*pi))*360;
+guidata(probe_atlas_gui, gui_data);
+
 % Update the slice and probe coordinates
 update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
-
-% Upload gui_data
-guidata(probe_atlas_gui, gui_data);
 
 end
 
@@ -450,7 +459,9 @@ probe_depth = round(sqrt(sum((probe_brain_intersect - probe_vector(:,2)).^2))*10
 probe_text = ['Probe: ' ....
     num2str(probe_bregma_coordinate(1)) ' AP, ', ...
     num2str(probe_bregma_coordinate(2)) ' ML, ', ...
-    num2str(probe_depth) ' Depth'];
+    num2str(probe_depth) ' Depth, ' ...
+    num2str(gui_data.probe_angle(1)) char(176) ' from midline, ' ...
+    num2str(gui_data.probe_angle(2)) char(176) ' from horizontal'];
 set(gui_data.probe_coordinates_text,'String',probe_text);
 
 end
