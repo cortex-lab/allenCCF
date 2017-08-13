@@ -1,6 +1,4 @@
 
-% todo/future features:
-% - switch to sagittal/horizontal slice types
 
 function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree)
 % Browser for the allen atlas ccf data in matlab.
@@ -17,6 +15,10 @@ function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree)
 %   - use: 
 %     >> ud = get(f, 'UserData'); myPoints = ud.pointList; 
 %     to retrieve these points
+
+% todo/future features:
+% - switch to sagittal/horizontal slice types
+
 
 fprintf(1, 'Controls: \n');
 fprintf(1, '--------- \n');
@@ -39,6 +41,7 @@ ud.showAtlas = false;
 
 ud.atlasAx = axes('Position', [0.05 0.05 0.9 0.9]);
 
+
 ud.im = plotTVslice(squeeze(templateVolume(ud.currentSlice,:,:)));
 
 set(ud.im, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k));
@@ -49,6 +52,9 @@ ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
 allData.tv = templateVolume;
 allData.av = annotationVolume;
 allData.st = structureTree;
+
+hold(ud.atlasAx, 'on');
+set(ud.atlasAx, 'HitTest', 'off');
 
 set(f, 'UserData', ud);
 
@@ -84,8 +90,12 @@ switch lower(keydata.Key)
     case 'o' % toggle Overlay
         ud.showOverlay = ~ud.showOverlay;
         if ~ud.showOverlay
-            ovIm = get(ud.overlayAx, 'Children');
-            set(ovIm, 'AlphaData', zeros(size(get(ovIm, 'CData'))));
+            % weird bug means that point clicking stops working when the
+            % overlayAx exists, even though I turned all the hittests off??
+            % hack solution is to just delete it every time... :/
+%             ovIm = get(ud.overlayAx, 'Children');
+%             set(ovIm, 'AlphaData', zeros(size(get(ovIm, 'CData'))));
+            delete(ud.overlayAx); ud.overlayAx = [];
         end
     case 'p' % toggle mode to register clicks as Points
         ud.getPoint = ~ud.getPoint;
@@ -108,8 +118,8 @@ function updateSlice(f, evt, allData)
 
 ud = get(f, 'UserData');
 ud.currentSlice = ud.currentSlice+evt.VerticalScrollCount*3;
-if ud.currentSlice>size(allData.tv,1); ud.currentSlice = 1; end; %wrap around
-if ud.currentSlice<1; ud.currentSlice = size(allData.tv,1); end; %wrap around
+if ud.currentSlice>size(allData.tv,1); ud.currentSlice = 1; end %wrap around
+if ud.currentSlice<1; ud.currentSlice = size(allData.tv,1); end %wrap around
 set(f, 'UserData', ud);
 
 if ud.showAtlas
@@ -152,7 +162,7 @@ if ud.getPoint
     clickZ = ud.currentSlice;
     
     ud.pointList(end+1, :) = [clickX, clickY, clickZ];
-    ud.pointHands(end+1) = plot(clickX, clickY, 'ro');
+    ud.pointHands(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro');
 end
 set(f, 'UserData', ud);
 
@@ -211,13 +221,15 @@ ud = get(f, 'UserData');
 if isempty(ud.overlayAx) % first time
     avo = plotAVoverlay(fliplr(squeeze(allData.av(ud.currentSlice,:,:))'), ann, ud.atlasAx);
     ud.overlayAx = avo;
+    set(ud.overlayAx, 'HitTest', 'off');
     set(f, 'UserData', ud);
 else
     ovIm = get(ud.overlayAx, 'Children');
+    set(ovIm, 'HitTest', 'off');
     thisSlice = squeeze(allData.av(ud.currentSlice,:,:));
     if ud.showAtlas
         % if showing the atlas annotations, make the cdata 1302 so you get
-        % a black overlay (it's number for the parafloccular sulcus, which 
+        % a black overlay (it's the number for the parafloccular sulcus, which 
         % is unused) in current annotations so I stole its entry in the
         % colormap to be black.
         adat = ones(size(get(ovIm, 'CData')));

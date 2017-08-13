@@ -28,7 +28,7 @@ end
 if showAllenColors
     fAllen = figure;
     plotAsProbe([], xc, yc, cm, 16, 40*scaleFactor);    
-    set(fAllen, 'Position', [-1896         -68         116         980]);
+    %set(fAllen, 'Position', [-1896         -68         116         980]);
     box off;
     ylim([0 3840*scaleFactor]);
     set(gca, 'YDir','reverse');
@@ -68,4 +68,4 @@ borders = table(yc(borders(2:end-1)), yc(borders(3:end)), acr(2:end)', name(2:en
     'VariableNames', {'upperBorder', 'lowerBorder', 'acronym', 'name', 'avIndex'})
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
-set(fD, 'Position', [-1765         -68         146         980]);
+%set(fD, 'Position', [-1765         -68         146         980]);
