@@ -50,6 +50,7 @@ end
 % end
 
 xlabel('x'); ylabel('y'); zlabel('z');
+return
 
 function cout = parseContours(c)
 startInd = 1;
@@ -60,4 +61,20 @@ while startInd<size(c,2)
     cout{cInd} = c(:,startInd+1:startInd+nC);
     cInd = cInd+1;
     startInd = startInd+nC+1;
+end
+return
+
+% Want to extract out the data for quick plotting later? use this:
+brainGridPlot = nan(0,3); downSamp = 8;
+for i = 1:numel(contourHands)
+    for j = 1:numel(contourHands{i})
+        for k = 1:numel(contourHands{i}{j})
+            nD = numel(contourHands{i}{j}{k}.XData(1:downSamp:end)); 
+            brainGridPlot(end+1:end+nD,:) = [...
+                contourHands{i}{j}{k}.XData(1:downSamp:end)' ...
+                contourHands{i}{j}{k}.YData(1:downSamp:end)' ...
+                contourHands{i}{j}{k}.ZData(1:downSamp:end)'];
+            brainGridPlot(end+1,:) = [NaN NaN NaN]; 
+        end
+    end
 end
