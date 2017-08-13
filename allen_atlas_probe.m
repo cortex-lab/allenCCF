@@ -468,4 +468,3 @@ probe_text = ['Probe: ' ....
 set(gui_data.probe_coordinates_text,'String',probe_text);
 
 end
-
