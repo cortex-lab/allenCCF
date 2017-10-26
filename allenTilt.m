@@ -4,7 +4,7 @@ function f = allenTilt(tv, av, st)
 refPoint = round(size(tv)/2);
 ext = 500; 
 
-moveStep = 1; % voxel, =10µm
+moveStep = 3; % voxel, =10µm
 angStep = 1; % degrees
 
 v = [-1 0 0];
@@ -70,8 +70,9 @@ ud.angleText.String = sprintf('tilt = %d, roll = %d, center = [%d, %d, %d]', ...
 function moveByStep(f, stepDirection)
 ud = get(f, 'UserData');
 stepSize = stepDirection*ud.pars.moveStep;
-stepVec = cross(ud.v, ud.vPerp);
-ud.refPoint = ud.refPoint+stepVec*stepSize;
+% stepVec = cross(ud.v, ud.vPerp);
+% ud.refPoint = ud.refPoint+stepVec*stepSize;
+ud.refPoint(2) = ud.refPoint(2)+stepSize;
 set(f, 'UserData', ud);
 updateSlice(f);
 updateAngleText(f)

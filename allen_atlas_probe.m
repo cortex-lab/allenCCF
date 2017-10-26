@@ -246,7 +246,7 @@ switch eventdata.Key
         
     case 'add'
         % Add structure(s) to display
-        slice_spacing = 10;
+        slice_spacing = 3;
 
         % Prompt for which structures to show
         plot_structures = listdlg('PromptString','Select a structure to add:', ...
