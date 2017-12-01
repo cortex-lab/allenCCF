@@ -13,7 +13,7 @@ Some code to work with the Allen Inst CCF data, specifically the 10µm voxel 201
 ## Requirements
 You need the npy-matlab repository to load the data: https://github.com/kwikteam/npy-matlab
 
-You also need the data files. See //zserver/Lab/Atlas/allenCCF or, if you don't have access to that, contact me at nick.steinmetz@gmail.com. See also https://alleninstitute.github.io/AllenSDK/reference_space.html for accessing the data directly from Allen Inst, via their python API (this is how I got it in the first place). 
+You also need the data files. See //zserver/Lab/Atlas/allenCCF or, if you don't have access to that, see setup_utils to download it yourself and preprocess. See also https://alleninstitute.github.io/AllenSDK/reference_space.html for accessing the data directly from Allen Inst via their python API. 
 
 ## Note about annotation volume
 The original volume has numbers that correspond to the "id" field in the structure tree, but since I wanted to make a colormap for these, I re-indexed the annotation volume by the row number of the structure tree. So in this version the values correspond to "index"+1. This also allows using uint16 datatype, cutting file size in half. See setup_utils.m.
