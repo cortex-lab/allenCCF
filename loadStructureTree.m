@@ -6,7 +6,7 @@ function structureTreeTable = loadStructureTree(fn)
 % fn = 'structure_tree_safe.csv';
 
 [~, fnBase] = fileparts(fn);
-if contains(fnBase, '2017');
+if ~isempty(strfind(fnBase, '2017'))
     mode = '2017'; 
 else
     mode = 'old'; 
