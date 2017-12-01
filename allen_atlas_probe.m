@@ -24,7 +24,7 @@ if nargin < 3
     cd('C:\Users\Andrew\OneDrive for Business\Documents\Atlases\AllenCCF')
     tv = readNPY('template_volume_10um.npy'); % grey-scale "background signal intensity"
     av = readNPY('annotation_volume_10um_by_index.npy'); % the number at each pixel labels the area, see note below
-    st = loadStructureTree('structure_tree_safe.csv'); % a table of what all the labels mean
+    st = loadStructureTree('structure_tree_safe_2017.csv'); % a table of what all the labels mean
 end
 
 % Set up the gui and axes
@@ -221,6 +221,13 @@ switch eventdata.Key
         current_visibility = gui_data.handles.slice_plot(1).Visible;
         switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
         set(gui_data.handles.slice_plot,'Visible',new_visibility);
+        
+    case 'p'
+        % Toggle probe visibility
+        current_visibility = gui_data.handles.probe_ref_line.Visible;
+        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
+        set(gui_data.handles.probe_ref_line,'Visible',new_visibility);
+        set(gui_data.handles.probe_line,'Visible',new_visibility);
                 
     case 'r'
         % Toggle 3D rotation
@@ -246,7 +253,7 @@ switch eventdata.Key
         
     case 'add'
         % Add structure(s) to display
-        slice_spacing = 3;
+        slice_spacing = 10;
 
         % Prompt for which structures to show
         plot_structures = listdlg('PromptString','Select a structure to add:', ...
@@ -271,9 +278,6 @@ switch eventdata.Key
                 'Faces',structure_3d.faces, ...
                 'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
         end
-        
-    case '*' 
-        % This is another version of adding a structure, which 
         
     case 'subtract'
         % Remove structure(s) already plotted
@@ -468,3 +472,33 @@ probe_text = ['Probe: ' ....
 set(gui_data.probe_coordinates_text,'String',probe_text);
 
 end
+
+
+%% PROBE HISTOLOGY: TO-DO
+
+function probe_histology
+% IN PROGRESS: plot best-fit line through probe histology points
+% this isn't implemented yet, just keeping this code here for whenever
+
+histology_points = AP015_probe_coords_1;
+
+r0 = mean(histology_points);
+xyz = bsxfun(@minus,histology_points,r0);
+[~,~,V] = svd(xyz,0);
+histology_probe_direction = V(:,1);
+
+t = [-1000,1000];
+P = bsxfun(@plus,bsxfun(@times,t',histology_probe_direction'),r0);
+% plot3(histology_points(:,3),histology_points(:,1),histology_points(:,2),'.b','MarkerSize',20);
+line(P(:,3),P(:,1),P(:,2),'color','r','linewidth',2)
+
+end
+
+
+
+
+
+
+
+
+
