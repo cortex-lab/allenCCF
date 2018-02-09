@@ -103,7 +103,8 @@ switch lower(keydata.Key)
         ud.showAtlas = ~ud.showAtlas;
         if ud.showAtlas
             set(ud.im, 'CData', squeeze(allData.av(ud.currentSlice,:,:)));
-            colormap(ud.atlasAx, allen_ccf_colormap); caxis(ud.atlasAx, [1 1305]);            
+            cmap = allen_ccf_colormap('2017');
+            colormap(ud.atlasAx, cmap); caxis(ud.atlasAx, [1 size(cmap,1)]);            
         else
             set(ud.im, 'CData', squeeze(allData.tv(ud.currentSlice,:,:)));
             colormap(ud.atlasAx, 'gray'); caxis(ud.atlasAx, [0 400]);
