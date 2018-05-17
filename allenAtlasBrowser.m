@@ -32,7 +32,7 @@ f = figure;
 
 ud.bregma = allenCCFbregma; 
 
-ud.currentSlice = ud.bregma(1); 
+ud.currentSlice = min(ud.bregma(1), size(templateVolume, 1)); 
 ud.oldContour = [];
 ud.showContour = false;
 ud.showOverlay = false; ud.overlayAx = [];
