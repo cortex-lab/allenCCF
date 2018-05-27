@@ -1,9 +1,10 @@
-function [borders, fD] = plotLabelsAsProbe(m, p, rpl, yc, av, st, scaleFactor, error_length, active_site_start)
+function [borders, fD] = plotLabelsAsProbe(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot)
 
 showAllenColors = false;
 
 % these are the query points along the probe tract
-yc = yc*scaleFactor;
+yc = 10*[0:(rpl + probage_past_tip_to_plot*100 -1)] - 20;
+
 t = yc/10; % dividing by 10 accounts for the 10um resolution of the atlas
 x = m(1)+p(1)*t;
 y = m(2)+p(2)*t;
@@ -53,21 +54,8 @@ for ind = 1:length(t)
     end
 end
 
-% showAllenColors = true;
-% if showAllenColors
-%     fAllen = figure;
-%     plotAsProbe([], ann_percents, yc, cm, 16, 40*scaleFactor);    
-%     %set(fAllen, 'Position', [-1896         -68         116         980]);
-%     box off;
-%     ylim([0 3840*scaleFactor]);
-%     set(gca, 'YDir','reverse');
-%     xlabel(sprintf('Scale=%.2f',scaleFactor));
-% else
-%     fAllen = [];
-% end
 
-
-% second version with distinguishable colors
+% version with distinguishable colors
 ann = ann2(:,1);
 uAnn = unique(ann);
 nC = numel(unique(ann(ann>1)));
@@ -76,13 +64,13 @@ distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, ou
 dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
 cmD = dc(ann,:)*.8;
 
-% put in loop and search colors for second regions!!
+% put in loop and search colors for second regions
 cmD2 = zeros(size(cmD));
 for region = unique(ann2(:,2))'
     ann_index = find(ann2(:,1)==region);
     ann2_index = find(ann2(:,2)==region);
     if isempty(ann_index)
-        color_to_use = allenCmap(region,:); %use allen Cmap if not in ann
+        color_to_use = allenCmap(region+1,:); %use allen Cmap if not in ann
         color_to_use = [.8 .8 .8]; % or light grey
     else
     	color_to_use = cmD(ann_index(1),:); %use the same color as in ann
@@ -92,11 +80,11 @@ end
     
 % plot labelled probe tract
 fD = figure('Name','Probe Tract','Position',[1000 100 300 900]);
-plotAsProbe([], ann_percents, yc, cmD, cmD2, 10, active_site_start)
+plotAsProbe([], ann_percents, yc, cmD, cmD2, 10, active_site_start, rpl)
 box off;
 % ylim([0 3840*scaleFactor]);
 xlabel(['% of ' num2str(error_length*10) ' um radius occupation']);
-ylim([0 rpl*10])
+ylim([0 (rpl+probage_past_tip_to_plot*100)*10])
 
 
 % algorithm for finding areas and labels

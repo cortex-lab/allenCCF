@@ -18,6 +18,7 @@ fprintf(1, 'a: switch to viewing annotations (or switch back) \n');
 fprintf(1, 'p: enable/disable mode where clicks are logged for probe or switch probes \n');
 fprintf(1, 't: enable/disable mode where clicks are logged for transform \n');
 fprintf(1, 'x: save transform \n');
+fprintf(1, 'l: load transform for current slice \n');
 fprintf(1, 'n: trace a new probe \n');
 fprintf(1, 'b: trace a previous probe \n');
 fprintf(1, 's: save current probe \n');
