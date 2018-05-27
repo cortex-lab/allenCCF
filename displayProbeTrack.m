@@ -11,13 +11,13 @@ probe_length = 5.6; % in mm -- how far into the brain did you go
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um
 
-reference_probe_length = false; %6.0; % in mm -- how far from the surface of the brain the regions are plotted
+reference_probe_length = 6.0; % in mm -- how far from the surface of the brain the regions are plotted
                                         % set to false to use the deepest probe point selected as the bottom tip of the probe
-probage_past_tip_to_plot = 1.0; %0.0; % in mm -- if the above is not set to false, this should be set to zero
+probage_past_tip_to_plot = 0.0; %0.0; % in mm -- if the above is not set to false, this should be set to zero
                                         
 % file location
 processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
-probe_save_name_suffix = '';
+probe_save_name_suffix = 'test';
 
 probes_to_analyze = 'all'; %'all'; % either set to 'all' or e.g. [2,3]
 
@@ -88,7 +88,7 @@ if ~reference_probe_length
     % find length of probe in reference atlas space
     [depth, tip_index] = max(curr_probePoints(:,2));
     reference_probe_length_tip = sqrt(sum((curr_probePoints(tip_index,:) - m).^2)); 
-    shrinkage_factor = (reference_probe_length / 100) / probe_length;
+    shrinkage_factor = (reference_probe_length_tip / 100) / probe_length;
 
     disp(' ');
     disp(['probe length of ' num2str(reference_probe_length_tip/100) ' mm in reference atlas space compared to a reported ' num2str(probe_length) ' mm']);
@@ -105,7 +105,7 @@ if ~reference_probe_length
         'Color', ProbeColors(selected_probe,:), 'LineWidth', 1);
 
 else % use user-defined probe plotting length
-    rpl = round(reference_probe_length * 100);
+    rpl = round(reference_probe_length * 100); active_site_start = false;
 end
 
 plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
@@ -116,12 +116,15 @@ plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
 %% GET AND PLOT BRAIN REGION LABELS ALONG EXTENT OF PROBE
 
 error_length = round(probe_radius / 10); %microns error as first number
-[borders, fD] = plotLabelsAsProbe(m, p, av, st, rpl, error_length, active_site_start*10, probage_past_tip_to_plot);
+% [borders, fD] = plotLabelsAsProbe(m, p, av, st, rpl, error_length, active_site_start*10, probage_past_tip_to_plot); % plots the percent of surrounding area occupied by region along probe
+borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot); % plots confidence score based on distance to nearest region along probe
+
+
 title(['Brain Regions Along Probe ' num2str(selected_probe)])
 
 % plot line(s) indicating active site length
-plot([0 100], [active_site_start*10 active_site_start*10], 'color', 'white', 'LineStyle','--');
+plot([0 100], [(round(active_site_start)-2)*10 (round(active_site_start)-2)*10], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
 if ~reference_probe_length
-    plot([0 100], [rpl*10 rpl*10], 'color', 'white', 'LineStyle','--');
+    plot([0 100], [(rpl-2)*10 (rpl-2)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
 end
 end

@@ -127,7 +127,7 @@ switch lower(keydata.Key)
             disp(['probe point mode OFF']);
         end
     case 'w'
-        for probe_plotted = size(ud.pointHands,1)
+        for probe_plotted = 1:size(ud.pointHands,1)
             set(ud.pointHands{probe_plotted,1}(:), 'Visible', 'off'); 
             set(ud.pointHands{probe_plotted,3}(:), 'Visible', 'off'); 
         end

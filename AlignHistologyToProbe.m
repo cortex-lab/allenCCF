@@ -8,7 +8,7 @@
 
 % directory of histology
 processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
-probe_save_name_suffix = '';
+probe_save_name_suffix = 'test';
 
 
 
@@ -31,7 +31,8 @@ catch; slice_figure = figure('Name','Slice Viewer'); end
 sliceBrowser(slice_figure, processed_images_folder);
 
 % use application in Atlas Viewer
-f = AtlasTransformBrowser(tv,av,st, slice_figure, processed_images_folder, probe_save_name_suffix);
-    
+% f = AtlasTransformBrowser(tv,av,st, slice_figure, processed_images_folder, probe_save_name_suffix); % use this function if you a processed_images_folder with appropriately processed .tif histology images
+save_location = processed_images_folder;
+f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
    
 
