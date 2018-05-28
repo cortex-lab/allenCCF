@@ -9,7 +9,7 @@ y = m(2)+p(2)*t;
 z = m(3)+p(3)*t;
 ortho_plane = null(p);
 
-projection_matrix = ortho_plane * ortho_plane'; %projection matrix onto plane orthogonal to probe tract
+projection_matrix = ortho_plane * ortho_plane'; % projection matrix onto plane orthogonal to probe tract
 scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of angle between x-z plane and probe tract
 
 
@@ -80,7 +80,7 @@ shift_ind = 0;
 
 
 
-% add active site start and rpl as borders
+% add active site start and rpl as pseudo-borders
 if active_site_start
     if ~sum(region_borders==round(active_site_start))
         region_borders = [region_borders(1:max(find(region_borders<active_site_start)) ) round(active_site_start)  ...
@@ -100,7 +100,7 @@ end
 borders = region_borders;
 
 % plot labelled probe tract
-fD = figure('Name','Probe Tract','Position',[1000 -200 300 900]);
+fD = figure('Name','Probe Tract','Position',[1200 -200 250 900]);
 box off;
 ylim([0 (rpl+probage_past_tip_to_plot*100)*10])
 
@@ -140,7 +140,7 @@ end
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
 xlabel('dist to nearest');
-ylim([0 max(yc)])
-xlim([0 50]);
+ylim([0 yc(borders(end-1))])
+xlim([0 error_length*10]);
 box off;
 
