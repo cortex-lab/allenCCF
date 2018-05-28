@@ -9,10 +9,15 @@ y = m(2)+p(2)*t;
 z = m(3)+p(3)*t;
 ortho_plane = null(p);
 
-projection_matrix = ortho_plane * ortho_plane'; %projection matrix onto plane orthogonal to probe tract
+projection_matrix = ortho_plane * ortho_plane'; % projection matrix onto plane orthogonal to probe tract
 scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of angle between x-z plane and probe tract
 
+% plot labelled probe tract
+fD = figure('Name','Probe Tract','Position',[1200 -200 250 900]);
+box off;
 
+for ann_type = 1:2 % loop between specific and parent region annotations
+    
 % collect annotations along the track
 annotation_square = ones(size(t,1), error_length*2+1, error_length*2+1);
 ann = ones(1,size(t,1));
@@ -30,7 +35,12 @@ for ind = 1:length(t)
        z(ind)>0 && z(ind)<=size(av,3)
    
         % add annotation to list of annotations
-        ann(ind) = av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind)));
+        if ann_type == 1
+            ann(ind) = av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind)));
+            cm(ind,:) = allenCmap(ann(ind),:);    % also add color map?         
+        elseif ann_type == 2
+            ann(ind) = st(av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind))),:).parent_structure_id; % get annotation for parent region
+        end
         
         % go in square orthogonal to probe tract and get other regions
         for index1 = -error_length:error_length
@@ -54,33 +64,33 @@ for ind = 1:length(t)
             otherDist(ind) = dists(otherInd);
         end
 
-        % also add color map
-        cm(ind,:) = allenCmap(ann(ind),:);
+
     end
 end
 
 
+if ann_type == 1
+    uAnn = unique(ann);
+    nC = numel(unique(ann(ann>1)));
+    distinctCmap = distinguishable_colors(nC);
 
-uAnn = unique(ann);
-nC = numel(unique(ann(ann>1)));
-distinctCmap = distinguishable_colors(nC);
-
-if any(uAnn==1)
-    distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
+    if any(uAnn==1)
+        distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
+    end
+    dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
+    cmD = dc(ann,:)*.8;
 end
-dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
-cmD = dc(ann,:)*.8;
-
 
 % algorithm for finding areas and labels
 region_borders = [0; find(diff(ann)~=0)'; length(yc)]';
-midY = zeros(numel(region_borders)-1 - logical( sum(region_borders==round(rpl)) ) - logical(sum(region_borders==round(active_site_start))) ,1);
-acr = {}; 
-shift_ind = 0;
+if ann_type == 1
+    midY = zeros(numel(region_borders)-1 - logical( sum(region_borders==round(rpl)) ) - logical(sum(region_borders==round(active_site_start))) ,1);
+    acr = {}; 
+    shift_ind = 0;
+end
 
 
-
-% add active site start and rpl as borders
+% add active site start and rpl as pseudo-borders
 if active_site_start
     if ~sum(region_borders==round(active_site_start))
         region_borders = [region_borders(1:max(find(region_borders<active_site_start)) ) round(active_site_start)  ...
@@ -99,10 +109,8 @@ else;
 end
 borders = region_borders;
 
-% plot labelled probe tract
-fD = figure('Name','Probe Tract','Position',[1000 -200 300 900]);
-box off;
-ylim([0 (rpl+probage_past_tip_to_plot*100)*10])
+
+
 
 for b = 1:length(borders)-1    
     
@@ -124,6 +132,7 @@ for b = 1:length(borders)-1
         'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
     hold on;
 
+    if ann_type==1
         if (borders(b+1) == round(active_site_start) && ~active_site_start_is_boundary) || ( (borders(b) == round(rpl)) && ~probe_tip_is_boundary)
      	  shift_ind = shift_ind + 1;
         else
@@ -132,15 +141,15 @@ for b = 1:length(borders)-1
             name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
             annBySegment(b - shift_ind) = ann(borders(b)+1);            
         end
-%     end
+    end
 end
-
+end
 % borders = table(yc(borders(2:end-1))', yc(borders(3:end))', acr(2:end)', name(2:end)', annBySegment(2:end)', ...
 %     'VariableNames', {'upperBorder', 'lowerBorder', 'acronym', 'name', 'avIndex'})
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
 xlabel('dist to nearest');
-ylim([0 max(yc)])
-xlim([0 50]);
+ylim([0 yc(borders(end-1))])
+xlim([0 error_length*10]);
 box off;
 
