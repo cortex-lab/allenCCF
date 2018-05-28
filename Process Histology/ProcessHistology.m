@@ -6,21 +6,21 @@
 %%  SET FILE AND PARAMETERS
 
 % directory of histology
-image_folder = '\\zubjects\\Subjects\\Richards\\Histology\\';
-save_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\Richards\\';
+image_folder = 'J:\tempHistology\Tatum\';
+save_folder = 'J:\tempHistology\Tatum\';
 % name of images, in order anterior to posterior
-image_file_names = {'Large Image 1.tif','Large Image 2.tif','Large Image 12.tif','Large Image 8.tif',...
-                            'Large Image 7.tif','Large Image 6.tif','Large Image 10.tif','Large Image 4.tif',...
-                            'Large Image 9.tif','Large Image 10.tif','Large Image 11.tif','Large Image 12.tif',...
-                            'Large Image 13.tif','Large Image 14.tif','Large Image 15.tif','Large Image 16.tif','Large Image 17.tif'}
+image_file_names = {'slide no 1_RGB.tif','slide no 2_RGB.tif','slide no 3_RGB.tif',...
+                            'slide no 4_RGB.tif','slide no 5_RGB.tif',...
+                            'slide no 6_RGB.tif','slide no 7_RGB.tif',...
+                            'slide no 8_RGB.tif'}
 
 % name to save cropped slices as
-save_file_name = 'Richards_';
+save_file_name = 'Tatum_';
 
 % parameters
-gain = 10;
+gain = 1;
 use_already_downsampled_image = false;
-microns_per_pixel = 3.233; %1.62; 
+microns_per_pixel = 1.625; %1.62; 
 microns_per_pixel_after_downsampling = 10;
 adjust_histology_contrast = true; 
 adjust_slice_contrast = true;
@@ -179,7 +179,7 @@ for file_num = 1:length(image_file_names)
                     ud_slice.grid = imresize(ud_slice.grid, ud_slice.size(1:2)); 
                 end
                 % display image
-                imshow(slice_image + uint16(ud_slice.grid))
+                imshow(slice_image + ud_slice.grid)
             end
             
             % finished with this slice

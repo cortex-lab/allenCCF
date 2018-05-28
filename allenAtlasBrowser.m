@@ -7,6 +7,10 @@ function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, 
 % The annotation volume should be the "by_index" version
 %
 
+if nargin<4
+    save_location = '';
+    save_suffix = '';
+end
 
 fprintf(1, 'Controls: \n');
 fprintf(1, '--------- \n');

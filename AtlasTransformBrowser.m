@@ -346,7 +346,7 @@ switch lower(keydata.Key)
                 ud.curr_im = ud.curr_slice_trans;
             end
         else % ud.histology_overlay == 0
-            ud.histology_overlay = 0
+            ud.histology_overlay = 0;
             disp('Reference mode!');
             set(ud.im, 'CData', ud.ref);
             ud.curr_im = ud.ref; set(f, 'UserData', ud);

@@ -7,8 +7,8 @@
 
 
 % directory of histology
-processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
-probe_save_name_suffix = '';
+processed_images_folder = 'J:\tempHistology\Tatum\processed\';
+probe_save_name_suffix = 'q';
 
 
 
