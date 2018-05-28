@@ -56,8 +56,8 @@ function SliceAtlasHotkeyFcn(fig, keydata, f)
 ud = get(fig, 'UserData');
 ud_atlas_viewer = get(f, 'UserData');
 
-set(ud.quiver_plot{1},'Visible','off');
-set(ud.quiver_plot{2},'Visible','off');
+% set(ud.quiver_plot{1},'Visible','off');
+% set(ud.quiver_plot{2},'Visible','off');
 
 if strcmp(keydata.Key,'leftarrow')    
     if ud.slice_num > 1

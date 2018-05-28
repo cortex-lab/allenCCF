@@ -73,20 +73,34 @@ cmD = dc(ann,:)*.8;
 
 
 % algorithm for finding areas and labels
-region_borders = [0; find(diff(ann)~=0)'; length(yc)];
-midY = zeros(numel(region_borders)-1,1);
+region_borders = [0; find(diff(ann)~=0)'; length(yc)]';
+midY = zeros(numel(region_borders)-1 - logical( sum(region_borders==round(rpl)) ) - logical(sum(region_borders==round(active_site_start))) ,1);
 acr = {}; 
 shift_ind = 0;
 
+
+
 % add active site start and rpl as borders
 if active_site_start
-borders = [region_borders(1:max(find(region_borders<active_site_start)) )' round(active_site_start)  ...
-    region_borders(max(find(region_borders<active_site_start))+1:find(region_borders>rpl,1)-1)' round(rpl) region_borders(find(region_borders>rpl,1):end)'];
-else; borders = region_borders;
+    if ~sum(region_borders==round(active_site_start))
+        region_borders = [region_borders(1:max(find(region_borders<active_site_start)) ) round(active_site_start)  ...
+            region_borders(max(find(region_borders<active_site_start))+1:end)];
+        active_site_start_is_boundary = 0;
+    else
+        active_site_start_is_boundary = 1;
+    end
+    if ~sum(region_borders==round(rpl))
+        region_borders = [region_borders(1:find(region_borders>rpl,1)-1) round(rpl) region_borders(find(region_borders>rpl,1):end)];
+        probe_tip_is_boundary = 0;
+    else
+        probe_tip_is_boundary = 1;
+    end
+else; 
 end
+borders = region_borders;
 
 % plot labelled probe tract
-fD = figure('Name','Probe Tract','Position',[1000 100 300 900]);
+fD = figure('Name','Probe Tract','Position',[1000 -200 300 900]);
 box off;
 ylim([0 (rpl+probage_past_tip_to_plot*100)*10])
 
@@ -95,25 +109,30 @@ for b = 1:length(borders)-1
     ycInds = (borders(b):min(borders(b+1)-1, length(yc)))+1;
     theseYC = yc(ycInds);
     
+    try
     if max(theseYC) < active_site_start*10  || max(theseYC) > rpl*10
         cur_alpha = .5;
     else
         cur_alpha = 1;
-    end    
+    end   
+    catch
+        disp('null');
+    end
     
     fill([0 0 otherDist(ycInds)'*10],...
         [max(theseYC) min(theseYC) theseYC], cmD(borders(b)+1,:),...
         'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
     hold on;
-     
-    if ~(borders(b+1) == round(active_site_start) || borders(b) == round(rpl)) || ~active_site_start % don't add tick twice for same region, past probe tip if using tip in plot
-        midY(b - shift_ind) = mean(theseYC);
-        acr{b - shift_ind} = st.acronym{ann(borders(b)+1)};
-        name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
-        annBySegment(b - shift_ind) = ann(borders(b)+1);
-    else
-        shift_ind = shift_ind + 1;
-    end
+
+        if (borders(b+1) == round(active_site_start) && ~active_site_start_is_boundary) || ( (borders(b) == round(rpl)) && ~probe_tip_is_boundary)
+     	  shift_ind = shift_ind + 1;
+        else
+            midY(b - shift_ind) = mean(theseYC);
+            acr{b - shift_ind} = st.acronym{ann(borders(b)+1)};
+            name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
+            annBySegment(b - shift_ind) = ann(borders(b)+1);            
+        end
+%     end
 end
 
 % borders = table(yc(borders(2:end-1))', yc(borders(3:end))', acr(2:end)', name(2:end)', annBySegment(2:end)', ...

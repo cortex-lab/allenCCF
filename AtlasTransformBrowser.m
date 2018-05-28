@@ -71,7 +71,7 @@ allData.av = annotationVolume;
 allData.st = structureTree;
 
 hold(ud.atlasAx, 'on');
-set(ud.atlasAx, 'HitTest', 'on');
+set(ud.atlasAx, 'HitTest', 'off');
 
 set(f, 'UserData', ud);
 

@@ -11,15 +11,17 @@ probe_length = 5.6; % in mm -- how far into the brain did you go
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um
 
-reference_probe_length = 6.0; % in mm -- how far from the surface of the brain the regions are plotted
+reference_probe_length = false; % in mm -- how far from the surface of the brain the regions are plotted
                                         % set to false to use the deepest probe point selected as the bottom tip of the probe
 probage_past_tip_to_plot = 0.0; %0.0; % in mm -- if the above is not set to false, this should be set to zero
                                         
 % file location
 processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
-probe_save_name_suffix = 'test';
+probe_save_name_suffix = '';
 
-probes_to_analyze = 'all'; %'all'; % either set to 'all' or e.g. [2,3]
+probes_to_analyze = 1:3; %'all'; %'all'; % either set to 'all' or e.g. [2,3]
+
+
 
 
 
