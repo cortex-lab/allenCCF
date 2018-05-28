@@ -1,5 +1,14 @@
 function borders = plotDistToNearest(m, p, yc, av, st, scaleFactor, error_length)
-
+% function borders = plotDistToNearest(m, p, yc, av, st, scaleFactor, error_length)
+%
+% TODO: 
+% - add also indications of how far to nearest place outside of higher
+% level structures. E.g. you might be in DG-mo and close to another area,
+% but if that other area is DG-sg then you don't really care, and you'd
+% like to also see just the distance to nearest DG. 
+% - remove scaleFactor and error_length arguments - just calculate from
+% root to root, and for a large error_length
+% - comments!
 
 % these are the query points along the probe tract
 yc = yc*scaleFactor;
