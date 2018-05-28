@@ -198,27 +198,24 @@ switch lower(keydata.Key)
 
 
         
-    case 't' % toggle mode to register clicks as Points
-        ud.getPoint_for_transform = ~ud.getPoint_for_transform;
+    case 't' % toggle mode to register clicks as Points -- 0, 1, or 2
+        
+        if ~size(ud.current_pointList_for_transform,1)
+            ud.getPoint_for_transform = ud.getPoint_for_transform + 1 - 3*(ud.getPoint_for_transform==2);
+        else
+            ud.getPoint_for_transform = ~ud.getPoint_for_transform;
+        end
+            
         ud.loaded = false;
         
         if ud.getPoint_for_transform
-            disp('transform point mode on!'); ud.currentProbe = 0;
+            if ud.getPoint_for_transform
+                disp('transform point mode on -- press t again before clicking for automatic transform point mode'); 
+            else
+                disp('automatic transform point mode activated (press top left of slice to abandon)!')
+            end
+                ud.currentProbe = 0;
 
-            
-            % set probe points from other slices invisible|
-%             for probe = 1:size(ud.pointList,1)
-%                 for probe_point = 1:size(ud.pointList{probe,1},1)
-%                     slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
-%                     if slice_point_belongs_to == ud_slice.slice_num
-%                         set(ud.pointHands{ud.currentProbe, 1}(probe_point), 'Visible', 'on'); 
-%                     else
-%                         set(ud.pointHands{ud.currentProbe, 1}(probe_point), 'Visible', 'off'); 
-%                     end
-% 
-%                 end
-%             end
-        
             % launch transform point mode
             if ud_slice.slice_num ~= ud.curr_slice_num || ~size(ud.current_pointList_for_transform,1)
                 ud.curr_slice_num = ud_slice.slice_num;
@@ -227,8 +224,8 @@ switch lower(keydata.Key)
                 num_hist_points = size(ud_slice.pointList,1);
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
-                disp('click in top left corner of Slice Viewer to exit')
-                while true
+
+                while true && ud.getPoint_for_transform == 2
                     % select template point automatically
                     if template_point == 1
                         findX = 1140 / 2;
@@ -688,7 +685,7 @@ elseif ud.getPoint_for_transform
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
     set(ud.pointHands_for_transform(:), 'color', [0 0 0]);
-    ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .7 0],'linewidth',2,'markers',4);    
+    ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'linewidth',2,'markers',4);    
     
 end
 set(f, 'UserData', ud);
