@@ -1,29 +1,29 @@
 
 
-function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, save_location, save_suffix)
+function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix)
 % Browser for the allen atlas ccf data in matlab.
 %
 % Inputs templateVolume, annotationVolume, and structureTree are the data describing the atlas.
 % The annotation volume should be the "by_index" version
 %
 
-if nargin<4
-    save_location = '';
-    save_suffix = '';
-end
 
 fprintf(1, 'Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'scroll: move between slices \n');
 fprintf(1, 'g: add/remove gridlines \n');
 fprintf(1, 'o: add/remove overlay of current region extent \n');
-fprintf(1, 'a: switch to viewing boundaries (or switch back) \n');
+fprintf(1, 'h: add/remove overlay of current histology slice \n');
+fprintf(1, 'a: switch to viewing annotations (or switch back) \n');
 fprintf(1, 'p: enable/disable mode where clicks are logged for probe or switch probes \n');
+fprintf(1, 't: enable/disable mode where clicks are logged for transform \n');
+fprintf(1, 'x: save transform \n');
+fprintf(1, 'l: load transform for current slice \n');
 fprintf(1, 'n: trace a new probe \n');
 fprintf(1, 'b: trace a previous probe \n');
 fprintf(1, 's: save current probe \n');
 fprintf(1, 'w: enable/disable probe viewer mode for current probe  \n');
-fprintf(1, 'd: delete most recent probe point \n');
+fprintf(1, 'd: delete most recent probe point or all transform points \n');
 
 fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
@@ -32,7 +32,6 @@ fprintf(1, 'down: scroll through slices \n');
 f = figure('Name','Atlas Viewer'); 
 
 ud.bregma = allenCCFbregma; 
-
 
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
@@ -45,10 +44,13 @@ ud.pointList = cell(1,3); ud.pointList{1} = zeros(0,3);
 ud.pointHands = cell(1,3);
 ud.probe_view_mode = false;
 ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0; .3 1 1; .7 0 .8; 1 0 0; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .8 .95 .5]; 
+ud.getPoint_for_transform = false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
+ud.current_pointList_for_transform = zeros(0,2); ud.curr_slice_num = 1;
 ud.showAtlas = false;
 ud.histology_overlay = 0; 
 ud.atlasAx = axes('Position', [0.05 0.05 0.9 0.9]);
-
+ud.transform = [];
+ud.transformed_slice_figure = [];
 
 ud.im = plotTVslice(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.ref = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
@@ -58,7 +60,7 @@ ud.im_annotation = zeros(800,1140,'uint16');
 ud.atlas_boundaries = zeros(800,1140,'uint16');;
 ud.loaded = 10;
 
-set(ud.im, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, save_location));
+set(ud.im, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
 
 
 ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
@@ -69,18 +71,19 @@ allData.av = annotationVolume;
 allData.st = structureTree;
 
 hold(ud.atlasAx, 'on');
-set(ud.atlasAx, 'HitTest', 'on');
+set(ud.atlasAx, 'HitTest', 'off');
 
 set(f, 'UserData', ud);
 
-set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, k, allData, save_location, save_suffix));
+set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location, save_suffix));
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData)); % Set the motion detector.
 
 
-function hotkeyFcn(f, keydata, allData, save_location, save_suffix)
+function hotkeyFcn(f, slice_figure, keydata, allData, save_location, save_suffix)
 
 ud = get(f, 'UserData');
+ud_slice = get(slice_figure, 'UserData');
 
 switch lower(keydata.Key)    
     case 'g' % toggle showing Gridlines
@@ -104,13 +107,21 @@ switch lower(keydata.Key)
             disp('Overlay OFF');
         else; disp('Overlay on!');
         end
-
     case 'p' % toggle mode to register clicks as Probe points
         ud.probe_view_mode = 0;
         if ud.currentProbe < size(ud.pointList,1)
             ud.currentProbe = ud.currentProbe + 1;
             ProbeColor =  {'white','gold','turquoise','purple','red','fern','bubble gum','overcast sky', 'rawhide', 'green apple'};
             disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ProbeColor{ud.currentProbe} ')']); 
+            ud.getPoint_for_transform = false; 
+            
+            % show Transformed Slice & Probage Viewer, if not already showing
+            try; figure(ud.transformed_slice_figure); 
+            catch
+                ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                highlight_point = false;
+                transformed_sliceBrowser(ud.transformed_slice_figure, [save_location 'transformations\\'], f, highlight_point, [], [], [], [], [])
+            end; figure(f);
         else
             ud.currentProbe = 0;
             disp(['probe point mode OFF']);
@@ -172,11 +183,125 @@ switch lower(keydata.Key)
  
                 % update slice
                 update.VerticalScrollCount = 0; set(f, 'UserData', ud);
-                updateSlice(f, update, allData); ud = get(f, 'UserData');                              
+                updateSlice(f, update, allData); ud = get(f, 'UserData');   
+                
+                % show Transformed Slice & Probage Viewer, if not already showing
+                try; figure(ud.transformed_slice_figure); 
+                catch
+                    ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                    highlight_point = false;
+                    transformed_sliceBrowser(ud.transformed_slice_figure, [save_location 'transformations\\'], f, highlight_point, [], [], [], [], [])
+                end; figure(f);                
             
             else; disp('probe view mode OFF'); end
 
-    case 'a' % toggle View boundaries
+
+
+        
+    case 't' % toggle mode to register clicks as Points -- 0, 1, or 2
+        
+        if ~size(ud.current_pointList_for_transform,1)
+            ud.getPoint_for_transform = ud.getPoint_for_transform + 1 - 3*(ud.getPoint_for_transform==2);
+        else
+            ud.getPoint_for_transform = ~ud.getPoint_for_transform;
+        end
+            
+        ud.loaded = false;
+        
+        if ud.getPoint_for_transform
+            if ud.getPoint_for_transform
+                disp('transform point mode on -- press t again before clicking for automatic transform point mode'); 
+            else
+                disp('automatic transform point mode activated (press top left of slice to abandon)!')
+            end
+                ud.currentProbe = 0;
+
+            % launch transform point mode
+            if ud_slice.slice_num ~= ud.curr_slice_num || ~size(ud.current_pointList_for_transform,1)
+                ud.curr_slice_num = ud_slice.slice_num;
+                ud.current_pointList_for_transform = zeros(0,2);
+                set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+                num_hist_points = size(ud_slice.pointList,1);
+                template_point = 1; template_points_shown = 0;
+                updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
+
+                while true && ud.getPoint_for_transform == 2
+                    % select template point automatically
+                    if template_point == 1
+                        findX = 1140 / 2;
+                        findY = min(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 4
+                        findX = 1140 / 2;
+                        findY = max(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 3
+                        findX = 1140 / 2;
+                        findY = round(prctile(find(ud.atlas_boundaries(:,findX)) , 66));   %median(find(ud.atlas_boundaries(:,findX)));            
+                    elseif template_point == 2
+                        findX = 1140 / 2;
+                        findY = round(prctile(find(ud.atlas_boundaries(:,findX)) , 25));                       
+                    elseif template_point == 12
+                        findY = 800 / 2;
+                        findX = max(find(ud.atlas_boundaries(findY,:)));
+                    elseif template_point == 7
+                        findY = 800 / 2;
+                        findX = min(find(ud.atlas_boundaries(findY,:)));         
+                    elseif template_point == 10
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 66));
+                        findY = min(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 14
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 66));
+                        findY = max(find(ud.atlas_boundaries(:,findX)));     
+                    elseif template_point == 5
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 33));
+                        findY = min(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 9
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 33));
+                        findY = max(find(ud.atlas_boundaries(:,findX)));   
+                    elseif template_point == 6
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 15));
+                        findY = min(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 8
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 15));
+                        findY = max(find(ud.atlas_boundaries(:,findX)));                           
+                    elseif template_point == 11
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 85));
+                        findY = min(find(ud.atlas_boundaries(:,findX)));
+                    elseif template_point == 13
+                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 85));
+                        findY = max(find(ud.atlas_boundaries(:,findX)));                           
+                    end
+
+                    % apply to template
+                    if template_points_shown < template_point
+                        ud.pointList_for_transform(end+1, :) = [findX, findY];
+                        ud.current_pointList_for_transform(end+1, :) = [findX, findY];
+                        set(ud.pointHands_for_transform(:), 'color', [0 0 0]);
+                        ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, findX, findY, 'ro', 'color', 'green','linewidth',2);  
+                        template_points_shown = template_points_shown + 1;
+                    end
+                    % move on if point was selected on histology
+                    ud_slice = get(slice_figure, 'UserData');
+                    if size(ud_slice.pointList,1) > num_hist_points
+                         if ud_slice.pointList(end,1) < 100 && ud_slice.pointList(end,2) < 100% if click in corner, break
+                            ud.current_pointList_for_transform = zeros(0,2); 
+                            set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+                            disp('exit transform mode'); break; end
+                        num_hist_points = size(ud_slice.pointList,1);
+                        template_point = template_point + 1;
+                    end
+
+                    % stop after last point
+                    if template_point > 14
+                        disp('press h to transform histology (whereupon more points can be added if necessary)')
+                        break
+                    end
+
+                    pause(.1);
+                end
+            end
+        else; disp('transform point mode OFF');    
+        end        
+    case 'a' % toggle View between template/annotation
         
         ud.showAtlas = ~ud.showAtlas;
         
@@ -195,7 +320,40 @@ switch lower(keydata.Key)
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
         disp('switch scroll mode -- scroll along A/P axis')
- 
+    case 'h'
+        ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
+        slice_points = ud_slice.pointList;
+        
+        if (ud.histology_overlay == 1 || ud.histology_overlay == 2) && ...
+                ( (size(ud.current_pointList_for_transform,1) && size(slice_points,1)) || ud.loaded)
+
+            reference_points = ud.current_pointList_for_transform;
+            slice_points = ud_slice.pointList;
+            current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+            if ~ud.loaded % use loaded version if 'l' was just pressed
+                ud.transform = fitgeotrans(slice_points,reference_points,'projective'); %can use 'affine', 'projective', or 'pwl'
+            end
+            R = imref2d(size(ud.ref));
+            ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+            image_blend =  imfuse(uint8(ud.ref*.6), ud.curr_slice_trans(:,:,:),'blend','Scaling','none');
+            if ud.histology_overlay == 2 % 2 ~ blend
+                disp('Slice + Reference mode!');
+                set(ud.im, 'CData', image_blend);
+                ud.curr_im = image_blend;
+            else % 1 ~ just see slice
+                disp('Slice mode!');
+                set(ud.im, 'CData', ud.curr_slice_trans); 
+                ud.curr_im = ud.curr_slice_trans;
+            end
+        else % ud.histology_overlay == 0
+            ud.histology_overlay = 0;
+            disp('Reference mode!');
+            set(ud.im, 'CData', ud.ref);
+            ud.curr_im = ud.ref; set(f, 'UserData', ud);
+        end
+        if ud.showAtlas
+            updateBoundaries(f,ud, allData);
+        end
     case 'n' % new probe
         new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added!']);
         probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
@@ -213,9 +371,87 @@ switch lower(keydata.Key)
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
         save([save_location  'probe_points' save_suffix], 'pointList'); disp('probe points saved');
+    case 'x' % save transform and current slice position and angle
+        
+        % find or create folder location for transformations
+        folder_transformations = [save_location 'transformations\\'];
+        if ~exist(folder_transformations)
+            mkdir(folder_transformations)
+        end
+
+        slice_name = ud_slice.processed_images(ud_slice.slice_num).name(1:end-4);
+        
+        % store transform
+        save_transform.transform = ud.transform;
+        % store transform points
+        transform_points = cell(2,1); transform_points{1} = ud.current_pointList_for_transform;
+        transform_points{2} = ud_slice.pointList;;
+        save_transform.transform_points = transform_points;
+        % store reference location
+        allen_location = cell(2,1); allen_location{1} = ud.currentSlice; allen_location{2} = ud.currentAngle; 
+        save_transform.allen_location = allen_location;
+        % save all this
+        save([folder_transformations slice_name '_transform_data'], 'save_transform');
+        
+        % save transformed histology image
+        current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
+        curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+        imwrite(curr_slice_trans, [folder_transformations slice_name '_transformed.tif'])
+        
+        disp('transform and atlas location saved.')
+        
+    case 'l' % load transform and current slice position and angle
+        slice_name = ud_slice.processed_images(ud_slice.slice_num).name(1:end-4);
+        folder_transformations = [save_location 'transformations\\'];
+        
+        try
+            
+        % set probe points from other slices invisible and from this slice visible
+        probe_points_present = false;
+        for probe = 1:size(ud.pointList,1)
+            set(ud.pointHands{probe, 3}(:),'Visible','off'); ud.pointHands{probe, 3} = [];
+            for probe_point = 1:size(ud.pointList{probe,1},1)
+                slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
+                if slice_point_belongs_to == ud_slice.slice_num
+                    set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'on');
+                    probe_points_present = true;
+                else
+                    set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off'); 
+                end
+
+            end
+        end
+                
+        % load transform data
+        transform_data = load([folder_transformations slice_name '_transform_data']);  
+        transform_data = transform_data.save_transform;
+        
+        % load new transform
+        ud.transform = transform_data.transform;
+        
+        % load allen ref location
+        ud.currentSlice = transform_data.allen_location{1}; ud.currentAngle = transform_data.allen_location{2};
+
+        % create transformed histology image
+        current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
+        ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+        
+        % update figure
+        update.VerticalScrollCount = 0; set(f, 'UserData', ud);
+        updateSlice(f, update, allData); ud = get(f, 'UserData');
+        ud.loaded = true;
+        
+        % switch slices if showing Transformed Slice & Probage Viewer
+        
+        catch; 
+            disp(['transform not found for this slice']); end
         
     case 'd' % delete current transform or most recent probe point
-        if ud.currentProbe
+        if ud.getPoint_for_transform
+            ud.current_pointList_for_transform = zeros(0,2); set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+            ud.pointHands_for_transform = [];
+            disp('current transform erased');
+        elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
             ud.pointList{ud.currentProbe,2} = ud.pointList{ud.currentProbe,2}(1:end-1,:);
             ud.pointList{ud.currentProbe,3} = ud.pointList{ud.currentProbe,3}(1:end-1,:);
@@ -266,6 +502,7 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
         updateOverlay(f, allData, ann);
     end  
     ud.ref = uint8(get(ud.im, 'CData'));
+    set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
     set(f, 'UserData', ud);
 % ---------------------------
 % if angle, do angle thing    
@@ -314,9 +551,16 @@ else
   end
 
   ud.ref = uint8(angle_slice);
-
+  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
 end
-ud.curr_im = ud.ref;
+
+
+% update histology overlay
+if ud.histology_overlay == 1 || ud.histology_overlay == 2
+    updateHistology(f,ud); ud = get(f, 'UserData');
+else
+    ud.curr_im = ud.ref;
+end
 
 
 % then update boundary overlay
@@ -351,6 +595,17 @@ end
   set(f, 'UserData', ud);
 
 
+% update the image shown if histology is currently being overlaid
+function updateHistology(f, ud)
+    if ud.histology_overlay == 2
+        image_blend =  imfuse(uint8(ud.ref*.6), ud.curr_slice_trans(:,:,:),'blend','Scaling','none');
+        set(ud.im, 'CData', image_blend);
+        ud.curr_im = image_blend;
+    elseif ud.histology_overlay == 1
+        set(ud.im, 'CData', ud.curr_slice_trans);
+        ud.curr_im = ud.curr_slice_trans;
+    end
+    set(f, 'UserData', ud);
 
 % update the position of the region boundary image
 function updateBoundaries(f, ud, allData)
@@ -391,22 +646,46 @@ function updateBoundaries(f, ud, allData)
 function atlasClickCallback(im, keydata, slice_figure, save_location)
 f = get(get(im, 'Parent'), 'Parent');
 ud = get(f, 'UserData');
+ud_slice = get(slice_figure, 'UserData');
 
+if ud.probe_view_mode && ud.currentProbe
+    clickX = round(keydata.IntersectionPoint(1));
+    clickY = round(keydata.IntersectionPoint(2));
+    clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
     
-if ud.currentProbe > 0
+    % find the probe point closest to this clicked point
+    [min_dist, point_ind] = min( sqrt(sum(([clickX clickY clickZ] - ud.pointList{ud.currentProbe}).^2,2)));
+
+    % find the slice corresponding to that point
+    relevant_slice = ud.pointList{ud.currentProbe,2}(point_ind);
+    highlight_point = true;
+    transformed_sliceBrowser(ud.transformed_slice_figure, [save_location 'transformations\\'], f, ...
+        highlight_point, relevant_slice, min_dist, clickX, clickY, point_ind)
+    figure(f);
+    
+elseif ud.currentProbe > 0
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
     clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
     
     ud.pointList{ud.currentProbe,1}(end+1, :) = [clickX, clickY, clickZ];
-    ud.pointList{ud.currentProbe,2}(end+1, :) = 0;
-    slice_name = 'no histology image';
+    ud.pointList{ud.currentProbe,2}(end+1, :) = ud_slice.slice_num;
+    slice_name = ud_slice.processed_images(ud_slice.slice_num).name;
     ud.pointList{ud.currentProbe,3}{end+1} = slice_name;
    
     
     ud.pointHands{ud.currentProbe, 1}(end+1) = scatter(ud.atlasAx, clickX, clickY, 20, 'ro', 'MarkerFaceColor', [ .1 .1 .1], ... %ud_atlas_viewer.ProbeColors(probe, :),...
                     'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), 'MarkerFaceAlpha',.4,'LineWidth',1.5);
-    ud.pointHands{ud.currentProbe, 2}(end+1) = 0;
+    ud.pointHands{ud.currentProbe, 2}(end+1) = ud_slice.slice_num;
+    
+elseif ud.getPoint_for_transform
+    clickX = round(keydata.IntersectionPoint(1));
+    clickY = round(keydata.IntersectionPoint(2));
+    
+    ud.pointList_for_transform(end+1, :) = [clickX, clickY];
+    ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
+    set(ud.pointHands_for_transform(:), 'color', [0 0 0]);
+    ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'linewidth',2,'markers',4);    
     
 end
 set(f, 'UserData', ud);
