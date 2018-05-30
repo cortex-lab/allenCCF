@@ -18,6 +18,7 @@ probes_to_analyze = 1; %'all'; % either set to 'all' or e.g. [2,3]
 probe_length = 4.5; % in mm -- how far into the brain did you go
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um
+show_parent_category = true; % overlay in gray distance between parent regions (takes a while)
 
 probage_past_tip_to_plot = 1.0; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
 
@@ -139,13 +140,13 @@ plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
 
 error_length = round(probe_radius / 10); %microns error as first number
 % [borders, fD] = plotLabelsAsProbe(m, p, av, st, rpl, error_length, active_site_start*10, probage_past_tip_to_plot); % plots the percent of surrounding area occupied by region along probe
-borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot); % plots confidence score based on distance to nearest region along probe
+borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category); % plots confidence score based on distance to nearest region along probe
 
 
 title(['Probe ' num2str(selected_probe)])
 
 % plot line(s) indicating active site length
-plot([0 100], [(round(active_site_start)-2)*10 (round(active_site_start)-2)*10], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
-plot([0 100], [(rpl-2)*10 (rpl-2)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+plot([0 100], [(round(active_site_start)-2.5)*10 (round(active_site_start)-2.5)*10], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+plot([0 100], [(rpl-2.5)*10 (rpl-2.5)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
     
 end

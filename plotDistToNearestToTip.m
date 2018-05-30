@@ -1,4 +1,4 @@
-function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot)
+function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category)
 
 
 % these are the query points along the probe tract
@@ -16,11 +16,11 @@ scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of an
 fD = figure('Name','Probe Tract','Position',[1200 -200 250 900]);
 box off;
 
-for ann_type = 1:2 % loop between specific and parent region annotations
+for ann_type = 1:1+show_parent_category % loop between specific and parent region annotations
     
 % collect annotations along the track
-annotation_square = ones(size(t,1), error_length*2+1, error_length*2+1);
-ann = ones(1,size(t,1));
+annotation_square = ones(size(t,2), error_length*2+1, error_length*2+1);
+ann = ones(1,size(t,2));
 cm = zeros(numel(t),3);
 allenCmap = allen_ccf_colormap();
 
@@ -48,14 +48,31 @@ for ind = 1:length(t)
               % get index of square index projected onto plane orthogonal to probe  
               project_index_onto_ortho_plane = round(projection_matrix * [index1 0 index2]' / scaling_factor);
               % use this index and register its annotation
-              annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
+              if ann_type == 1
+                 annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
                                                           ceil(z(ind)+project_index_onto_ortho_plane(3)));
-            end
-        end
-                                                  
-        cur_annotation_square = squeeze(annotation_square(ind,:,:));
+              elseif ann_type == 2
+%                  annotation_square(ind,error_length+1+index1,error_length+1+index2) = st(av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
+%                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
+%                                                           ceil(z(ind)+project_index_onto_ortho_plane(3))),10).parent_structure_id;           
 
+                 id_path = st(av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
+                                                          ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
+                                                          ceil(z(ind)+project_index_onto_ortho_plane(3))),14).structure_id_path;   
+                  
+                 id_path_array = regexp(id_path, '/*/', 'split');
+                 if size(id_path_array{1},2) > 4
+                     annotation_square(ind,error_length+1+index1,error_length+1+index2) = str2num(id_path_array{1}{size(id_path_array{1},2)-3});
+                 end
+                 
+              end
+              
+           end
+        end
+        
+        cur_annotation_square = squeeze(annotation_square(ind,:,:));
+        
         currSqVec = cur_annotation_square(:);
         otherInd = find(currSqVec(distOrder)~=currSqVec(distOrder(1)),1); 
         if isempty(otherInd)
@@ -63,8 +80,6 @@ for ind = 1:length(t)
         else
             otherDist(ind) = dists(otherInd);
         end
-
-
     end
 end
 
@@ -78,7 +93,10 @@ if ann_type == 1
         distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
     end
     dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
-    cmD = dc(ann,:)*.8;
+    cmD = dc(ann,:);
+    if ~show_parent_category; cmD = cmD*.8; end
+else
+    cmD = ones(size(dc)) * .3;
 end
 
 % algorithm for finding areas and labels
@@ -117,19 +135,22 @@ for b = 1:length(borders)-1
     ycInds = (borders(b):min(borders(b+1)-1, length(yc)))+1;
     theseYC = yc(ycInds);
     
-    try
+
     if max(theseYC) < active_site_start*10  || max(theseYC) > rpl*10
-        cur_alpha = .5;
+        cur_alpha = .75 / ann_type^2;
     else
-        cur_alpha = 1;
+        cur_alpha = 1  / ann_type^2;
     end   
-    catch
-        disp('null');
-    end
     
-    fill([0 0 otherDist(ycInds)'*10],...
-        [max(theseYC) min(theseYC) theseYC], cmD(borders(b)+1,:),...
+    if size(theseYC,2) < 3
+    fill([0 0 otherDist(ycInds(1))*10 otherDist(ycInds(end))'*10 otherDist(ycInds(end))'*10 0],...
+        [max(theseYC)+5 min(theseYC)-5  min(theseYC)-5 max(theseYC)+5  max(theseYC)+5 max(theseYC)+5], cmD(borders(b)+1,:),...
         'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
+    else
+    fill([0 0 otherDist(ycInds(1))*10 otherDist(ycInds)'*10 otherDist(ycInds(end))*10 0],...
+        [max(theseYC)+5 min(theseYC)-5  min(theseYC)-5 theseYC  max(theseYC)+5 max(theseYC)+5], cmD(borders(b)+1,:),...
+        'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
+    end
     hold on;
 
     if ann_type==1
@@ -137,9 +158,15 @@ for b = 1:length(borders)-1
      	  shift_ind = shift_ind + 1;
         else
             midY(b - shift_ind) = mean(theseYC);
-            acr{b - shift_ind} = st.acronym{ann(borders(b)+1)};
+            if max(otherDist(ycInds)) == 1 % don't show label if region is one pixel away from another region for its full extent (plot gets crowded)
+                acr{b - shift_ind} = '';
+            else
+                acr{b - shift_ind} = st.acronym{ann(borders(b)+1)};    
+            end            
             name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
-            annBySegment(b - shift_ind) = ann(borders(b)+1);            
+            annBySegment(b - shift_ind) = ann(borders(b)+1);     
+            
+
         end
     end
 end
