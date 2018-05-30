@@ -1,11 +1,11 @@
 function borders = plotDistToNearest(m, p, yc, av, st, scaleFactor, error_length)
 % function borders = plotDistToNearest(m, p, yc, av, st, scaleFactor, error_length)
 %
-% TODO: 
+% TODO:
 % - add also indications of how far to nearest place outside of higher
 % level structures. E.g. you might be in DG-mo and close to another area,
 % but if that other area is DG-sg then you don't really care, and you'd
-% like to also see just the distance to nearest DG. 
+% like to also see just the distance to nearest DG.
 % - remove scaleFactor and error_length arguments - just calculate from
 % root to root, and for a large error_length
 % - comments!
@@ -35,41 +35,48 @@ dists = dists(:);
 otherDist = zeros(numel(t),1);
 for ind = 1:length(t)
     if x(ind)>0 && x(ind)<=size(av,1) &&...
-       y(ind)>0 && y(ind)<=size(av,2) &&...
-       z(ind)>0 && z(ind)<=size(av,3)
-   
+            y(ind)>0 && y(ind)<=size(av,2) &&...
+            z(ind)>0 && z(ind)<=size(av,3)
+        
         % add annotation to list of annotations
         ann(ind) = av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind)));
         
         % go in square orthogonal to probe tract and get other regions
         for index1 = -error_length:error_length
             for index2 = -error_length:error_length
-              % get index of square index projected onto plane orthogonal to probe  
-              project_index_onto_ortho_plane = round(projection_matrix * [index1 0 index2]' / scaling_factor);
-              % use this index and register its annotation
-              annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
-                                                          ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
-                                                          ceil(z(ind)+project_index_onto_ortho_plane(3)));
+                % get index of square index projected onto plane orthogonal to probe
+                project_index_onto_ortho_plane = round(projection_matrix * [index1 0 index2]' / scaling_factor);
+                % use this index and register its annotation
+                xx = ceil(x(ind)+project_index_onto_ortho_plane(1));
+                yy = ceil(y(ind)+project_index_onto_ortho_plane(2));
+                zz = ceil(z(ind)+project_index_onto_ortho_plane(3));
+                if xx>0 && xx<=size(av,1) &&...
+                        yy>0 && yy<=size(av,2) &&...
+                        zz>0 && zz<=size(av,3)
+                    annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(xx,yy,zz);                        
+                else
+                    annotation_square(ind,error_length+1+index1,error_length+1+index2) = 1;
+                end
             end
         end
-                                                  
+        
         cur_annotation_square = squeeze(annotation_square(ind,:,:));
-
+        
         currSqVec = cur_annotation_square(:);
-        otherInd = find(currSqVec(distOrder)~=currSqVec(distOrder(1)),1); 
+        otherInd = find(currSqVec(distOrder)~=currSqVec(distOrder(1)),1);
         if isempty(otherInd)
             otherDist(ind) = dists(end);
         else
             otherDist(ind) = dists(otherInd);
         end
-
+        
         % also add color map
         cm(ind,:) = allenCmap(ann(ind),:);
     end
 end
 
 
-
+ann(ann==0) = 1;
 uAnn = unique(ann);
 nC = numel(unique(ann(ann>1)));
 distinctCmap = distinguishable_colors(nC);
@@ -77,22 +84,23 @@ distinctCmap = distinguishable_colors(nC);
 if any(uAnn==1)
     distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
 end
-dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
+dc = zeros(max(uAnn),3); 
+dc(uAnn,:) = distinctCmap;
 cmD = dc(ann,:)*.8;
 
 
 % algorithm for finding areas and labels
 borders = [0; find(diff(ann)~=0)'; length(yc)];
 midY = zeros(numel(borders)-1,1);
-acr = {}; 
-for b = 1:length(borders)-1    
+acr = {};
+for b = 1:length(borders)-1
     
     ycInds = (borders(b):min(borders(b+1)-1, length(yc)))+1;
     theseYC = yc(ycInds);
     
     fill([0 0 otherDist(ycInds)'*10],...
         [max(theseYC) min(theseYC) theseYC], cmD(borders(b)+1,:),...
-        'EdgeAlpha', 0); 
+        'EdgeAlpha', 0);
     hold on;
     
     midY(b) = mean(theseYC);
