@@ -7,7 +7,8 @@
 
 
 % directory of histology
-processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
+processed_images_folder = 'P:\brain volumes\slices\Richards\processed\\';
+% processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
 probe_save_name_suffix = '';
 
 
@@ -27,7 +28,7 @@ end
 
 % show histology in Slice Viewer
 try; figure(slice_figure); title('');
-catch; slice_figure = figure('Name','Slice Viewer'); end
+catch; slice_figure = figure('Name','Slice Viewer','Position', [121 542 822 542]); end
 sliceBrowser(slice_figure, processed_images_folder);
 
 % use application in Atlas Viewer
@@ -35,4 +36,3 @@ f = AtlasTransformBrowser(tv,av,st, slice_figure, processed_images_folder, probe
 % save_location = processed_images_folder;
 % f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
    
-

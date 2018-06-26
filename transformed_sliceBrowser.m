@@ -1,14 +1,18 @@
-function transformed_sliceBrowser(transformed_slice_figure, transformed_images_folder, f, highlight_point, relevant_slice, min_dist, ...
+function transformed_sliceBrowser(transformed_slice_figure, save_location, f, highlight_point, relevant_slice, min_dist, ...
                                                 clickX, clickY, point_ind)
 
 
 % go through histology at the same time
 figure(transformed_slice_figure)
 clf(transformed_slice_figure)
+
+transformed_images_folder = [save_location 'transformations\\'];
 transformed_images = dir([transformed_images_folder '*.tif']);
-total_num_files = size(transformed_images,1); 
-ud_transformed_slice.total_num_files = total_num_files;
+
+ud_transformed_slice.transformed_image_names = natsortfiles({transformed_images.name});
+
 ud_transformed_slice.current_plot_handles = []; 
+ud_transformed_slice.save_location = save_location;
 
 ud = get(f, 'UserData');
 
@@ -38,98 +42,111 @@ if highlight_point
     
     ud_transformed_slice.quiver_plot{2} = quiver( x_plot - 30 - 10, y_plot + 30 + 10, 30, -30, 1, 'color', 'white', 'linewidth',1,'MaxHeadSize',10);
 else       
-    ud_transformed_slice.slice_num = ud.curr_slice_num;
+    ud_transformed_slice.all_slices_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     ud_transformed_slice.quiver_plot = [];
 end
 
-processed_image_name = ud_transformed_slice.transformed_images(ud_transformed_slice.slice_num).name;
-current_slice_image = flip(imread([ud_transformed_slice.transformed_images_folder processed_image_name]),1);
-set(ud_transformed_slice.im, 'CData', current_slice_image);
+processed_images = dir([ud_transformed_slice.save_location '*.tif']);
+processed_image_names = natsortfiles({processed_images.name});
+ud_transformed_slice.total_num_files = length(processed_image_names); 
 
-set(transformed_slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(transformed_slice_figure, keydata, f));
+ud_transformed_slice.slice_num =  find(strcmp([processed_image_names{ud_transformed_slice.all_slices_slice_num}(1:end-4)  '_transformed.tif'],ud_transformed_slice.transformed_image_names));
+        
+% show image
+if size(ud_transformed_slice.slice_num,2)
+    processed_image_name = ud_transformed_slice.transformed_image_names{ud_transformed_slice.slice_num};
+    current_slice_image = flip(imread([transformed_images_folder processed_image_name]),1);
+    extra_text = ' (transformed)';
+else
+    processed_image_name = processed_image_names{ud_transformed_slice.all_slices_slice_num};
+    current_slice_image = flip(imread([save_location processed_image_name]),1);
+    extra_text = ' (not transformed)';
+end
+
+
+set(ud_transformed_slice.im, 'CData', current_slice_image);
+title(['Probe on Slice Viewer ' num2str(ud_transformed_slice.all_slices_slice_num) '/' num2str(ud_transformed_slice.total_num_files) extra_text])
+
+set(transformed_slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(transformed_slice_figure, keydata, f, transformed_images_folder));
 set(transformed_slice_figure, 'UserData', ud_transformed_slice)
 
 
 
-function SliceAtlasHotkeyFcn(fig, keydata, f)
+function SliceAtlasHotkeyFcn(fig, keydata, f, transformed_images_folder)
 
 ud = get(fig, 'UserData');
 ud_atlas_viewer = get(f, 'UserData');
 
-% set(ud.quiver_plot{1},'Visible','off');
-% set(ud.quiver_plot{2},'Visible','off');
+processed_images = dir([ud.save_location '*.tif']);
+processed_image_names = natsortfiles({processed_images.name});
+
+transformed_images = dir([transformed_images_folder '*.tif']);
+ud.transformed_image_names = natsortfiles({transformed_images.name});
+ud.transformed_images = transformed_images;
+
 
 if strcmp(keydata.Key,'leftarrow')    
-    if ud.slice_num > 1
-        ud.slice_num = ud.slice_num - 1;
+    if ud.all_slices_slice_num > 1
+        ud.all_slices_slice_num = ud.all_slices_slice_num - 1;
+        
+        ud.slice_num =  find(strcmp([processed_image_names{ud.all_slices_slice_num}(1:end-4)  '_transformed.tif'],ud.transformed_image_names));
         
         % show next image
-        processed_image_name = ud.transformed_images(ud.slice_num).name;
-        current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+        if size(ud.slice_num,2)
+            processed_image_name = ud.transformed_image_names{ud.slice_num};
+            current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+            extra_text = ' (transformed)';
+        else
+            processed_image_name = processed_image_names{ud.all_slices_slice_num};
+            current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
+            extra_text = ' (not transformed)';
+        end
         set(ud.im, 'CData', current_slice_image);
         
-        title(['Probe on Slice Viewer ' num2str(ud.slice_num) '/' num2str(ud.total_num_files)])
+        title(['Probe on Slice Viewer ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) extra_text])
         
-        % plot probe points for that slice
-        set(ud.current_plot_handles(:), 'Visible', 'off'); ud.current_plot_handles = [];
-        
-        for probe = 1:size(ud_atlas_viewer.pointList,1)
-            for point = 1:size(ud_atlas_viewer.pointList{probe,1},1)
-                if ud.slice_num == ud_atlas_viewer.pointList{probe,2}(point)
-                    ud.current_plot_handles(end+1) = scatter(ud.sliceAx, ud_atlas_viewer.pointList{probe,1}(point,1), ...
-                        800-ud_atlas_viewer.pointList{probe,1}(point,2), 20, 'ro', 'MarkerFaceColor',[ .1 .1 .1],...
-                    'MarkerEdgeColor', ud_atlas_viewer.ProbeColors(probe, :), 'MarkerFaceAlpha',.4,'LineWidth',1.5);
-                end
-            end
-        end
-             
-            
+           
             
 
     end
 elseif strcmp(keydata.Key,'rightarrow') % break
-    if ud.slice_num < ud.total_num_files
-        ud.slice_num = ud.slice_num + 1;
+    if ud.all_slices_slice_num < ud.total_num_files
+       ud.all_slices_slice_num = ud.all_slices_slice_num + 1;
         
-        processed_image_name = ud.transformed_images(ud.slice_num).name;
-        current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+        ud.slice_num =  find(strcmp([processed_image_names{ud.all_slices_slice_num}(1:end-4)  '_transformed.tif'],ud.transformed_image_names));
+        
+        % show next image
+        if size(ud.slice_num,2)
+            processed_image_name = ud.transformed_image_names{ud.slice_num};
+            current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+            extra_text = ' (transformed)';
+        else
+            processed_image_name = processed_image_names{ud.all_slices_slice_num};
+            current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
+            extra_text = ' (not transformed)';
+        end
+        
         set(ud.im, 'CData', current_slice_image);
-        
-        title(['Probe on Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files)])        
+
+    end
+
+    
+end
+
+        title(['Probe on Slice Viewer -- Slice ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) extra_text ])        
         
         % plot probe points for that slice
         set(ud.current_plot_handles(:), 'Visible', 'off'); ud.current_plot_handles = [];
         
         for probe = 1:size(ud_atlas_viewer.pointList,1)
             for point = 1:size(ud_atlas_viewer.pointList{probe,1},1)
-                if ud.slice_num == ud_atlas_viewer.pointList{probe,2}(point)
+                if ud.all_slices_slice_num == ud_atlas_viewer.pointList{probe,2}(point)
                     ud.current_plot_handles(end+1) = scatter(ud.sliceAx, ud_atlas_viewer.pointList{probe,1}(point,1), ...
                         800-ud_atlas_viewer.pointList{probe,1}(point,2), 20, 'ro', 'MarkerFaceColor',[ .1 .1 .1],...
                     'MarkerEdgeColor', ud_atlas_viewer.ProbeColors(probe, :), 'MarkerFaceAlpha',.4,'LineWidth',1.5);
                 end
             end
         end
-
-
-    end
-elseif strcmp(keydata.Key,'uparrow') || strcmp(keydata.Key,'downarrow')
-    % update probe points    
-        % plot probe points for that slice
-        set(ud.current_plot_handles(:), 'Visible', 'off'); ud.current_plot_handles = [];
-        
-        for probe = 1:size(ud_atlas_viewer.pointList,1)
-            for point = 1:size(ud_atlas_viewer.pointList{probe,1},1)
-                if ud.slice_num == ud_atlas_viewer.pointList{probe,2}(point)
-                    ud.current_plot_handles(end+1) = scatter(ud.sliceAx, ud_atlas_viewer.pointList{probe,1}(point,1), ...
-                        800-ud_atlas_viewer.pointList{probe,1}(point,2), 20, 'ro', 'MarkerFaceColor', [ .1 .1 .1], ... %ud_atlas_viewer.ProbeColors(probe, :),...
-                    'MarkerEdgeColor', ud_atlas_viewer.ProbeColors(probe, :), 'MarkerFaceAlpha',.4,'LineWidth',1.5);
-                end
-            end
-        end
-    
-end
-
-
 
 
 

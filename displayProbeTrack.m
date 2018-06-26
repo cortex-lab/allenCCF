@@ -8,22 +8,23 @@
 
 
 % file location
-processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
+% processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
+processed_images_folder = 'P:\brain volumes\slices\Richards\processed\\';
 probe_save_name_suffix = '';
 
-probes_to_analyze = 1; %'all'; % either set to 'all' or e.g. [2,3]
+probes_to_analyze = [2 3]; %'all'; %'all'; % either set to 'all' or e.g. [2,3]
 
 
 % probe parameters
-probe_length = 4.5; % in mm -- how far into the brain did you go
+probe_length = 2.0; %4.5; % in mm -- how far into the brain did you go
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um
-show_parent_category = true; % overlay in gray distance between parent regions (takes a while)
+show_parent_category = false; %true; % overlay in gray distance between parent regions (takes a while)
 
-probage_past_tip_to_plot = 1.0; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
+probage_past_tip_to_plot = .1; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
 
 
-scaling_factor = 1.2; % set scaling e.g. based on lining up with ephys, or set to *false* to get scaling automatically from histology
+scaling_factor = 1.0; % set scaling e.g. based on lining up with ephys, or set to *false* to get scaling automatically from histology
 
 
 
@@ -41,8 +42,8 @@ scaling_factor = 1.2; % set scaling e.g. based on lining up with ephys, or set t
 %% GET AND PLOT PROBE VECTOR IN ATLAS SPACE
 
 % get scaling-factor method
-use_tip_to_get_reference_probe_length = false;
 if scaling_factor
+    use_tip_to_get_reference_probe_length = false;
     reference_probe_length = probe_length * scaling_factor;
     disp(['probe scaling of ' num2str(scaling_factor) ' determined by user input']);    
 else
@@ -125,9 +126,9 @@ else % use user-defined probe plotting length or scaling factor
 end
 
 % plot line the length of the active probe sites in reference space
-percent_of_tract_with_active_sites = active_probe_length / probe_length;
-active_site_start = reference_probe_length_tip*(1-percent_of_tract_with_active_sites);
-apl = round([active_site_start  reference_probe_length_tip]);
+percent_of_tract_with_active_sites = min([active_probe_length / probe_length, 1.0]);
+active_site_start = rpl*(1-percent_of_tract_with_active_sites);
+apl = round([active_site_start  rpl]);
 plot3(m(1)+p(1)*[apl(1) apl(2)], m(3)+p(3)*[apl(1) apl(2)], m(2)+p(2)*[apl(1) apl(2)], ...
     'Color', ProbeColors(selected_probe,:), 'LineWidth', 1);
 
