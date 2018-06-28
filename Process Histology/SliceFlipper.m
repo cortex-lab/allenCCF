@@ -13,6 +13,8 @@ ud_flip.rotate_angle = 0;
 ud_flip.processed_image_name = ud_flip.processed_image_names{ud_flip.slice_num};
 ud_flip.current_slice_image = imread([folder_processed_images ud_flip.processed_image_name]);
 ud_flip.original_slice_image = ud_flip.current_slice_image;
+ud_flip.original_ish_slice_image = ud_flip.current_slice_image;
+
 ud_flip.size = size(ud_flip.original_slice_image);
 ud_flip.grid = zeros(size(ud_flip.current_slice_image),class(ud_flip.original_slice_image)); 
 ud_flip.grid(1:50:end,:,:) = 150 + 20000*(isa(ud_flip.original_slice_image,'uint16')); 
@@ -59,6 +61,7 @@ switch lower(keydata.Key)
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
         ud.current_slice_image = imread([folder_processed_images ud.processed_image_name]);
         ud.original_slice_image = ud.current_slice_image;        
+        ud.original_ish_slice_image = ud.current_slice_image;   
         
         ud.size = size(ud.current_slice_image); 
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
@@ -70,7 +73,8 @@ switch lower(keydata.Key)
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
         ud.current_slice_image = imread([folder_processed_images ud.processed_image_name]);
         ud.original_slice_image = ud.current_slice_image;             
-
+        ud.original_ish_slice_image = ud.current_slice_image;   
+        
         ud.size = size(ud.current_slice_image); 
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
         ud.rotate_angle = 0;
@@ -101,6 +105,7 @@ switch lower(keydata.Key)
         
 	case 's' % sharpen
         ud.current_slice_image = localcontrast(ud.current_slice_image);
+        ud.original_ish_slice_image = localcontrast(ud.original_ish_slice_image);
     case 'w' % switch order
         if ud.slice_num < length(ud.processed_image_names)
             disp('switching order -- moving this image forward')
@@ -117,8 +122,10 @@ switch lower(keydata.Key)
         
     case 'f' % flip horizontally
         ud.current_slice_image = flip(ud.current_slice_image,2);
+        ud.original_ish_slice_image = flip(ud.original_ish_slice_image,2);
     case 'r' % return to original
         ud.current_slice_image = ud.original_slice_image;
+        ud.original_ish_slice_image = ud.original_slice_image;
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
         ud.rotate_angle = 0;
 end
@@ -143,7 +150,7 @@ ud = get(fig, 'UserData');
 %modify based on scrolling
 ud.rotate_angle = ud.rotate_angle + evt.VerticalScrollCount*.5;
 
-ud.current_slice_image = imrotate(ud.original_slice_image,ud.rotate_angle,'nearest','crop');
+ud.current_slice_image = imrotate(ud.original_ish_slice_image,ud.rotate_angle,'nearest','crop');
 imshow(ud.current_slice_image+ud.grid)
 
 

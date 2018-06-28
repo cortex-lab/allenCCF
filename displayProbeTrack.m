@@ -8,25 +8,23 @@
 
 
 % file location
-% processed_images_folder = 'C:\\Users\\Experiment\\Desktop\\brain volumes\\slices\\SS096\\processed\\';
 processed_images_folder = 'P:\brain volumes\slices\Richards\processed\\';
 probe_save_name_suffix = '';
 
-probes_to_analyze = [2 3]; %'all'; %'all'; % either set to 'all' or e.g. [2,3]
+probes_to_analyze = [2]; %'all';  % either set to 'all' or e.g. [2,3]
 
 
 % probe parameters
-probe_length = 2.0; %4.5; % in mm -- how far into the brain did you go
+probe_lengths = [3.0, 2.5, 3.8, 5.5, 6.5, 3.8, 5.2, 5.2, 5, 4.2, 4]; % in mm -- how far into the brain did you go, for all probes or just one num.
 active_probe_length = 3.84; % in mm
-probe_radius = 100; % in um
-show_parent_category = false; %true; % overlay in gray distance between parent regions (takes a while)
+probe_radius = 100; % in um -- error range queried for confidence metric
+show_parent_category = true; %true; % overlay in gray distance between parent regions (takes a while)
 
-probage_past_tip_to_plot = .1; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
+probage_past_tip_to_plot = .3; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
 
+scaling_factor = 1.1; % set scaling e.g. based on lining up with ephys, or set to *false* to get scaling automatically from histology
 
-scaling_factor = 1.0; % set scaling e.g. based on lining up with ephys, or set to *false* to get scaling automatically from histology
-
-
+show_region_table = true;
 
 
                                         
@@ -37,25 +35,21 @@ scaling_factor = 1.0; % set scaling e.g. based on lining up with ephys, or set t
 
 
 
-
+% close all
 
 %% GET AND PLOT PROBE VECTOR IN ATLAS SPACE
-
-% get scaling-factor method
-if scaling_factor
-    use_tip_to_get_reference_probe_length = false;
-    reference_probe_length = probe_length * scaling_factor;
-    disp(['probe scaling of ' num2str(scaling_factor) ' determined by user input']);    
-else
-    use_tip_to_get_reference_probe_length = true;
-    disp(['getting probe scaling from histology data...']);
-end
 
 
 % load points
 probePoints = load([processed_images_folder  'probe_points' probe_save_name_suffix]);
-ProbeColors = [1 1 1; 1 .75 0; .3 1 1; .7 0 .8; 1 0 0; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .8 .95 .5]; 
+ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; 1 .6 0; .7 0 0; .6 0 .7]; 
+% order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','orange','red','purple'};
 fwireframe = [];
+if ~exist('av')
+    disp('loading reference...')
+    av = readNPY('\\ZSERVER.cortexlab.net\Lab\Atlas\allenCCF\annotation_volume_10um_by_index.npy');
+    st = loadStructureTree('structure_tree_safe_2017.csv');
+end
 
 if strcmp(probes_to_analyze,'all')
     probes = 1:size(probePoints.pointList.pointList,1);
@@ -71,7 +65,21 @@ curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [3 2 1])
 % if curr_probePoints(1,3)>570 % analyze all on same side (necessary?)
 %         curr_probePoints(:,3) = 1140-curr_probePoints(:,3);
 % end
+if length(probe_lengths) > 1
+    probe_length = probe_lengths(selected_probe);
+else
+    probe_length = probe_lengths;
+end
 
+% get scaling-factor method
+if scaling_factor
+    use_tip_to_get_reference_probe_length = false;
+    reference_probe_length = probe_length * scaling_factor;
+    disp(['probe scaling of ' num2str(scaling_factor) ' determined by user input']);    
+else
+    use_tip_to_get_reference_probe_length = true;
+    disp(['getting probe scaling from histology data...']);
+end
 
 % get line of best fit through points
 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
@@ -100,7 +108,7 @@ end
 
 % plot brain grid
 fwireframe = plotBrainGrid([], [], fwireframe); hold on; 
-
+fwireframe.InvertHardcopy = 'off';
 
 % plot probe points
 hp = plot3(curr_probePoints(:,1), curr_probePoints(:,3), curr_probePoints(:,2), '.','linewidth',2, 'color',[ProbeColors(selected_probe,:) .2],'markers',10);
@@ -114,10 +122,11 @@ if use_tip_to_get_reference_probe_length
     reference_probe_length_tip = sqrt(sum((curr_probePoints(tip_index,:) - m).^2)); 
     shrinkage_factor = (reference_probe_length_tip / 100) / probe_length;
 
-    disp(' ');
+    
     disp(['probe length of ' num2str(reference_probe_length_tip/100) ' mm in reference atlas space compared to a reported ' num2str(probe_length) ' mm']);
     disp(['probe scaling of ' num2str(shrinkage_factor)]);
-
+    disp(' ');
+    
     % plot line the length of the probe in reference space
     rpl = round(reference_probe_length_tip);
     
@@ -141,13 +150,14 @@ plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
 
 error_length = round(probe_radius / 10); %microns error as first number
 % [borders, fD] = plotLabelsAsProbe(m, p, av, st, rpl, error_length, active_site_start*10, probage_past_tip_to_plot); % plots the percent of surrounding area occupied by region along probe
-borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category); % plots confidence score based on distance to nearest region along probe
+borders_table = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
 
+title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 
-title(['Probe ' num2str(selected_probe)])
 
 % plot line(s) indicating active site length
-plot([0 100], [(round(active_site_start)-2.5)*10 (round(active_site_start)-2.5)*10], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
-plot([0 100], [(rpl-2.5)*10 (rpl-2.5)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+plot([0 100], [(active_site_start*10) (active_site_start*10)], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+plot([0 100], [(rpl)*10 (rpl)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
     
+pause(.05)
 end

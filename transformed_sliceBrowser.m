@@ -1,5 +1,5 @@
 function transformed_sliceBrowser(transformed_slice_figure, save_location, f, highlight_point, relevant_slice, min_dist, ...
-                                                clickX, clickY, point_ind)
+                                                clickX, clickY, point_ind, add)
 
 
 % go through histology at the same time
@@ -27,8 +27,8 @@ ud_transformed_slice.im = plotTVslice(zeros(800,1140, 'uint8'));
 
 
 if highlight_point
-    ud_transformed_slice.slice_num = relevant_slice;
-    if min_dist < 40
+    ud_transformed_slice.all_slices_slice_num = relevant_slice;
+    if min_dist < 10
         x_plot = ud.pointList{ud.currentProbe,1}(point_ind,1);
         y_plot = 800-ud.pointList{ud.currentProbe,1}(point_ind,2);
     else
@@ -42,7 +42,7 @@ if highlight_point
     
     ud_transformed_slice.quiver_plot{2} = quiver( x_plot - 30 - 10, y_plot + 30 + 10, 30, -30, 1, 'color', 'white', 'linewidth',1,'MaxHeadSize',10);
 else       
-    ud_transformed_slice.all_slices_slice_num = ud.slice_at_shift_start+ud.slice_shift;
+    ud_transformed_slice.all_slices_slice_num = ud.slice_at_shift_start+ud.slice_shift+add;
     ud_transformed_slice.quiver_plot = [];
 end
 
@@ -56,16 +56,16 @@ ud_transformed_slice.slice_num =  find(strcmp([processed_image_names{ud_transfor
 if size(ud_transformed_slice.slice_num,2)
     processed_image_name = ud_transformed_slice.transformed_image_names{ud_transformed_slice.slice_num};
     current_slice_image = flip(imread([transformed_images_folder processed_image_name]),1);
-    extra_text = ' (transformed)';
+    ud_transformed_slice.extra_text = ' (transformed)';
 else
     processed_image_name = processed_image_names{ud_transformed_slice.all_slices_slice_num};
     current_slice_image = flip(imread([save_location processed_image_name]),1);
-    extra_text = ' (not transformed)';
+    ud_transformed_slice.extra_text = ' (not transformed)';
 end
 
 
 set(ud_transformed_slice.im, 'CData', current_slice_image);
-title(['Probe on Slice Viewer ' num2str(ud_transformed_slice.all_slices_slice_num) '/' num2str(ud_transformed_slice.total_num_files) extra_text])
+title(['Probe on Slice Viewer ' num2str(ud_transformed_slice.all_slices_slice_num) '/' num2str(ud_transformed_slice.total_num_files) ud_transformed_slice.extra_text])
 
 set(transformed_slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(transformed_slice_figure, keydata, f, transformed_images_folder));
 set(transformed_slice_figure, 'UserData', ud_transformed_slice)
@@ -95,18 +95,14 @@ if strcmp(keydata.Key,'leftarrow')
         if size(ud.slice_num,2)
             processed_image_name = ud.transformed_image_names{ud.slice_num};
             current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
-            extra_text = ' (transformed)';
+            ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
             current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
-            extra_text = ' (not transformed)';
+            ud.extra_text = ' (not transformed)';
         end
         set(ud.im, 'CData', current_slice_image);
-        
-        title(['Probe on Slice Viewer ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) extra_text])
-        
-           
-            
+
 
     end
 elseif strcmp(keydata.Key,'rightarrow') % break
@@ -119,11 +115,11 @@ elseif strcmp(keydata.Key,'rightarrow') % break
         if size(ud.slice_num,2)
             processed_image_name = ud.transformed_image_names{ud.slice_num};
             current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
-            extra_text = ' (transformed)';
+            ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
             current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
-            extra_text = ' (not transformed)';
+            ud.extra_text = ' (not transformed)';
         end
         
         set(ud.im, 'CData', current_slice_image);
@@ -133,7 +129,7 @@ elseif strcmp(keydata.Key,'rightarrow') % break
     
 end
 
-        title(['Probe on Slice Viewer -- Slice ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) extra_text ])        
+        title(['Probe on Slice Viewer -- Slice ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) ud.extra_text ])        
         
         % plot probe points for that slice
         set(ud.current_plot_handles(:), 'Visible', 'off'); ud.current_plot_handles = [];

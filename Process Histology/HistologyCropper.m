@@ -72,7 +72,7 @@ switch lower(keydata.Key)
     % pad and save slice image
         try; ud.slice_image = padarray(ud.slice_image, [floor((reference_size(1) - size(ud.slice_image,1)) / 2) + mod(size(ud.slice_image,1),2) ...
                                                           floor((reference_size(2) - size(ud.slice_image,2)) / 2) + mod(size(ud.slice_image,2),2)],0);
-        catch; disp('image must be under reference brain image size -- make sure to crop in next stage!');
+        catch; disp('image must be under reference brain image size -- make sure to crop in next stage of preprocessing!');
         end              
         imwrite(ud.slice_image, [save_folder 'processed\\' ...
                     ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif'])
@@ -81,19 +81,22 @@ switch lower(keydata.Key)
         disp([ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) ' saved!'])
         
         figure(histology_figure);
+        
+      
         try
         cropped_slice_rect = imrect;
         slice_position = cropped_slice_rect.getPosition;
         ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
         ud.slice_image = localcontrast(ud.slice_image);
         ud.original_slice_image = ud.slice_image;
-        catch; disp('cropping failed'); end 
-        
         figure(slice_figure);
         imshow(ud.slice_image);
         ud.original_slice_image = ud.slice_image;
 
-        ud.size = size(ud.slice_image);
+        ud.size = size(ud.slice_image);          
+        catch; disp('cropping failed'); end 
+        
+
 end
 
 
