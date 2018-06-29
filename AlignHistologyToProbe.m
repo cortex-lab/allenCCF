@@ -14,6 +14,7 @@ probe_save_name_suffix = ''; % name the saved probe points, to avoid overwriting
 
 
 
+
 %% GET PROBE TRAJECTORY POINTS
 
 % load the reference brain and region annotations (takes a while)

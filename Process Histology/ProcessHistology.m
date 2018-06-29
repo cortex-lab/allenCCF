@@ -10,6 +10,7 @@ image_folder = '\\zubjects\\Subjects\\Richards\\Histology\\';
 save_folder = 'P:\brain volumes\slices\Richards\tutorial\';
 
 
+
 % name of images, in order anterior to posterior or vice versa
 image_file_names = {'Large Image 1.tif','Large Image 2.tif','Large Image 13.tif'}; %,'Large Image 12.tif',...
 %                              'Large Image 11.tif', 'Large Image 9.tif','Large Image 8.tif','Large Image 7.tif','Large Image 6.tif',...
@@ -17,11 +18,12 @@ image_file_names = {'Large Image 1.tif','Large Image 2.tif','Large Image 13.tif'
                             % note that image 14/15/16/17, which fit inbetween 2 and 12, have no dye visible
                         
 % name to save cropped slices as
-save_file_name = 'Richards_';
+save_file_name = 'Tatum_';
 
 % parameters
 microns_per_pixel = 3.233; %1.62; 
 microns_per_pixel_after_downsampling = 1;
+
 
 
 % additional parameters

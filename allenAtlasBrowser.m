@@ -7,6 +7,10 @@ function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, 
 % The annotation volume should be the "by_index" version
 %
 
+if nargin<4
+    save_location = '';
+    save_suffix = '';
+end
 
 fprintf(1, 'Controls: \n');
 fprintf(1, '--------- \n');
@@ -28,6 +32,7 @@ fprintf(1, 'down: scroll through slices \n');
 f = figure('Name','Atlas Viewer'); 
 
 ud.bregma = allenCCFbregma; 
+
 
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
@@ -99,13 +104,13 @@ switch lower(keydata.Key)
             disp('Overlay OFF');
         else; disp('Overlay on!');
         end
+
     case 'p' % toggle mode to register clicks as Probe points
         ud.probe_view_mode = 0;
         if ud.currentProbe < size(ud.pointList,1)
             ud.currentProbe = ud.currentProbe + 1;
             ProbeColor =  {'white','gold','turquoise','purple','red','fern','bubble gum','overcast sky', 'rawhide', 'green apple'};
             disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ProbeColor{ud.currentProbe} ')']); 
-            
         else
             ud.currentProbe = 0;
             disp(['probe point mode OFF']);

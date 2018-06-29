@@ -60,6 +60,7 @@ ann = ann2(:,1);
 uAnn = unique(ann);
 nC = numel(unique(ann(ann>1)));
 distinctCmap = distinguishable_colors(nC);
+
 distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
 dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
 cmD = dc(ann,:)*.8;

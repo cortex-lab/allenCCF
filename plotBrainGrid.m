@@ -3,14 +3,13 @@ function f = plotBrainGrid(brainGridData, ax, brain_figure)
 % 
 % To plot the wire mesh data loaded from brainGridData.npy. 
 
-if isempty(brainGridData)
+if nargin<1 || isempty(brainGridData)
     mf = mfilename('fullpath');
     brainGridData = readNPY(fullfile(fileparts(mf), 'brainGridData.npy'));
 end
 
 bp = double(brainGridData); 
 bp(sum(bp,2)==0,:) = NaN; % when saved to uint16, NaN's become zeros. There aren't any real vertices at (0,0,0) and it shouldn't look much different if there were
-
 
 try; f = figure(brain_figure);
 catch
