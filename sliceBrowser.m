@@ -3,6 +3,7 @@ function sliceBrowser(slice_figure, processed_images_folder)
 
 % go through histology at the same time
 processed_images = dir([processed_images_folder '*.tif']);
+ud_slice.processed_image_names = natsortfiles({processed_images.name});
 total_num_files = size(processed_images,1); disp(['found ' num2str(total_num_files) ' processed slice images']);
 ud_slice.total_num_files = total_num_files;
 ud_slice.break = 0; 
@@ -26,7 +27,7 @@ set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(sli
 set(slice_figure, 'UserData', ud_slice)
 
 
-processed_image_name = ud_slice.processed_images(ud_slice.slice_num).name;
+processed_image_name = ud_slice.processed_image_names{ud_slice.slice_num};
 current_slice_image = flip(imread([ud_slice.processed_images_folder processed_image_name]),1);
 set(ud_slice.im, 'CData', current_slice_image);
 title('Slice Viewer');
@@ -42,9 +43,15 @@ ud = get(f, 'UserData');
 if ud.getPoint
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
-    
+
     ud.pointList(end+1, :) = [clickX, 800 - clickY];
     ud.pointHands(end+1) = plot(ud.sliceAx, clickX, clickY, 'ro', 'color', [0 .5 0],'linewidth',2,'markers',4);    
+    
+     if clickX < 100 && (800 - clickY) < 100 % if click in corner, break
+        ud.pointList = []; 
+        set(ud.pointHands(:), 'Visible', 'off');     
+     end
+    
 end
 set(f, 'UserData', ud);
 
@@ -59,7 +66,7 @@ if strcmp(keydata.Key,'leftarrow')
     if ud.slice_num > 1
         ud.slice_num = ud.slice_num - 1;
         
-        processed_image_name = ud.processed_images(ud.slice_num).name;
+        processed_image_name = ud.processed_image_names{ud.slice_num};
         current_slice_image = flip(imread([ud.processed_images_folder processed_image_name]),1);
         set(ud.im, 'CData', current_slice_image); 
         
@@ -72,7 +79,7 @@ elseif strcmp(keydata.Key,'rightarrow')
     if ud.slice_num < ud.total_num_files
         ud.slice_num = ud.slice_num + 1;
         
-        processed_image_name = ud.processed_images(ud.slice_num).name;
+        processed_image_name = ud.processed_image_names{ud.slice_num};
         current_slice_image = flip(imread([ud.processed_images_folder processed_image_name]),1);
         set(ud.im, 'CData', current_slice_image); 
         
@@ -85,9 +92,6 @@ elseif strcmp(keydata.Key,'t')
     ud.getPoint = ~ud.getPoint;
         if ud.getPoint; disp('transform point mode!'); end
 end
-
-
-
 
 
 

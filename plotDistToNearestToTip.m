@@ -1,8 +1,8 @@
-function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category)
+function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table)
 
 
 % these are the query points along the probe tract
-yc = 10*[0:(rpl + probage_past_tip_to_plot*100 -1)] - 20;
+yc = 10*[0:(rpl + probage_past_tip_to_plot*100 )] - 0;
 t = yc/10; % dividing by 10 accounts for the 10um resolution of the atlas
 x = m(1)+p(1)*t;
 y = m(2)+p(2)*t;
@@ -13,11 +13,14 @@ projection_matrix = ortho_plane * ortho_plane'; % projection matrix onto plane o
 scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of angle between x-z plane and probe tract
 
 % plot labelled probe tract
-fD = figure('Name','Probe Tract','Position',[1200 -200 250 900]);
+fD = figure('Name','Probe Tract','Position',[1300 40 250 1000]);
 box off;
 
 for ann_type = 1:1+show_parent_category % loop between specific and parent region annotations
     
+    if ann_type == 2
+        disp('calculting confidences for the parent regions...');
+    end
 % collect annotations along the track
 annotation_square = ones(size(t,2), error_length*2+1, error_length*2+1);
 ann = ones(1,size(t,2));
@@ -43,11 +46,13 @@ for ind = 1:length(t)
         end
         
         % go in square orthogonal to probe tract and get other regions
+        try
         for index1 = -error_length:error_length
             for index2 = -error_length:error_length
               % get index of square index projected onto plane orthogonal to probe  
               project_index_onto_ortho_plane = round(projection_matrix * [index1 0 index2]' / scaling_factor);
               % use this index and register its annotation
+              
               if ann_type == 1
                  annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
@@ -70,6 +75,7 @@ for ind = 1:length(t)
               
            end
         end
+        catch; disp('you''re way out of the brain');end
         
         cur_annotation_square = squeeze(annotation_square(ind,:,:));
         
@@ -96,7 +102,7 @@ if ann_type == 1
     cmD = dc(ann,:);
     if ~show_parent_category; cmD = cmD*.8; end
 else
-    cmD = ones(size(dc)) * .3;
+    cmD = ones(length(ann),3) * .15;
 end
 
 % algorithm for finding areas and labels
@@ -104,12 +110,13 @@ region_borders = [0; find(diff(ann)~=0)'; length(yc)]';
 if ann_type == 1
     midY = zeros(numel(region_borders)-1 - logical( sum(region_borders==round(rpl)) ) - logical(sum(region_borders==round(active_site_start))) ,1);
     acr = {}; 
+    acr_for_table = {};
     shift_ind = 0;
 end
 
 
 % add active site start and rpl as pseudo-borders
-if active_site_start
+% if active_site_start
     if ~sum(region_borders==round(active_site_start))
         region_borders = [region_borders(1:max(find(region_borders<active_site_start)) ) round(active_site_start)  ...
             region_borders(max(find(region_borders<active_site_start))+1:end)];
@@ -123,8 +130,10 @@ if active_site_start
     else
         probe_tip_is_boundary = 1;
     end
-else; 
-end
+% else; 
+    
+    
+% end
 borders = region_borders;
 
 
@@ -137,9 +146,9 @@ for b = 1:length(borders)-1
     
 
     if max(theseYC) < active_site_start*10  || max(theseYC) > rpl*10
-        cur_alpha = .75 / ann_type^2;
+        cur_alpha = .75 / ann_type;
     else
-        cur_alpha = 1  / ann_type^2;
+        cur_alpha = 1  / ann_type;
     end   
     
     if size(theseYC,2) < 3
@@ -147,6 +156,7 @@ for b = 1:length(borders)-1
         [max(theseYC)+5 min(theseYC)-5  min(theseYC)-5 max(theseYC)+5  max(theseYC)+5 max(theseYC)+5], cmD(borders(b)+1,:),...
         'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
     else
+
     fill([0 0 otherDist(ycInds(1))*10 otherDist(ycInds)'*10 otherDist(ycInds(end))*10 0],...
         [max(theseYC)+5 min(theseYC)-5  min(theseYC)-5 theseYC  max(theseYC)+5 max(theseYC)+5], cmD(borders(b)+1,:),...
         'EdgeAlpha', 0, 'FaceAlpha', cur_alpha); 
@@ -163,20 +173,51 @@ for b = 1:length(borders)-1
             else
                 acr{b - shift_ind} = st.acronym{ann(borders(b)+1)};    
             end            
-            name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
-            annBySegment(b - shift_ind) = ann(borders(b)+1);     
-            
-
+%             name{b - shift_ind} = st.safe_name{ann(borders(b)+1)};
+%             annBySegment(b - shift_ind) = ann(borders(b)+1);     
         end
+        acr_for_table{b} = st.acronym{ann(borders(b)+1)};
+        name{b} = st.safe_name{ann(borders(b)+1)};
+        annBySegment(b) = ann(borders(b)+1); 
     end
 end
+yc(borders(2)) = 0;
+if show_region_table && ann_type==1
+    borders_table = table(yc(borders(2:end-1))', yc(borders(3:end))', acr_for_table(2:end)', name(2:end)', annBySegment(2:end)', ...
+     'VariableNames', {'upperBorder', 'lowerBorder', 'acronym', 'name', 'avIndex'})
 end
-% borders = table(yc(borders(2:end-1))', yc(borders(3:end))', acr(2:end)', name(2:end)', annBySegment(2:end)', ...
-%     'VariableNames', {'upperBorder', 'lowerBorder', 'acronym', 'name', 'avIndex'})
+
+end
+
+
+ 
+if strcmp(acr{end}, 'root')
+    acr{end} = 'end';
+end
+
+yyaxis left
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
-xlabel('dist to nearest');
-ylim([0 yc(borders(end-1))])
+if show_parent_category; set(gca,'Color',[.85 .85 .85]);
+else; set(gca,'Color',[.4 .4 .4]); end
+xlabel('dist to nearest (um)','color','white');
+set(gca,'XColor','white')
+set(gca,'YColor',[.85 .85 .85])
+% ylim([0 yc(borders(end-1))])
+ylim([1 yc(end)+1])
 xlim([0 error_length*10]);
+set(fD,'Color','k')
+fD.InvertHardcopy = 'off';
+
+yyaxis right
+if active_site_start> 0
+set(gca, 'YTick', [1 active_site_start*10 rpl*10 yc(end)], 'YTickLabel', {'0 um' [num2str(active_site_start*10) ' um'] [num2str(rpl*10) ' um'] [num2str(yc(end)) ' um']});
+else
+    set(gca, 'YTick', [1 rpl*10 yc(end)], 'YTickLabel', {'0 um' [num2str(rpl*10) ' um'] [num2str(yc(end)) ' um']});
+end
+set(gca, 'YDir','reverse');
+set(gca,'YColor',[.9 1 1])
+ylim([1 yc(end)+1])
+
 box off;
 
