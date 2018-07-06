@@ -6,12 +6,14 @@ ud_histology.file_num = 1;
 ud_histology.slice_num = ones(length(image_file_names),1);
 
 ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
-figure(histology_figure); imshow(ud_histology.hist_image);
+figure(histology_figure); 
+ud_histology.im = imshow(ud_histology.hist_image);
 
+ud_histology.cropped_slice_rect = {};
 try % get first slice ROI
 disp('please select an ROI')
-cropped_slice_rect = imrect;
-slice_position = cropped_slice_rect.getPosition;
+ud_histology.cropped_slice_rect{end+1} = imrect;
+slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
 ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
 ud.slice_image = localcontrast(ud.slice_image);
 catch; disp('cropping failed'); end
@@ -72,36 +74,38 @@ switch lower(keydata.Key)
     % pad and save slice image
         try; ud.slice_image = padarray(ud.slice_image, [floor((reference_size(1) - size(ud.slice_image,1)) / 2) + mod(size(ud.slice_image,1),2) ...
                                                           floor((reference_size(2) - size(ud.slice_image,2)) / 2) + mod(size(ud.slice_image,2),2)],0);
-        catch; disp('image must be under reference brain image size -- make sure to crop in next stage of preprocessing!');
+        catch; disp(''); disp('image must be under reference brain image size -- make sure to crop in next stage of preprocessing!');
         end              
         imwrite(ud.slice_image, [save_folder 'processed\\' ...
                     ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif'])
         
-        ud_histology.slice_num(ud_histology.file_num) = ud_histology.slice_num(ud_histology.file_num) + 1;        
+            
         disp([ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) ' saved!'])
+        ud_histology.slice_num(ud_histology.file_num) = ud_histology.slice_num(ud_histology.file_num) + 1;    
         
         figure(histology_figure);
-        
-      
         try
-        cropped_slice_rect = imrect;
-        slice_position = cropped_slice_rect.getPosition;
+        ud_histology.cropped_slice_rect{end+1} = imrect;
+        slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
         ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
         ud.slice_image = localcontrast(ud.slice_image);
         ud.original_slice_image = ud.slice_image;
         figure(slice_figure);
         imshow(ud.slice_image);
-        ud.original_slice_image = ud.slice_image;
 
-        ud.size = size(ud.slice_image);          
-        catch; disp('cropping failed'); end 
+        ud.size = size(ud.slice_image);    
+        
+        set(histology_figure, 'UserData', ud_histology);
+        set(slice_figure, 'UserData', ud);        
+        catch; 
+            disp('');
+        end 
         
 
 end
 
 
-set(histology_figure, 'UserData', ud_histology);
-set(slice_figure, 'UserData', ud);
+
 
 
 
@@ -118,21 +122,33 @@ switch lower(keydata.Key)
         ud_histology.file_num = ud_histology.file_num + 1;
         
         ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
-        figure(histology_figure); imshow(ud_histology.hist_image);
+        figure(histology_figure); 
+        set(ud_histology.im, 'CData', ud_histology.hist_image); %imshow(ud_histology.hist_image);
         
+        for i = 1:length(ud_histology.cropped_slice_rect)
+        delete(ud_histology.cropped_slice_rect{i})
+        end
+        ud_histology.cropped_slice_rect = {};
         try % get first slice ROI
         disp('please select an ROI')
-        cropped_slice_rect = imrect;
-        slice_position = cropped_slice_rect.getPosition;
+        ud_histology.cropped_slice_rect{end+1} = imrect;
+        slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
         ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
         ud.slice_image = localcontrast(ud.slice_image);
         ud.original_slice_image = ud.slice_image;
-        catch; disp('cropping failed'); end
+        figure(slice_figure);
+        imshow(ud.slice_image);        
+        catch; 
+            disp('cropping failed'); 
+        end
+        
+set(slice_figure, 'UserData', ud);
+set(histology_figure, 'UserData', ud_histology);
+
 end
 
 
-set(slice_figure, 'UserData', ud_slice);
-set(histology_figure, 'UserData', ud_histology);
+
 
 
 

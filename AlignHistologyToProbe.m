@@ -7,9 +7,9 @@
 
 
 % directory of histology
-processed_images_folder = 'P:\brain volumes\slices\Richards\processed\\';
+processed_images_folder = 'C:\Drive\Histology\for tutorial\SS096\processed\\';
 
-probe_save_name_suffix = ''; % name the saved probe points, to avoid overwriting another set of probes going in the same folder
+probe_save_name_suffix = 'test'; % name the saved probe points, to avoid overwriting another set of probes going in the same folder
 
 
 
@@ -20,11 +20,11 @@ probe_save_name_suffix = ''; % name the saved probe points, to avoid overwriting
 % load the reference brain and region annotations (takes a while)
 if ~exist('av')
     disp('loading reference...')
-    av = readNPY('\\ZSERVER.cortexlab.net\Lab\Atlas\allenCCF\annotation_volume_10um_by_index.npy');
-    st = loadStructureTree('structure_tree_safe_2017.csv');
+    av = readNPY('C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy');
+    st = loadStructureTree('C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv');
 end
 if ~exist('tv')
-    tv = readNPY('\\ZSERVER.cortexlab.net\Lab\Atlas\allenCCF\template_volume_10um.npy');
+    tv = readNPY('C:\Drive\Histology\for tutorial\template_volume_10um.npy');
 end
 
 % show histology in Slice Viewer

@@ -6,23 +6,20 @@
 %%  SET FILE AND PARAMETERS
 
 % directory of histology
-image_folder = '\\zubjects\\Subjects\\Richards\\Histology\\';
-save_folder = 'P:\brain volumes\slices\Richards\tutorial\';
+image_folder = 'C:\Drive\Histology\for tutorial\SS096_raw\';
+save_folder = 'C:\Drive\Histology\for tutorial\SS096_raw\';
 
 
 
 % name of images, in order anterior to posterior or vice versa
-image_file_names = {'Large Image 1.tif','Large Image 2.tif','Large Image 13.tif'}; %,'Large Image 12.tif',...
-%                              'Large Image 11.tif', 'Large Image 9.tif','Large Image 8.tif','Large Image 7.tif','Large Image 6.tif',...
-%                              'Large Image 10.tif','Large Image 5.tif','Large Image 4.tif'};
-                            % note that image 14/15/16/17, which fit inbetween 2 and 12, have no dye visible
+image_file_names = {'slide no 2_RGB.tif','slide no 3_RGB.tif','slide no 4_RGB.tif'};
                         
 % name to save cropped slices as
-save_file_name = 'Tatum_';
+save_file_name = 'SS096_';
 
 % parameters
 microns_per_pixel = 3.233; %1.62; 
-microns_per_pixel_after_downsampling = 1;
+microns_per_pixel_after_downsampling = 10;
 
 
 
@@ -35,7 +32,7 @@ adjust_slice_contrast = true; % adjust large histology image before cropping
 
 
 
-close all
+
 
 % find or create folder location for processed images
 reference_size = [800 1140]; % size in of reference atlas brain coronal slice
@@ -49,7 +46,7 @@ end;
 
 %% LOAD AND PROCESS SLICE PLATE IMAGES
 
-
+close all
 
 
 % open figure to view histology
@@ -72,14 +69,11 @@ end
 
 %% CROP AND SAVE SLICES -- only run once the above is done
 
+close all
 
 
-
-try; figure(slice_figure);
-catch; slice_figure = figure('Name','Slice Viewer'); end
-
-try; figure(histology_figure);
-catch; histology_figure = figure('Name','Histology Viewer'); end
+slice_figure = figure('Name','Slice Viewer'); 
+histology_figure = figure('Name','Histology Viewer');
 
 
 
@@ -93,11 +87,10 @@ HistologyCropper(histology_figure, slice_figure, save_folder, image_file_names, 
 
 %% GO THROUGH TO FLIP HORIZONTAL SLICE ORIENTATION, ROTATE, SHARPEN, and CHANGE ORDER
 
+close all
 
 
-
-try; figure(slice_figure);
-catch; slice_figure = figure('Name','Slice Viewer'); end
+slice_figure = figure('Name','Slice Viewer');
 
 
 
