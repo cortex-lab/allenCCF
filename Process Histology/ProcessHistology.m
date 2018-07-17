@@ -24,8 +24,8 @@ microns_per_pixel_after_downsampling = 10;
 
 
 % additional parameters
-gain = 8; % increase gain if for some reason the images are not bright enough
-use_already_downsampled_image = false; 
+gain = 1; % increase gain if for some reason the images are not bright enough
+use_already_downsampled_image = true; 
 
 adjust_slice_contrast = true; % adjust large histology image before cropping
 
@@ -40,7 +40,7 @@ adjust_histology_contrast = true; % adjust image before moving on
 folder_processed_images = [save_folder 'processed\\'];
 if ~exist(folder_processed_images)
     mkdir(folder_processed_images)
-end; 
+end
 
 
 

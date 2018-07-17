@@ -142,9 +142,6 @@ switch lower(keydata.Key)
                 
                 curr_probePoints = ud.pointList{ud.currentProbe,1}(:, [3 2 1]);
 
-                if curr_probePoints(1,3)>570 % analyze all on same side (necessary?)
-                        curr_probePoints(:,3) = 1140-curr_probePoints(:,3);
-                end
 
                 % get line of best fit through points
                 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
@@ -169,6 +166,11 @@ switch lower(keydata.Key)
                 ud.currentAngle(1) = round (400*p(1) / p(2) );
                 z_shift_above_probe_center = m(2)*p(1) / p(2);
                 ud.currentAngle(2) = round( 570 * (ud.currentAngle(1) - z_shift_above_probe_center) / (m(3) - 570) );
+                p_abs = abs(p);
+                ud.currentAngle(2) = round(ud.currentAngle(2) * ( p_abs(3) / (p_abs(1) + p_abs(3))));
+                
+%                 z_shift_above_probe_center = m(2)*p(1) / p(2);
+%                 ud.currentAngle(2) = round( 570 * (ud.currentAngle(1) - z_shift_above_probe_center) / (m(3) - 570) );
  
                 % update slice
                 update.VerticalScrollCount = 0; set(f, 'UserData', ud);

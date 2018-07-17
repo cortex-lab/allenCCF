@@ -7,7 +7,7 @@
 
 
 % directory of histology
-processed_images_folder = 'C:\Drive\Histology\for tutorial\SS096\processed\\';
+processed_images_folder = 'C:\Drive\Histology\for tutorial\SS096\processed\\'; % 'C:\Drive\Histology\for tutorial\Richards\processed'
 
 probe_save_name_suffix = 'test'; % name the saved probe points, to avoid overwriting another set of probes going in the same folder
 
@@ -34,6 +34,8 @@ sliceBrowser(slice_figure2, processed_images_folder);
 
 % use application in Atlas Viewer
 f = AtlasTransformBrowser(tv,av,st, slice_figure2, processed_images_folder, probe_save_name_suffix); % use this function if you a processed_images_folder with appropriately processed .tif histology images
+
+% use simpler version, without the processed slice images
 % save_location = processed_images_folder;
 % f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
    
