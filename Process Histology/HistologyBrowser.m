@@ -101,7 +101,7 @@ switch lower(keydata.Key)
             ud.file_num = ud.file_num + 1;
             move_on = true;
         else
-            disp('that''s all, folks; save this image and continue to the next cell')
+            disp('that''s all, folks; continue to the next cell')
             move_on = false;
         end
 end

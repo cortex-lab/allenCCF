@@ -3,6 +3,7 @@ function HistologyCropper(histology_figure, slice_figure, save_folder, image_fil
 
 % set up histology figure
 ud_histology.file_num = 1;
+ud_histology.num_files = length(image_file_names);
 ud_histology.slice_num = ones(length(image_file_names),1);
 
 ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
@@ -119,27 +120,31 @@ ud_histology = get(histology_figure, 'UserData');
 switch lower(keydata.Key)    
         
     case 'space' % move onto next image
-        ud_histology.file_num = ud_histology.file_num + 1;
-        
-        ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
-        figure(histology_figure); 
-        set(ud_histology.im, 'CData', ud_histology.hist_image); %imshow(ud_histology.hist_image);
-        
-        for i = 1:length(ud_histology.cropped_slice_rect)
-        delete(ud_histology.cropped_slice_rect{i})
-        end
-        ud_histology.cropped_slice_rect = {};
-        try % get first slice ROI
-        disp('please select an ROI')
-        ud_histology.cropped_slice_rect{end+1} = imrect;
-        slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
-        ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
-        ud.slice_image = localcontrast(ud.slice_image);
-        ud.original_slice_image = ud.slice_image;
-        figure(slice_figure);
-        imshow(ud.slice_image);        
-        catch; 
-            disp('cropping failed'); 
+        if ud_histology.file_num + 1 <= ud_histology.num_files
+            ud_histology.file_num = ud_histology.file_num + 1;
+
+            ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
+            figure(histology_figure); 
+            set(ud_histology.im, 'CData', ud_histology.hist_image); %imshow(ud_histology.hist_image);
+
+            for i = 1:length(ud_histology.cropped_slice_rect)
+            delete(ud_histology.cropped_slice_rect{i})
+            end
+            ud_histology.cropped_slice_rect = {};
+            try % get first slice ROI
+            disp('please select an ROI')
+            ud_histology.cropped_slice_rect{end+1} = imrect;
+            slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
+            ud.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
+            ud.slice_image = localcontrast(ud.slice_image);
+            ud.original_slice_image = ud.slice_image;
+            figure(slice_figure);
+            imshow(ud.slice_image);        
+            catch; 
+                disp('cropping failed'); 
+            end
+        else
+           disp('That was the last file -- close and move on to the next cell') 
         end
         
 set(slice_figure, 'UserData', ud);

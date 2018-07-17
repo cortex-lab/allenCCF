@@ -8,17 +8,17 @@
 
 
 % file location
-processed_images_folder = 'P:\brain volumes\slices\Richards\processed\\';
+processed_images_folder = 'C:\Drive\Histology\for tutorial\SS096\processed\\'; %'C:\Drive\Histology\for tutorial\Richards\processed\';
 probe_save_name_suffix = '';
 
-probes_to_analyze = [2]; %'all';  % either set to 'all' or e.g. [2,3]
+probes_to_analyze = 'all'; %[2];  % either set to 'all' or e.g. [2,3]
 
 
 % probe parameters
 probe_lengths = [3.0, 2.5, 3.8, 5.5, 6.5, 3.8, 5.2, 5.2, 5, 4.2, 4]; % in mm -- how far into the brain did you go, for all probes or just one num.
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um -- error range queried for confidence metric
-show_parent_category = true; %true; % overlay in gray distance between parent regions (takes a while)
+show_parent_category = false; %true; % overlay in gray distance between parent regions (takes a while)
 
 probage_past_tip_to_plot = .3; % in mm -- plot this far or to the bottom of the brain, whichever is shorter
 
