@@ -12,7 +12,7 @@ ud_flip.flip = 0;
 ud_flip.rotate_angle = 0;
 
 ud_flip.processed_image_name = ud_flip.processed_image_names{ud_flip.slice_num};
-ud_flip.current_slice_image = imread([folder_processed_images ud_flip.processed_image_name]);
+ud_flip.current_slice_image = imread(fullfile(folder_processed_images, ud_flip.processed_image_name));
 ud_flip.original_slice_image = ud_flip.current_slice_image;
 ud_flip.original_ish_slice_image = ud_flip.current_slice_image;
 
@@ -59,11 +59,11 @@ ud = get(slice_figure, 'UserData');
 
 switch lower(keydata.Key)   
     case 'leftarrow' % last slice
-        imwrite(ud.current_slice_image, [folder_processed_images ud.processed_image_name])
+        imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))
         
         ud.slice_num = ud.slice_num - 1*(ud.slice_num>1);
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
-        ud.current_slice_image = imread([folder_processed_images ud.processed_image_name]);
+        ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;        
         ud.original_ish_slice_image = ud.current_slice_image;   
         
@@ -75,11 +75,11 @@ switch lower(keydata.Key)
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
         ud.rotate_angle = 0;
     case 'rightarrow' % next slice      
-        imwrite(ud.current_slice_image, [folder_processed_images ud.processed_image_name])
+        imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))
         
         ud.slice_num = ud.slice_num + 1*(ud.slice_num < length(ud.processed_image_names));
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
-        ud.current_slice_image = imread([folder_processed_images ud.processed_image_name]);
+        ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;             
         ud.original_ish_slice_image = ud.current_slice_image;   
         
@@ -122,10 +122,10 @@ switch lower(keydata.Key)
         if ud.slice_num < length(ud.processed_image_names)
             disp('switching order -- moving this image forward')
             next_processed_image_name = ud.processed_image_names{ud.slice_num+1};
-            next_slice_image = imread([folder_processed_images next_processed_image_name]);
+            next_slice_image = imread(fullfile(folder_processed_images, next_processed_image_name));
 
-            imwrite(next_slice_image, [folder_processed_images ud.processed_image_name])            
-            imwrite(ud.current_slice_image, [folder_processed_images next_processed_image_name])
+            imwrite(next_slice_image, fullfile(folder_processed_images, ud.processed_image_name))            
+            imwrite(ud.current_slice_image, fullfile(folder_processed_images, next_processed_image_name))
             
             ud.current_slice_image = next_slice_image; 
             ud.size = size(ud.current_slice_image); 

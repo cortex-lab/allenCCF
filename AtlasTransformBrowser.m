@@ -28,7 +28,15 @@ fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
 
-f = figure('Name','Atlas Viewer','Position',[956 401 883 657]); 
+
+f = figure('Name','Atlas Viewer'); 
+try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+catch; screen_size = [1900 1080]./[2560 1440];
+end
+    
+set(f,'Position', [956*screen_size(1) 401*screen_size(2) 883*screen_size(1) 657*screen_size(2)])
+movegui(f,'onscreen')
+
 
 ud.bregma = allenCCFbregma; 
 
@@ -42,8 +50,8 @@ ud.showOverlay = false; ud.overlayAx = [];
 ud.pointList = cell(1,3); ud.pointList{1} = zeros(0,3); 
 ud.pointHands = cell(1,3);
 ud.probe_view_mode = false;
-ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; 1 .6 0; .7 0 0; .5 0 .6]; 
-ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','orange','red','purple'};
+ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .5 0 .6; 1 .6 0]; 
+ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','red','purple','orange'};
 ud.getPoint_for_transform = false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
 ud.current_pointList_for_transform = zeros(0,2); ud.curr_slice_num = 1;
 ud.showAtlas = false;
@@ -115,18 +123,26 @@ switch key_letter
         ud.probe_view_mode = 0;
         if ud.currentProbe < size(ud.pointList,1)
             ud.currentProbe = ud.currentProbe + 1;
-            
+                        
             disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ud.ProbeColor{ud.currentProbe} ')']); 
             ud.getPoint_for_transform = false; 
             
             % show Transformed Slice & Probage Viewer, if not already showing
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = fullfile(save_location, 'transformations\\');
             try; load([folder_transformations slice_name '_transform_data.mat']);
                 try; figure(ud.transformed_slice_figure); 
                 catch
-                    ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer','Position', [265 37 560 420]);
+                    
+                    ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                    try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                    catch; screen_size = [1900 1080]./[2560 1440];
+                    end
+
+                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
+                    movegui(ud.transformed_slice_figure,'onscreen')        
+                    
                     highlight_point = false;
                     transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
                 end; figure(f);
@@ -148,7 +164,7 @@ switch key_letter
             if ud.probe_view_mode
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
-                        probe_points = load([save_location 'probe_points' save_suffix]);  disp('loading probe points')
+                        probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
                         ud.pointList = probe_points.pointList.pointList;
                         ud.pointHands = probe_points.pointList.pointHands;
                 end; disp(['activate probe view mode for probe ' num2str(ud.currentProbe)])
@@ -202,6 +218,12 @@ switch key_letter
                 try; figure(ud.transformed_slice_figure); 
                 catch
                     ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                    try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                    catch; screen_size = [1900 1080]./[2560 1440];
+                    end
+
+                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
+                    movegui(ud.transformed_slice_figure,'onscreen')                      
                     highlight_point = false;
                     transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [],0)
                 end; figure(f);                
@@ -214,104 +236,23 @@ switch key_letter
         
     case 't' % toggle mode to register clicks as Points -- 0, 1, or 2
         
-        if ~size(ud.current_pointList_for_transform,1)
-            ud.getPoint_for_transform = ud.getPoint_for_transform + 1 - 3*(ud.getPoint_for_transform==2);
-        else
-            ud.getPoint_for_transform = ~ud.getPoint_for_transform;
-        end
-            
+
+        ud.getPoint_for_transform = ~ud.getPoint_for_transform;
         ud.loaded = false;
         
         if ud.getPoint_for_transform
-            if ud.getPoint_for_transform
-                disp('transform point mode on -- press t again before clicking for automatic transform point mode'); 
-            else
-                disp('automatic transform point mode activated (press top left of slice to abandon)!')
-            end
-                ud.currentProbe = 0;
+            disp('transform point mode on -- press t again before clicking for automatic transform point mode'); 
+
+            ud.currentProbe = 0;
 
             % launch transform point mode
-            if ud_slice.slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) || ~size(ud.current_pointList_for_transform,1) % ud_slice.slice_num ~= ud.curr_slice_num
+            if (ud_slice.slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) || ~size(ud.current_pointList_for_transform,1)) && ~ud.loaded 
                 ud.curr_slice_num = ud_slice.slice_num;
                 ud.current_pointList_for_transform = zeros(0,2);
                 set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
                 num_hist_points = size(ud_slice.pointList,1);
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
-
-                while true && ud.getPoint_for_transform == 2
-                    % select template point automatically
-                    if template_point == 1
-                        findX = 1140 / 2;
-                        findY = min(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 4
-                        findX = 1140 / 2;
-                        findY = max(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 3
-                        findX = 1140 / 2;
-                        findY = round(prctile(find(ud.atlas_boundaries(:,findX)) , 66));   %median(find(ud.atlas_boundaries(:,findX)));            
-                    elseif template_point == 2
-                        findX = 1140 / 2;
-                        findY = round(prctile(find(ud.atlas_boundaries(:,findX)) , 25));                       
-                    elseif template_point == 12
-                        findY = 800 / 2;
-                        findX = max(find(ud.atlas_boundaries(findY,:)));
-                    elseif template_point == 7
-                        findY = 800 / 2;
-                        findX = min(find(ud.atlas_boundaries(findY,:)));         
-                    elseif template_point == 10
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 66));
-                        findY = min(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 14
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 66));
-                        findY = max(find(ud.atlas_boundaries(:,findX)));     
-                    elseif template_point == 5
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 33));
-                        findY = min(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 9
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 33));
-                        findY = max(find(ud.atlas_boundaries(:,findX)));   
-                    elseif template_point == 6
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 15));
-                        findY = min(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 8
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 15));
-                        findY = max(find(ud.atlas_boundaries(:,findX)));                           
-                    elseif template_point == 11
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 85));
-                        findY = min(find(ud.atlas_boundaries(:,findX)));
-                    elseif template_point == 13
-                        findX = round(prctile(find(ud.atlas_boundaries(800/2,:)) , 85));
-                        findY = max(find(ud.atlas_boundaries(:,findX)));                           
-                    end
-
-                    % apply to template
-                    if template_points_shown < template_point
-                        ud.pointList_for_transform(end+1, :) = [findX, findY];
-                        ud.current_pointList_for_transform(end+1, :) = [findX, findY];
-                        set(ud.pointHands_for_transform(:), 'color', [0 0 0]);
-                        ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, findX, findY, 'ro', 'color', 'green','LineWidth',3);  
-                        template_points_shown = template_points_shown + 1;
-                    end
-                    % move on if point was selected on histology
-                    ud_slice = get(slice_figure, 'UserData');
-                    if size(ud_slice.pointList,1) > num_hist_points
-                         if ud_slice.pointList(end,1) < 100 && ud_slice.pointList(end,2) < 100% if click in corner, break
-                            ud.current_pointList_for_transform = zeros(0,2); 
-                            set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-                            disp('exit transform mode'); break; end
-                        num_hist_points = size(ud_slice.pointList,1);
-                        template_point = template_point + 1;
-                    end
-
-                    % stop after last point
-                    if template_point > 14
-                        disp('press h to transform histology (whereupon more points can be added if necessary)')
-                        break
-                    end
-
-                    pause(.1);
-                end
             end
         else; disp('transform point mode OFF');    
         end        
@@ -408,7 +349,7 @@ switch key_letter
     case 's' % save probe trajectory and points of each probe per histology image (and associated histology name/number)
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
-        save([save_location  'probe_points' save_suffix], 'pointList'); disp('probe points saved');        
+        save(fullfile(save_location, ['probe_points' save_suffix]), 'pointList'); disp('probe points saved');        
     case 'l' % load transform and current slice position and angle
         slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
         folder_transformations = [save_location 'transformations\\'];
@@ -456,9 +397,11 @@ switch key_letter
             disp('transform loaded -- press ''l'' again now to load probe points');
         else % load probe points
             if ~size(ud.pointList{1,1},1)
-                probe_points = load([save_location 'probe_points' save_suffix]);  disp('probe points loaded')
+                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('probe points loaded')
                 ud.pointList = probe_points.pointList.pointList;
                 ud.pointHands = probe_points.pointList.pointHands;
+            else
+                disp('probe points not loaded -- there are already some current probe points')
             end
         end
         
@@ -510,7 +453,7 @@ if strcmp(key_letter,'x') % save transform and current slice position and angle
         
         % find or create folder location for transformations
         try
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = fullfile(save_location, 'transformations\\');
         if ~exist(folder_transformations)
             mkdir(folder_transformations)
         end
@@ -530,12 +473,12 @@ if strcmp(key_letter,'x') % save transform and current slice position and angle
         allen_location = cell(2,1); allen_location{1} = ud.currentSlice; allen_location{2} = ud.currentAngle; 
         save_transform.allen_location = allen_location;
         % save all this
-        save([folder_transformations slice_name '_transform_data.mat'], 'save_transform');
+        save(fullfile(folder_transformations, [slice_name '_transform_data.mat']), 'save_transform');
         
         % save transformed histology image
         current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
         curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
-        imwrite(curr_slice_trans, [folder_transformations slice_name '_transformed.tif'])
+        imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
         
         disp('transform and atlas location saved.')
         catch
@@ -579,7 +522,7 @@ elseif ud.scrollMode == 3
   ud.slice_shift = ud.slice_shift+evt.VerticalScrollCount;    
   slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
   end
-  folder_transformations = [save_location 'transformations\\'];
+  folder_transformations = fullfile(save_location, 'transformations\\');
   
 %   ud.slice_at_shift_start = ud.loaded_slice; %ud_slice.slice_num;
   
@@ -610,7 +553,7 @@ elseif ud.scrollMode == 3
             ud.current_pointList_for_transform = transform_data.transform_points{1};
             ud_slice.pointList = transform_data.transform_points{2};
         else
-            ud_slice.pointList = [];
+            ud_slice.pointList = [];           
         end
         set(slice_figure, 'UserData', ud_slice);
         
@@ -622,7 +565,6 @@ elseif ud.scrollMode == 3
         
         % update figure
         update.VerticalScrollCount = 0; set(f, 'UserData', ud);
-%         updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');
         ud.loaded = true;
         
         ud.histology_overlay = 1;
@@ -803,6 +745,7 @@ f = get(get(im, 'Parent'), 'Parent');
 ud = get(f, 'UserData');
 ud_slice = get(slice_figure, 'UserData');
 
+% probe view mode
 if ud.probe_view_mode && ud.currentProbe
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
@@ -821,6 +764,7 @@ if ud.probe_view_mode && ud.currentProbe
         highlight_point, relevant_slice, min_dist, clickX, clickY, point_ind,0)
     figure(f);
     
+% selecting probe mode    
 elseif ud.currentProbe > 0
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
@@ -839,16 +783,20 @@ elseif ud.currentProbe > 0
                 
     ud.pointHands{ud.currentProbe, 2}(end+1) = ud_slice.slice_num + ud.slice_shift;
     
+% transform mode    
 elseif ud.getPoint_for_transform
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
     
-    if ud.curr_slice_num ~= ud_slice.slice_num;
+    if ud.curr_slice_num ~= ud_slice.slice_num
+        if ~ud.loaded
         ud.current_pointList_for_transform = zeros(0,2);
         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
-        ud.curr_slice_num = ud_slice.slice_num;
         disp('transforming new slice');
+        end
+        ud.curr_slice_num = ud_slice.slice_num;
     end
+    
     
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];

@@ -22,9 +22,9 @@ disp(['loading image ' num2str(file_num) '...'])
 
 % load already processed image
 if use_already_downsampled_image
-    image = imread([save_folder image_file_names{file_num}(1:end-4) '_processed.tif']);
+    image = imread(fullfile(save_folder, [image_file_names{file_num}(1:end-4) '_processed.tif']));
 else %process image now
-    image = imread([image_folder image_file_names{file_num}]);
+    image = imread(fullfile(image_folder,image_file_names{file_num}));
     original_image_size = size(image);
 
     % resize (downsample) image to 25 micron pixels
@@ -70,36 +70,39 @@ switch lower(keydata.Key)
     case 'r' % return to original
         ud.contrast = [0 1];       
     case 'space'
-        disp('switch contrast effect')
+        contrast_effect = {'minimum intensity limit','maximum intensity limit'};
         if ud.contrast_type==2
             ud.contrast_type = 1;
         elseif ud.contrast_type==1
             ud.contrast_type = 2;
-    end
+        end
+        disp(['switch contrast effect -- now adjusting ' contrast_effect{ud.contrast_type}])
     case 'c' % break
         disp('next channel')
         ud.channel = ud.channel + 1 - (ud.channel==3)*3;
     case 's'
         disp('saving downsampled and processed image');
-        imwrite(ud.adjusted_image, [ud.save_folder image_file_names{ud.file_num}(1:end-4) '_processed.tif'])
+        imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
         imshow(ud.adjusted_image)
     case 'leftarrow'
     disp('saving downsampled and processed image');
-    imwrite(ud.adjusted_image, [ud.save_folder image_file_names{ud.file_num}(1:end-4) '_processed.tif'])
+    imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
     imshow(ud.adjusted_image)           
         if ud.file_num > 1
             ud.file_num = ud.file_num - 1;
             move_on = true;
+            ud_histology.contrast = [0 1];
         else
             move_on = false;
         end
         case 'rightarrow'
     disp('saving downsampled and processed image');
-    imwrite(ud.adjusted_image, [ud.save_folder image_file_names{ud.file_num}(1:end-4) '_processed.tif'])
+    imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
     imshow(ud.adjusted_image)               
         if ud.file_num < ud.num_files;
             ud.file_num = ud.file_num + 1;
             move_on = true;
+            ud_histology.contrast = [0 1];
         else
             disp('that''s all, folks; continue to the next cell')
             move_on = false;
@@ -113,9 +116,9 @@ if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightar
     
     % load already processed image
     if use_already_downsampled_image
-        image = imread([ud.save_folder image_file_names{ud.file_num}(1:end-4) '_processed.tif']);
+        image = imread(fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']));
     else %process image now
-        image = imread([ud.image_folder image_file_names{ud.file_num}]);
+        image = imread(fullfile(ud.image_folder, image_file_names{ud.file_num}));
         original_image_size = size(image);
 
         % resize (downsample) image to 25 micron pixels
@@ -146,13 +149,19 @@ ud.key = 'scroll';
 
 
 %modify based on scrolling
-ud.contrast(ud.contrast_type) = ud.contrast(ud.contrast_type) + evt.VerticalScrollCount*.1;
+if ud.contrast(1) < ud.contrast(2)
+    ud.contrast(ud.contrast_type) = ud.contrast(ud.contrast_type) + evt.VerticalScrollCount*.1;
+else
+    disp('contrast limit hit')
+end
 
 % make sure within limit of 0 to 1
 if ud.contrast(ud.contrast_type) < 0
     ud.contrast(ud.contrast_type) = 0;
+    disp('contrast limit hit')
 elseif ud.contrast(ud.contrast_type) > 1
     ud.contrast(ud.contrast_type) = 1;
+    disp('contrast limit hit')
 end
 
 try

@@ -7,7 +7,10 @@ Some code to work with the Allen Inst CCF data, specifically the 10µm voxel 201
 >> tv = readNPY('template_volume_10um.npy'); % grey-scale "background signal intensity"
 >> av = readNPY('annotation_volume_10um_by_index.npy'); % the number at each pixel labels the area, see note below
 >> st = loadStructureTree('structure_tree_safe_2017.csv'); % a table of what all the labels mean
->> f = allenAtlasBrowser(tv, av, st);
+
+>> file_save_location = 'C:\Histology\Mouse1'; % where will the probe locations be saved
+>> probe_name = 'test'; % name probe to avoid overwriting
+>> f = allenAtlasBrowser(tv, av, st, file_save_location, probe_name);
 ```
 
 ## Requirements

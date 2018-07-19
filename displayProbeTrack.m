@@ -8,14 +8,14 @@
 
 
 % file location
-processed_images_folder = 'C:\Drive\Histology\for tutorial\SS096\processed\\'; %'C:\Drive\Histology\for tutorial\Richards\processed\';
-probe_save_name_suffix = '';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096\processed';
+probe_save_name_suffix = '_tutorial';
 
 probes_to_analyze = 'all'; %[2];  % either set to 'all' or e.g. [2,3]
 
 
 % probe parameters
-probe_lengths = [3.0, 2.5, 3.8, 5.5, 6.5, 3.8, 5.2, 5.2, 5, 4.2, 4]; % in mm -- how far into the brain did you go, for all probes or just one num.
+probe_lengths = 5.0; % in mm -- how far into the brain did you go, for all probes or just one num.
 active_probe_length = 3.84; % in mm
 probe_radius = 100; % in um -- error range queried for confidence metric
 show_parent_category = false; %true; % overlay in gray distance between parent regions (takes a while)
@@ -28,8 +28,9 @@ show_region_table = true;
 
 
                                         
-
-
+% directory of reference atlas files
+annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
+structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 
 
@@ -41,15 +42,17 @@ show_region_table = true;
 
 
 % load points
-probePoints = load([processed_images_folder  'probe_points' probe_save_name_suffix]);
-ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; 1 .6 0; .7 0 0; .6 0 .7]; 
-% order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','orange','red','purple'};
+probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
+ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
+% order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','purple','orange','red'};
 fwireframe = [];
-if ~exist('av')
-    disp('loading reference...')
-    av = readNPY('\\ZSERVER.cortexlab.net\Lab\Atlas\allenCCF\annotation_volume_10um_by_index.npy');
-    st = loadStructureTree('structure_tree_safe_2017.csv');
+
+if ~exist('av','var') || ~exist('st','var')
+    disp('loading reference atlas...')
+    av = readNPY(annotation_volume_location);
+    st = loadStructureTree(structure_tree_location);
 end
+
 
 if strcmp(probes_to_analyze,'all')
     probes = 1:size(probePoints.pointList.pointList,1);
