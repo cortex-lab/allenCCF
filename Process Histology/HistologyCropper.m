@@ -6,7 +6,7 @@ ud_histology.file_num = 1;
 ud_histology.num_files = length(image_file_names);
 ud_histology.slice_num = ones(length(image_file_names),1);
 
-ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
+ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
 figure(histology_figure); 
 ud_histology.im = imshow(ud_histology.hist_image);
 
@@ -77,8 +77,8 @@ switch lower(keydata.Key)
                                                           floor((reference_size(2) - size(ud.slice_image,2)) / 2) + mod(size(ud.slice_image,2),2)],0);
         catch; disp(''); disp('image must be under reference brain image size -- make sure to crop in next stage of preprocessing!');
         end              
-        imwrite(ud.slice_image, [save_folder 'processed\\' ...
-                    ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif'])
+        imwrite(ud.slice_image, fullfile(save_folder, 'processed', ...
+                    [ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif']))
         
             
         disp([ud.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) ' saved!'])
@@ -123,7 +123,7 @@ switch lower(keydata.Key)
         if ud_histology.file_num + 1 <= ud_histology.num_files
             ud_histology.file_num = ud_histology.file_num + 1;
 
-            ud_histology.hist_image = imread([save_folder image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']);
+            ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
             figure(histology_figure); 
             set(ud_histology.im, 'CData', ud_histology.hist_image); %imshow(ud_histology.hist_image);
 

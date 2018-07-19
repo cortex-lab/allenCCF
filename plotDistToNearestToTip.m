@@ -13,7 +13,13 @@ projection_matrix = ortho_plane * ortho_plane'; % projection matrix onto plane o
 scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of angle between x-z plane and probe tract
 
 % plot labelled probe tract
-fD = figure('Name','Probe Tract','Position',[1300 40 250 1000]);
+fD = figure('Name','Probe Tract');
+try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+catch; screen_size = [1900 1080]./[2560 1440];
+end
+    
+set(fD,'Position', [700*screen_size(1) 40*screen_size(2) 250*screen_size(1) 1200*screen_size(2)])
+movegui(fD,'onscreen')
 box off;
 
 for ann_type = 1:1+show_parent_category % loop between specific and parent region annotations

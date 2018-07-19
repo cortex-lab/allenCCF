@@ -6,7 +6,7 @@ function transformed_sliceBrowser(transformed_slice_figure, save_location, f, hi
 figure(transformed_slice_figure)
 clf(transformed_slice_figure)
 
-transformed_images_folder = [save_location 'transformations\\'];
+transformed_images_folder = fullfile(save_location, 'transformations\\');
 transformed_images = dir([transformed_images_folder '*.tif']);
 
 ud_transformed_slice.transformed_image_names = natsortfiles({transformed_images.name});
@@ -59,7 +59,7 @@ if size(ud_transformed_slice.slice_num,2)
     ud_transformed_slice.extra_text = ' (transformed)';
 else
     processed_image_name = processed_image_names{ud_transformed_slice.all_slices_slice_num};
-    current_slice_image = flip(imread([save_location processed_image_name]),1);
+    current_slice_image = flip(imread(fullfile(save_location, processed_image_name)),1);
     ud_transformed_slice.extra_text = ' (not transformed)';
 end
 
@@ -98,7 +98,7 @@ if strcmp(keydata.Key,'leftarrow')
             ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
-            current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
+            current_slice_image = flip(imread(fullfile(ud.save_location, processed_image_name)),1);
             ud.extra_text = ' (not transformed)';
         end
         set(ud.im, 'CData', current_slice_image);
@@ -118,7 +118,7 @@ elseif strcmp(keydata.Key,'rightarrow') % break
             ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
-            current_slice_image = flip(imread([ud.save_location processed_image_name]),1);
+            current_slice_image = flip(imread(fullfile(ud.save_location, processed_image_name)),1);
             ud.extra_text = ' (not transformed)';
         end
         
