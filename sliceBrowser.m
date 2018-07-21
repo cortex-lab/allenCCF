@@ -4,7 +4,7 @@ function sliceBrowser(slice_figure, processed_images_folder)
 %-----------------------------------------------------------------
 
 % initialize user data variables held by the figure
-processed_images = dir([processed_images_folder '*.tif']);
+processed_images = dir([processed_images_folder filesep '*.tif']);
 ud_slice.processed_image_names = natsortfiles({processed_images.name});
 total_num_files = size(processed_images,1); disp(['found ' num2str(total_num_files) ' processed slice images']);
 ud_slice.total_num_files = total_num_files;
@@ -67,8 +67,6 @@ if ud.getPoint
     
 end
 set(f, 'UserData', ud);
-
-
 
 % ------------------------
 % react to keyboard press

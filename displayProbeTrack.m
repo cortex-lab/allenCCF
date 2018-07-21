@@ -2,13 +2,14 @@
 %          Display Probe Track
 % ------------------------------------------------------------------------
 
-
-
 %% ENTER PARAMETERS AND FILE LOCATION
 
-
 % file location of probe points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096\processed';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_done\processed';
+
+% directory of reference atlas files
+annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
+structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved probe points
 probe_save_name_suffix = '_tutorial';
@@ -16,12 +17,9 @@ probe_save_name_suffix = '_tutorial';
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';
 
-
-
 % -----------
 % parameters
 % -----------
-
 % how far into the brain did you go, either for each probe or just one number for all -- in mm
 probe_lengths = 5.0; 
 
@@ -44,15 +42,9 @@ scaling_factor = 1.1;
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
                                         
-% directory of reference atlas files
-annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
-structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
-
 
 
 % close all
-
-
 
 
 
@@ -61,14 +53,12 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 % -----------------------------------------------
 % load the reference annotations and probe points
 % -----------------------------------------------
-
 % load the reference brain annotations
 if ~exist('av','var') || ~exist('st','var')
     disp('loading reference atlas...')
     av = readNPY(annotation_volume_location);
     st = loadStructureTree(structure_tree_location);
 end
-
 
 % load probe points
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
@@ -82,7 +72,6 @@ if strcmp(probes_to_analyze,'all')
 else
     probes = probes_to_analyze;
 end 
-
 
 
 %% ----------------------------------------------------------------

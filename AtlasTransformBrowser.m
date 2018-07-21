@@ -131,24 +131,24 @@ switch key_letter
             
             % show Transformed Slice & Probage Viewer, if not already showing
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end
-        slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
-        folder_transformations = fullfile(save_location, 'transformations\\');
-            try; load([folder_transformations slice_name '_transform_data.mat']);
-                try; figure(ud.transformed_slice_figure); 
-                catch
-                    
-                    ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
-                    try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
-                    catch; screen_size = [1900 1080]./[2560 1440];
-                    end
+                slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
+                folder_transformations = fullfile(save_location, ['transformations' filesep]);
+                try; load([folder_transformations slice_name '_transform_data.mat']);
+                    try; figure(ud.transformed_slice_figure); 
+                    catch
 
-                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
-                    movegui(ud.transformed_slice_figure,'onscreen')        
-                    
-                    highlight_point = false;
-                    transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
-                end; figure(f);
-            end
+                        ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                        try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                        catch; screen_size = [1900 1080]./[2560 1440];
+                        end
+
+                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
+                        movegui(ud.transformed_slice_figure,'onscreen')        
+
+                        highlight_point = false;
+                        transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
+                    end; figure(f);
+                end
         else
             ud.currentProbe = 0;
             disp(['probe point mode OFF']);
@@ -289,7 +289,7 @@ switch key_letter
         slice_points = ud_slice.pointList;
         
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = [save_location 'transformations' filesep];
         if size(ud.current_pointList_for_transform,1)  && size(slice_points,1) && ud.slice_at_shift_start+ud.slice_shift == ud_slice.slice_num
             key_letter = 'x'; % save transform automatically
         end
@@ -358,15 +358,19 @@ switch key_letter
 % l -- load transform and current slice position and angle        
     case 'l' 
         slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = fullfile(save_location, ['transformations' filesep]);
         
         try
         if ud.loaded_slice+ud.slice_shift ~= ud_slice.slice_num
             
             ud.curr_slice_num = ud_slice.slice_num;
             
+            % remove overlay
+            ud.showOverlay = 0;
+            delete(ud.overlayAx); ud.overlayAx = [];
+            
             % load transform data
-            transform_data = load([folder_transformations slice_name '_transform_data.mat']);  
+            transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
             transform_data = transform_data.save_transform;
 
             % load new transform
@@ -453,7 +457,7 @@ if strcmp(key_letter,'x')
         
         % find or create folder location for transformations
         try
-        folder_transformations = fullfile(save_location, 'transformations\\');
+        folder_transformations = fullfile(save_location, ['transformations' filesep]);
         if ~exist(folder_transformations)
             mkdir(folder_transformations)
         end
@@ -514,7 +518,8 @@ elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
 % scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
   set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-  
+  ud.showOverlay = 0;
+  delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
   
   try
@@ -524,7 +529,7 @@ elseif ud.scrollMode == 3
   ud.slice_shift = ud.slice_shift+evt.VerticalScrollCount;    
   slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
   end
-  folder_transformations = fullfile(save_location, 'transformations\\');
+  folder_transformations = fullfile(save_location, ['transformations' filesep]);
     
     % set probe points from other slices invisible and from this slice visible
     for probe = 1:size(ud.pointList,1)
@@ -543,7 +548,7 @@ elseif ud.scrollMode == 3
     try; load([folder_transformations slice_name '_transform_data.mat']);
        
         % load transform data
-        transform_data = load([folder_transformations slice_name '_transform_data.mat']);  
+        transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
         transform_data = transform_data.save_transform;
         
         % load new transform
