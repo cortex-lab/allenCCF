@@ -96,7 +96,7 @@ switch lower(keydata.Key)
         else
             move_on = false;
         end
-        case 'rightarrow' % save image and move to next image
+    case 'rightarrow' % save image and move to next image
     disp('saving downsampled and processed image');
     imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
     imshow(ud.adjusted_image)               
@@ -107,6 +107,8 @@ switch lower(keydata.Key)
             disp('that''s all, folks; continue to the next cell')
             move_on = false;
         end
+    otherwise
+        imshow(ud.adjusted_image)
 end
 
 if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightarrow')) && move_on
