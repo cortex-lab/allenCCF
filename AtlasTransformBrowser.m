@@ -1,13 +1,13 @@
-
-
 function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix)
+% ------------------------------------------------
 % Browser for the allen atlas ccf data in matlab.
+% ------------------------------------------------
 %
 % Inputs templateVolume, annotationVolume, and structureTree are the data describing the atlas.
 % The annotation volume should be the "by_index" version
 %
 
-
+% print instructions
 fprintf(1, 'Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'scroll: move between slices \n');
@@ -28,18 +28,16 @@ fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
 
-
+% create figure and adjust to user's screen size
 f = figure('Name','Atlas Viewer'); 
 try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
-end
-    
+end 
 set(f,'Position', [956*screen_size(1) 401*screen_size(2) 883*screen_size(1) 657*screen_size(2)])
 movegui(f,'onscreen')
 
-
+% initialize user data variables held by the figure
 ud.bregma = allenCCFbregma; 
-
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
 ud.scrollMode = 0;
@@ -70,35 +68,45 @@ ud.curr_im = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.curr_slice_trans = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.im_annotation = zeros(800,1140,'uint16');
 ud.atlas_boundaries = zeros(800,1140,'uint16');;
-ud.loaded = 10;
+ud.loaded = 0;
 
+% create functions needed to interact with the figure
 set(ud.im, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
-
 ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
     'String', '[coords]', 'EdgeColor', 'none', 'Color', 'k');
-
 allData.tv = templateVolume;
 allData.av = annotationVolume;
 allData.st = structureTree;
-
 hold(ud.atlasAx, 'on');
 set(ud.atlasAx, 'HitTest', 'off');
-
 set(f, 'UserData', ud);
-
 set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location, save_suffix));
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figure, save_location))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
 
+% ------------------------
+% react to keyboard press
+% ------------------------
 function hotkeyFcn(f, slice_figure, keydata, allData, save_location, save_suffix)
 
+% retrieve user data from figure
 ud = get(f, 'UserData');
 ud_slice = get(slice_figure, 'UserData');
 
+
 key_letter = lower(keydata.Key);
 switch key_letter  
-    case 'g' % toggle showing Gridlines
+% o -- toggle showing brain region overlay
+    case 'o'
+        ud.showOverlay = ~ud.showOverlay;
+        if ~ud.showOverlay
+            delete(ud.overlayAx); ud.overlayAx = [];
+            disp('Overlay OFF');
+        else; disp('Overlay on!');
+        end
+% g -- toggle showing Gridlines    
+    case 'g' 
         if ~isfield(ud, 'gridlines') || isempty(ud.gridlines)
             axes(ud.atlasAx); hold on;
             gridY = 100:100:700; % assuming the size of the atlas for this for now
@@ -111,15 +119,9 @@ switch key_letter
             cellfun(@(x)set(x, 'Visible', 'off'), ud.gridlines);
         elseif strcmp(get(ud.gridlines{1}, 'Visible'), 'off');
             cellfun(@(x)set(x, 'Visible', 'on'), ud.gridlines);
-        end
-    case 'o' % toggle Overlay
-        ud.showOverlay = ~ud.showOverlay;
-        if ~ud.showOverlay
-            delete(ud.overlayAx); ud.overlayAx = [];
-            disp('Overlay OFF');
-        else; disp('Overlay on!');
-        end
-    case 'p' % toggle mode to register clicks as Probe points
+        end  
+% p -- toggle mode to register clicks as probe points        
+    case 'p' 
         ud.probe_view_mode = 0;
         if ud.currentProbe < size(ud.pointList,1)
             ud.currentProbe = ud.currentProbe + 1;
@@ -129,28 +131,29 @@ switch key_letter
             
             % show Transformed Slice & Probage Viewer, if not already showing
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end
-        slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
-        folder_transformations = fullfile(save_location, 'transformations\\');
-            try; load([folder_transformations slice_name '_transform_data.mat']);
-                try; figure(ud.transformed_slice_figure); 
-                catch
-                    
-                    ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
-                    try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
-                    catch; screen_size = [1900 1080]./[2560 1440];
-                    end
+                slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
+                folder_transformations = fullfile(save_location, ['transformations' filesep]);
+                try; load([folder_transformations slice_name '_transform_data.mat']);
+                    try; figure(ud.transformed_slice_figure); 
+                    catch
 
-                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
-                    movegui(ud.transformed_slice_figure,'onscreen')        
-                    
-                    highlight_point = false;
-                    transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
-                end; figure(f);
-            end
+                        ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+                        try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                        catch; screen_size = [1900 1080]./[2560 1440];
+                        end
+
+                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
+                        movegui(ud.transformed_slice_figure,'onscreen')        
+
+                        highlight_point = false;
+                        transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
+                    end; figure(f);
+                end
         else
             ud.currentProbe = 0;
             disp(['probe point mode OFF']);
         end
+% w -- toggle mode to visualize probe trajectory           
     case 'w'
         for probe_plotted = 1:size(ud.pointHands,1)
             set(ud.pointHands{probe_plotted,1}(:), 'Visible', 'off'); 
@@ -231,10 +234,8 @@ switch key_letter
                 set(ud.im, 'CData', ud.ref);
                 ud.curr_im = ud.ref; set(f, 'UserData', ud);
             else; disp('probe view mode OFF'); end
-
-            
-        
-    case 't' % toggle mode to register clicks as Points -- 0, 1, or 2
+% t -- toggle mode to register clicks as Points   
+    case 't' 
         
 
         ud.getPoint_for_transform = ~ud.getPoint_for_transform;
@@ -255,8 +256,9 @@ switch key_letter
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
             end
         else; disp('transform point mode OFF');    
-        end        
-    case 'a' % toggle View between template/annotation
+        end     
+% a -- toggle viewing of annotation boundaries  
+    case 'a' 
         
         ud.showAtlas = ~ud.showAtlas;
         
@@ -280,13 +282,14 @@ switch key_letter
         if ~ud.slice_at_shift_start
             ud.slice_at_shift_start = ud_slice.slice_num;
         end
-        disp('switch scroll mode -- scroll along slice images')        
+        disp('switch scroll mode -- scroll along slice images')     
+% h -- toggle viewing of histology / histology overlay
     case 'h'
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
         slice_points = ud_slice.pointList;
         
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = [save_location 'transformations' filesep];
         if size(ud.current_pointList_for_transform,1)  && size(slice_points,1) && ud.slice_at_shift_start+ud.slice_shift == ud_slice.slice_num
             key_letter = 'x'; % save transform automatically
         end
@@ -333,7 +336,8 @@ switch key_letter
         if ud.showAtlas
             updateBoundaries(f,ud, allData);
         end
-    case 'n' % new probe
+% n -- start marking a new probe        
+    case 'n' 
         new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added! (' ud.ProbeColor{new_num_probes} ')']);
         probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
         for prev_probe = 1:new_num_probes-1
@@ -346,22 +350,27 @@ switch key_letter
         end; probe_point_list{new_num_probes,1} = zeros(0,3);
         ud.pointList = probe_point_list; ud.pointHands = probe_hands_list;
         ud.currentProbe = new_num_probes;
-    case 's' % save probe trajectory and points of each probe per histology image (and associated histology name/number)
+ % s -- save probe trajectory and points of each probe per histology image (and associated histology name/number)     
+    case 's'
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
         save(fullfile(save_location, ['probe_points' save_suffix]), 'pointList'); disp('probe points saved');        
-    case 'l' % load transform and current slice position and angle
+% l -- load transform and current slice position and angle        
+    case 'l' 
         slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
-        folder_transformations = [save_location 'transformations\\'];
+        folder_transformations = fullfile(save_location, ['transformations' filesep]);
         
         try
-            
         if ud.loaded_slice+ud.slice_shift ~= ud_slice.slice_num
             
             ud.curr_slice_num = ud_slice.slice_num;
             
+            % remove overlay
+            ud.showOverlay = 0;
+            delete(ud.overlayAx); ud.overlayAx = [];
+            
             % load transform data
-            transform_data = load([folder_transformations slice_name '_transform_data.mat']);  
+            transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
             transform_data = transform_data.save_transform;
 
             % load new transform
@@ -422,17 +431,13 @@ switch key_letter
                 else
                     set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off'); 
                 end
-
             end
-    end
-         
-            
-        
+        end
         ud.slice_shift = 0;
         catch; 
             disp(['loading failed']); end
-            
-    case 'd' % delete current transform or most recent probe point
+% d -- delete current transform or most recent probe point            
+    case 'd' 
         if ud.getPoint_for_transform
             ud.current_pointList_for_transform = zeros(0,2); set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
             ud.pointHands_for_transform = []; ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
@@ -447,13 +452,12 @@ switch key_letter
             disp('probe point deleted')
         end
 end
-
-
-if strcmp(key_letter,'x') % save transform and current slice position and angle
+% x -- save transform and current slice position and angle
+if strcmp(key_letter,'x') 
         
         % find or create folder location for transformations
         try
-        folder_transformations = fullfile(save_location, 'transformations\\');
+        folder_transformations = fullfile(save_location, ['transformations' filesep]);
         if ~exist(folder_transformations)
             mkdir(folder_transformations)
         end
@@ -488,7 +492,9 @@ end
         
 set(f, 'UserData', ud);
 
-
+% -----------------------------------------
+% Update slice (from scrolling or loading)
+% -----------------------------------------
 function updateSlice(f, evt, allData, slice_figure, save_location)
 
 ud = get(f, 'UserData');
@@ -509,10 +515,11 @@ elseif ud.scrollMode==1 %&&  abs(ud.currentAngle(1)) < 130
 elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
   ud.currentAngle(2) = ud.currentAngle(2)+evt.VerticalScrollCount*3; 
   
-% scroll through slices
+% scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
   set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-  
+  ud.showOverlay = 0;
+  delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
   
   try
@@ -522,10 +529,8 @@ elseif ud.scrollMode == 3
   ud.slice_shift = ud.slice_shift+evt.VerticalScrollCount;    
   slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
   end
-  folder_transformations = fullfile(save_location, 'transformations\\');
-  
-%   ud.slice_at_shift_start = ud.loaded_slice; %ud_slice.slice_num;
-  
+  folder_transformations = fullfile(save_location, ['transformations' filesep]);
+    
     % set probe points from other slices invisible and from this slice visible
     for probe = 1:size(ud.pointList,1)
         set(ud.pointHands{probe, 3}(:),'Visible','off'); ud.pointHands{probe, 3} = [];     
@@ -543,7 +548,7 @@ elseif ud.scrollMode == 3
     try; load([folder_transformations slice_name '_transform_data.mat']);
        
         % load transform data
-        transform_data = load([folder_transformations slice_name '_transform_data.mat']);  
+        transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
         transform_data = transform_data.save_transform;
         
         % load new transform
@@ -583,9 +588,9 @@ elseif ud.scrollMode == 3
 end  
 
 
-% ---------------------------------
-% if no angle, just do normal thing
-% ---------------------------------
+% ----------------------------------------
+% if no angle, just change reference slice
+% ----------------------------------------
 if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
     
     set(ud.im, 'CData', squeeze(allData.tv(ud.currentSlice,:,:)));
@@ -601,8 +606,9 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
     ud.ref = uint8(get(ud.im, 'CData'));
     set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
     set(f, 'UserData', ud);
+    
 % ---------------------------
-% if angle, do angle thing    
+% if angle, angle the atlas
 % ---------------------------
 else 
   image_size = size(squeeze(allData.av(ud.currentSlice,:,:)));
@@ -652,13 +658,12 @@ else
 end
 
 
-% update histology overlay
+% in all cases. update histology overlay
 if ud.histology_overlay == 1 || ud.histology_overlay == 2
     updateHistology(f,ud); ud = get(f, 'UserData');
 else
     ud.curr_im = ud.ref;
 end
-
 
 % then update boundary overlay
 if ud.showAtlas
@@ -691,8 +696,9 @@ disp(['mean distance from this slice to probe points is ' num2str(round(mean_dis
 end
   set(f, 'UserData', ud);
 
-
+% ---------------------------------------------------------------
 % update the image shown if histology is currently being overlaid
+% ---------------------------------------------------------------
 function updateHistology(f, ud)
     if ud.histology_overlay == 2
         image_blend =  imfuse(uint8(ud.ref*.6), ud.curr_slice_trans(:,:,:),'blend','Scaling','none');
@@ -704,7 +710,10 @@ function updateHistology(f, ud)
     end
     set(f, 'UserData', ud);
 
+    
+% -------------------------------------------------    
 % update the position of the region boundary image
+% -------------------------------------------------
 function updateBoundaries(f, ud, allData)
     if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
         curr_annotation = squeeze(allData.av(ud.currentSlice,:,:));
@@ -739,7 +748,9 @@ function updateBoundaries(f, ud, allData)
     
     set(f, 'UserData', ud);
     
-
+% ----------------
+% react to clicks
+% ----------------
 function atlasClickCallback(im, keydata, slice_figure, save_location)
 f = get(get(im, 'Parent'), 'Parent');
 ud = get(f, 'UserData');
@@ -796,8 +807,6 @@ elseif ud.getPoint_for_transform
         end
         ud.curr_slice_num = ud_slice.slice_num;
     end
-    
-    
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
     set(ud.pointHands_for_transform(:), 'color', [0 0 0]);
@@ -809,14 +818,14 @@ elseif ud.getPoint_for_transform
 end
 set(f, 'UserData', ud);
 
-
+% ------------------------
+% react to mouse hovering
+% ------------------------
 function fh_wbmfcn(f, allData, slice_figure, save_location)
 % WindowButtonMotionFcn for the figure.
 
 ud = get(f, 'UserData');
-
 ax = ud.atlasAx;
-
 pixel = getPixel(ax);
 
 %get offset due to angling
@@ -848,7 +857,9 @@ if ~isempty(name)
     end    
 end
 
-
+% ---------------------------------------------
+% update the coordinates shown in the top left
+% ---------------------------------------------
 function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText)
 atlasRes = 0.010; % mm
 ap = -(currentSlice-bregma(1))*atlasRes;
@@ -856,7 +867,9 @@ dv = (pixel(1)-bregma(2))*atlasRes;
 ml = (pixel(2)-bregma(3))*atlasRes;
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
 
-
+% ---------------------------------
+% update the current mouse location
+% ---------------------------------
 function pixel = getPixel(ax)
 
 currPoint = get(ax,'currentpoint');  % The current point w.r.t the axis.
@@ -864,7 +877,9 @@ currPoint = get(ax,'currentpoint');  % The current point w.r.t the axis.
 Cx = currPoint(1,1); Cy = currPoint(1,2);
 pixel = round([Cy Cx]);
 
-
+% ---------------------------------
+% update the overlaid brain region
+% ---------------------------------
 function updateOverlay(f, allData, ann, slice_figure, save_location)
 ud = get(f, 'UserData');
 if isempty(ud.overlayAx) % first time
@@ -892,7 +907,9 @@ else
 
 end
 
-
+% ---------------------------------
+% find the region being hovered on
+% ---------------------------------
 function [name, acr, ann] = getPixelAnnotation(allData, pixel, currentSlice)
 if pixel(1)>0&&pixel(1)<size(allData.av,2) && pixel(2)>0&&pixel(2)<=size(allData.av,3)
     ann = allData.av(currentSlice,pixel(1),pixel(2));
@@ -902,6 +919,9 @@ else
     ann = []; name = []; acr = [];
 end
 
+% ---------------------------------
+% update the title, showing region
+% ---------------------------------
 function updateTitle(ax, name, acr)
 if ~isempty(name)
     title(ax, [name{1} ' (' acr{1} ')']);

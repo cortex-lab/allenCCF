@@ -1,7 +1,7 @@
 function SliceFlipper(slice_figure, folder_processed_images, reference_size)
+% crop, sharpen, and flip slice images
 
-
-processed_images = dir([folder_processed_images '*tif']);
+processed_images = dir([folder_processed_images filesep '*tif']);
 ud_flip.processed_image_names = natsortfiles({processed_images.name});
 
 ud_flip.total_num_files = size(processed_images,1); disp(['found ' num2str(ud_flip.total_num_files) ' processed slice images']);
@@ -13,6 +13,7 @@ ud_flip.rotate_angle = 0;
 
 ud_flip.processed_image_name = ud_flip.processed_image_names{ud_flip.slice_num};
 ud_flip.current_slice_image = imread(fullfile(folder_processed_images, ud_flip.processed_image_name));
+ud_flip.current_slice_image = localcontrast(ud_flip.current_slice_image);
 ud_flip.original_slice_image = ud_flip.current_slice_image;
 ud_flip.original_ish_slice_image = ud_flip.current_slice_image;
 
@@ -46,11 +47,9 @@ fprintf(1, 'w: switch order (move image forward) \n');
 fprintf(1, 'r: reset to original \n');
 
 
-
-
-
-
-
+% --------------------
+% respond to keypress
+% --------------------
 function SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images, reference_size)
 
 ud = get(slice_figure, 'UserData');
@@ -66,6 +65,7 @@ switch lower(keydata.Key)
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;        
         ud.original_ish_slice_image = ud.current_slice_image;   
+        ud.current_slice_image = localcontrast(ud.current_slice_image);
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142
@@ -82,6 +82,7 @@ switch lower(keydata.Key)
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;             
         ud.original_ish_slice_image = ud.current_slice_image;   
+        ud.current_slice_image = localcontrast(ud.current_slice_image);        
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142

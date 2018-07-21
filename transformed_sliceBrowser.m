@@ -1,13 +1,12 @@
 function transformed_sliceBrowser(transformed_slice_figure, save_location, f, highlight_point, relevant_slice, min_dist, ...
                                                 clickX, clickY, point_ind, add)
 
-
 % go through histology at the same time
 figure(transformed_slice_figure)
 clf(transformed_slice_figure)
 
-transformed_images_folder = fullfile(save_location, 'transformations\\');
-transformed_images = dir([transformed_images_folder '*.tif']);
+transformed_images_folder = fullfile(save_location, ['transformations' filesep]);
+transformed_images = dir([transformed_images_folder filesep '*.tif']);
 
 ud_transformed_slice.transformed_image_names = natsortfiles({transformed_images.name});
 
@@ -25,7 +24,7 @@ title('Probe on Slice Viewer');
 
 ud_transformed_slice.im = plotTVslice(zeros(800,1140, 'uint8'));
 
-
+% for probe view mode
 if highlight_point
     ud_transformed_slice.all_slices_slice_num = relevant_slice;
     if min_dist < 10
@@ -46,7 +45,7 @@ else
     ud_transformed_slice.quiver_plot = [];
 end
 
-processed_images = dir([ud_transformed_slice.save_location '*.tif']);
+processed_images = dir([ud_transformed_slice.save_location filesep '*.tif']);
 processed_image_names = natsortfiles({processed_images.name});
 ud_transformed_slice.total_num_files = length(processed_image_names); 
 
@@ -71,16 +70,18 @@ set(transformed_slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasH
 set(transformed_slice_figure, 'UserData', ud_transformed_slice)
 
 
-
+% ------------------------
+% react to keyboard press
+% ------------------------
 function SliceAtlasHotkeyFcn(fig, keydata, f, transformed_images_folder)
 
 ud = get(fig, 'UserData');
 ud_atlas_viewer = get(f, 'UserData');
 
-processed_images = dir([ud.save_location '*.tif']);
+processed_images = dir([ud.save_location filesep '*.tif']);
 processed_image_names = natsortfiles({processed_images.name});
 
-transformed_images = dir([transformed_images_folder '*.tif']);
+transformed_images = dir([transformed_images_folder filesep '*.tif']);
 ud.transformed_image_names = natsortfiles({transformed_images.name});
 ud.transformed_images = transformed_images;
 
@@ -94,7 +95,7 @@ if strcmp(keydata.Key,'leftarrow')
         % show next image
         if size(ud.slice_num,2)
             processed_image_name = ud.transformed_image_names{ud.slice_num};
-            current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+            current_slice_image = flip(imread(fullfile(ud.transformed_images_folder, processed_image_name)),1);
             ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
@@ -114,23 +115,17 @@ elseif strcmp(keydata.Key,'rightarrow') % break
         % show next image
         if size(ud.slice_num,2)
             processed_image_name = ud.transformed_image_names{ud.slice_num};
-            current_slice_image = flip(imread([ud.transformed_images_folder processed_image_name]),1);
+            current_slice_image = flip(imread(fullfile(ud.transformed_images_folder, processed_image_name)),1);
             ud.extra_text = ' (transformed)';
         else
             processed_image_name = processed_image_names{ud.all_slices_slice_num};
             current_slice_image = flip(imread(fullfile(ud.save_location, processed_image_name)),1);
             ud.extra_text = ' (not transformed)';
         end
-        
         set(ud.im, 'CData', current_slice_image);
-
     end
-
-    
 end
-
         title(['Probe on Slice Viewer -- Slice ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) ud.extra_text ])        
-        
         % plot probe points for that slice
         set(ud.current_plot_handles(:), 'Visible', 'off'); ud.current_plot_handles = [];
         
@@ -144,10 +139,4 @@ end
             end
         end
 
-
-
-
-
 set(fig, 'UserData', ud);
-
-

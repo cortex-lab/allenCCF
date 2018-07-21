@@ -10,6 +10,7 @@ Some code to work with the Allen Inst CCF data, specifically the 10µm voxel 201
 
 >> file_save_location = 'C:\Histology\Mouse1'; % where will the probe locations be saved
 >> probe_name = 'test'; % name probe to avoid overwriting
+
 >> f = allenAtlasBrowser(tv, av, st, file_save_location, probe_name);
 ```
 
@@ -35,7 +36,7 @@ axis off
 view([-30    25]);
 ```
 
-## Advanced Version (AtlasTransformBrowser)
+## Advanced Version (ProcessHistology, AlignHistologyToProbe (using AtlasTransformBrowser), and displayProbeTrack)
 In this version, you can transform each histological brain slice image to more precisely locate regions of interest in your slices. See the User Guide pdf for instructions.
 
 

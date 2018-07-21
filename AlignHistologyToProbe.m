@@ -7,10 +7,10 @@
 
 
 % directory of histology
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096\processed\\'; 
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_cooked\processed'; 
 
 % name the saved probe points, to avoid overwriting another set of probes going in the same folder
-probe_save_name_suffix = '_tutorial'; 
+probe_save_name_suffix = '_try_it_out'; 
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';

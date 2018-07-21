@@ -225,5 +225,9 @@ set(gca, 'YDir','reverse');
 set(gca,'YColor',[.9 1 1])
 ylim([1 yc(end)+1])
 
+% plot line(s) indicating active site length
+plot([0 100], [(active_site_start*10) (active_site_start*10)], 'color',[.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+plot([0 100], [(rpl)*10 (rpl)*10], 'color', [.1 .1 .1], 'LineStyle',':', 'linewidth',3);
+
 box off;
 
