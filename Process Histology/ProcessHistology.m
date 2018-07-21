@@ -22,9 +22,9 @@ microns_per_pixel = 3.233; %1.62;
 microns_per_pixel_after_downsampling = 10; %to match reference atlas
 
 
-
+% ----------------------
 % additional parameters
-
+% ----------------------
 % increase gain if for some reason the images are not bright enough
 gain = 1; 
 
@@ -41,11 +41,11 @@ reference_size = [800 1140];
 
 
 % find or create folder location for processed images
-
 folder_processed_images = fullfile(save_folder, 'processed');
 if ~exist(folder_processed_images)
     mkdir(folder_processed_images)
 end
+
 
 
 
@@ -77,7 +77,7 @@ end
 close all
 
 histology_figure = figure('Name','Histology Viewer');
-HistologyCropper(histology_figure, slice_figure, save_folder, image_file_names, reference_size, save_file_name)
+HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name)
 
 
 
