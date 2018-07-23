@@ -240,8 +240,6 @@ switch key_letter
             else; disp('probe view mode OFF'); end
 % t -- toggle mode to register clicks as Points   
     case 't' 
-        
-
         ud.getPoint_for_transform = ~ud.getPoint_for_transform;
         ud.loaded = false;
         
@@ -289,6 +287,10 @@ switch key_letter
         disp('switch scroll mode -- scroll along slice images')     
 % h -- toggle viewing of histology / histology overlay
     case 'h'
+        % remove overlay
+        ud.showOverlay = 0;
+        delete(ud.overlayAx); ud.overlayAx = [];
+        
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
         slice_points = ud_slice.pointList;
         
@@ -306,8 +308,8 @@ switch key_letter
             ud.curr_slice_trans = imread([folder_transformations slice_name '_transformed.tif']);
             
         else
-                set(ud.text,'Visible','off');
-                fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+            set(ud.text,'Visible','off');
+            fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
 
             reference_points = ud.current_pointList_for_transform;
             slice_points = ud_slice.pointList;
@@ -777,8 +779,8 @@ if ud.probe_view_mode && ud.currentProbe
     % find the slice corresponding to that point
     relevant_slice = ud.pointList{ud.currentProbe,2}(point_ind);
     highlight_point = true;
-    transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, ...
-        highlight_point, relevant_slice, min_dist, clickX, clickY, point_ind,0)
+    ud.transformed_slice_figure = transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, ...
+        highlight_point, relevant_slice, min_dist, clickX, clickY, point_ind,0);
     figure(f);
     
 % selecting probe points mode    
@@ -787,7 +789,7 @@ elseif ud.currentProbe > 0
     clickY = round(keydata.IntersectionPoint(2));
     clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
     
-    if ud.showOverlay; clickY = 800 - clickY; end
+    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
        
     ud.pointList{ud.currentProbe,1}(end+1, :) = [clickX, clickY, clickZ];
     ud.pointList{ud.currentProbe,2}(end+1, :) = ud.slice_at_shift_start + ud.slice_shift;
@@ -806,6 +808,7 @@ elseif ud.currentProbe > 0
 elseif ud.getPoint_for_transform
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
+    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
     
     if ud.curr_slice_num ~= ud_slice.slice_num
         if ~ud.loaded
