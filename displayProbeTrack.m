@@ -33,11 +33,11 @@ probe_radius = 100;
 show_parent_category = false; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
-probage_past_tip_to_plot = .3;
+distance_past_tip_to_plot = .3;
 
 % set scaling e.g. based on lining up the ephys with the atlas
 % set to *false* to get scaling automatically from the clicked points
-scaling_factor = 1.1; 
+scaling_factor = 1.0; 
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
@@ -174,7 +174,7 @@ plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
 error_length = round(probe_radius / 10);
 
 % find and regions the probe goes through, confidence in those regions, and plot them
-borders_table = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
+borders_table = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
 title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 
 pause(.05)

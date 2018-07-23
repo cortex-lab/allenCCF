@@ -155,6 +155,10 @@ switch key_letter
         end
 % w -- toggle mode to visualize probe trajectory           
     case 'w'
+        % remove overlay
+        ud.showOverlay = 0;
+        delete(ud.overlayAx); ud.overlayAx = [];
+            
         for probe_plotted = 1:size(ud.pointHands,1)
             set(ud.pointHands{probe_plotted,1}(:), 'Visible', 'off'); 
             set(ud.pointHands{probe_plotted,3}(:), 'Visible', 'off'); 
@@ -339,6 +343,7 @@ switch key_letter
 % n -- start marking a new probe        
     case 'n' 
         new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added! (' ud.ProbeColor{new_num_probes} ')']);
+        ud.probe_view_mode = 0;
         probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
         for prev_probe = 1:new_num_probes-1
             probe_point_list{prev_probe,1} = ud.pointList{prev_probe,1};
@@ -354,6 +359,7 @@ switch key_letter
     case 's'
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
+        warning('off', 'MATLAB:Figure:FigureSavedToMATFile');
         save(fullfile(save_location, ['probe_points' save_suffix]), 'pointList'); disp('probe points saved');        
 % l -- load transform and current slice position and angle        
     case 'l' 
@@ -775,11 +781,13 @@ if ud.probe_view_mode && ud.currentProbe
         highlight_point, relevant_slice, min_dist, clickX, clickY, point_ind,0)
     figure(f);
     
-% selecting probe mode    
+% selecting probe points mode    
 elseif ud.currentProbe > 0
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
     clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
+    
+    if ud.showOverlay; clickY = 800 - clickY; end
        
     ud.pointList{ud.currentProbe,1}(end+1, :) = [clickX, clickY, clickZ];
     ud.pointList{ud.currentProbe,2}(end+1, :) = ud.slice_at_shift_start + ud.slice_shift;

@@ -13,7 +13,7 @@ ud_flip.rotate_angle = 0;
 
 ud_flip.processed_image_name = ud_flip.processed_image_names{ud_flip.slice_num};
 ud_flip.current_slice_image = imread(fullfile(folder_processed_images, ud_flip.processed_image_name));
-ud_flip.current_slice_image = localcontrast(ud_flip.current_slice_image);
+% ud_flip.current_slice_image = localcontrast(ud_flip.current_slice_image);
 ud_flip.original_slice_image = ud_flip.current_slice_image;
 ud_flip.original_ish_slice_image = ud_flip.current_slice_image;
 
@@ -65,7 +65,7 @@ switch lower(keydata.Key)
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;        
         ud.original_ish_slice_image = ud.current_slice_image;   
-        ud.current_slice_image = localcontrast(ud.current_slice_image);
+%         ud.current_slice_image = localcontrast(ud.current_slice_image);
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142
@@ -82,7 +82,7 @@ switch lower(keydata.Key)
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
         ud.original_slice_image = ud.current_slice_image;             
         ud.original_ish_slice_image = ud.current_slice_image;   
-        ud.current_slice_image = localcontrast(ud.current_slice_image);        
+%         ud.current_slice_image = localcontrast(ud.current_slice_image);        
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142
