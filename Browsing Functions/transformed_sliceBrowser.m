@@ -1,14 +1,22 @@
-function transformed_sliceBrowser(transformed_slice_figure, save_location, f, highlight_point, relevant_slice, min_dist, ...
+function transformed_slice_figure = transformed_sliceBrowser(transformed_slice_figure, save_location, f, highlight_point, relevant_slice, min_dist, ...
                                                 clickX, clickY, point_ind, add)
 
 % go through histology at the same time
-figure(transformed_slice_figure)
+try
+    figure(transformed_slice_figure)
+catch
+    transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
+end
 clf(transformed_slice_figure)
 
 transformed_images_folder = fullfile(save_location, ['transformations' filesep]);
 transformed_images = dir([transformed_images_folder filesep '*.tif']);
 
-ud_transformed_slice.transformed_image_names = natsortfiles({transformed_images.name});
+try
+    ud_transformed_slice.transformed_image_names = natsortfiles({transformed_images.name});
+catch
+    disp('no transformed images found.'); ud_transformed_slice.transformed_image_names = {};
+end
 
 ud_transformed_slice.current_plot_handles = []; 
 ud_transformed_slice.save_location = save_location;
@@ -82,7 +90,12 @@ processed_images = dir([ud.save_location filesep '*.tif']);
 processed_image_names = natsortfiles({processed_images.name});
 
 transformed_images = dir([transformed_images_folder filesep '*.tif']);
-ud.transformed_image_names = natsortfiles({transformed_images.name});
+try
+    ud.transformed_image_names = natsortfiles({transformed_images.name});
+catch
+    ud.transformed_image_names = {};
+end
+
 ud.transformed_images = transformed_images;
 
 
