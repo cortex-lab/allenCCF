@@ -9,6 +9,7 @@ ud_histology.save_file_name =save_file_name;
 ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
 figure(histology_figure); 
 ud_histology.im = imshow(ud_histology.hist_image);
+warning('off', 'MATLAB:colon:nonIntegerIndex');
 
 ud_histology.cropped_slice_rect = {};
 
@@ -48,12 +49,15 @@ function ud_histology = crop_and_save_image(ud_histology, histology_figure, save
 
         ud_histology.slice_num(ud_histology.file_num) = ud_histology.slice_num(ud_histology.file_num) + 1;
 
-    catch; disp('cropping failed'); ud_histology.slice_image = zeros(100,100,'int16');
+    catch; ud_histology.slice_image = zeros(100,100,'int16');
     end
     
     set(histology_figure, 'UserData', ud_histology);
     
+    try
     ud_histology = crop_and_save_image(ud_histology, histology_figure, save_folder, reference_size);
+    catch; disp('')
+    end
 end
 
 
@@ -87,6 +91,10 @@ ud_histology = get(histology_figure, 'UserData');
         end
     end
 
+try   
 set(histology_figure, 'UserData', ud_histology);
+catch; disp('')
+end
+
 
 end
