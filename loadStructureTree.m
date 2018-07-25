@@ -5,6 +5,11 @@ function structureTreeTable = loadStructureTree(fn)
 
 % fn = 'structure_tree_safe.csv';
 
+if nargin<1
+    p = mfilename('fullpath');
+    fn = fullfile(fileparts(p), 'structure_tree_safe_2017.csv');
+end
+
 [~, fnBase] = fileparts(fn);
 if ~isempty(strfind(fnBase, '2017'))
     mode = '2017'; 
