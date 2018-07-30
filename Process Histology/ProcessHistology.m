@@ -5,7 +5,14 @@
 
 %%  SET FILE AND PARAMETERS
 
-% directory of histology
+% directory of histology (image with several slices)
+% 
+% if you already have individual, downsampled slice images, 
+% put them in a folder called 'processed' inside of this image_folder
+% and run this and the last cell. 
+% 
+% If you have high-res individual images, put
+% them in this image_folder, and just skip the 'crop and save' cell below)
 image_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
 
 % directory to save the processed images
