@@ -38,10 +38,10 @@ sliceBrowser(slice_figure_browser, processed_images_folder);
 
 
 % use application in Atlas Transform Viewer
-% f = AtlasTransformBrowser(tv,av,st, slice_figure_browser, processed_images_folder, probe_save_name_suffix); % use this function if you a processed_images_folder with appropriately processed .tif histology images
+f = AtlasTransformBrowser(tv,av,st, slice_figure_browser, processed_images_folder, probe_save_name_suffix); % use this function if you a processed_images_folder with appropriately processed .tif histology images
 
 
 % use simpler version, without the processed slice images
-save_location = processed_images_folder;
-f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
-   
+% save_location = processed_images_folder;
+% f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
+
