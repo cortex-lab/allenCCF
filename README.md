@@ -7,7 +7,7 @@ Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µ
 You need the npy-matlab repository to load the data: https://github.com/kwikteam/npy-matlab
 
 You also need the data files, which can be found at http://data.cortexlab.net/allenCCF/ (or, if you have access, at //zserver/Lab/Atlas/allenCCF)
-Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html for accessing the data directly from Allen Inst via their python API.
+Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html to access the data directly via the Allen Inst python API.
 
 
 ## Usage examples:
