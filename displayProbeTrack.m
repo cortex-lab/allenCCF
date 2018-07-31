@@ -41,7 +41,9 @@ scaling_factor = 1.0;
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
-                                        
+      
+% black brain?
+black_brain = true;
 
 
 % close all
@@ -123,7 +125,7 @@ while ~(ann==1 && gotToCtx)
 end
 
 % plot brain grid
-fwireframe = plotBrainGrid([], [], fwireframe); hold on; 
+fwireframe = plotBrainGrid([], [], fwireframe, black_brain); hold on; 
 fwireframe.InvertHardcopy = 'off';
 
 % plot probe points

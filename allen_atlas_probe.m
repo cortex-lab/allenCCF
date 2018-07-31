@@ -170,7 +170,7 @@ switch eventdata.Key
         update_slice(probe_atlas_gui);
         update_probe_coordinates(probe_atlas_gui);
         
-    case 'numpad2'
+    case '1'
         
         probe_offset = -10;
         old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
@@ -185,7 +185,7 @@ switch eventdata.Key
         
         update_probe_coordinates(probe_atlas_gui);
         
-    case 'numpad8'
+    case '2'
         
         probe_offset = 10;
         old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
@@ -251,7 +251,7 @@ switch eventdata.Key
         % Get updated guidata
         gui_data = guidata(probe_atlas_gui);
         
-    case 'add'
+    case 'x'
         % Add structure(s) to display
         slice_spacing = 10;
 
@@ -289,7 +289,7 @@ switch eventdata.Key
             gui_data.handles.structure_patch(remove_structures) = [];
         end
         
-    case 'x'
+    case 'g'
         % Export the probe coordinates in Allen CCF to the workspace
         probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
         probe_vector_ccf = round(probe_vector([1,3,2],:))'*10;
