@@ -15,12 +15,13 @@ try; f = figure(brain_figure);
 catch
     f = figure('Name','Brain View');
     ax = axes('Parent', f);    
-    plot3(ax, bp(:,1), bp(:,2), bp(:,3), 'Color', [.7 .7 .7 0.3]);
+    %plot3(ax, bp(:,1), bp(:,2), bp(:,3), 'Color', [.7 .7 .7 0.3]);
+    plot3(ax, bp(:,1), bp(:,2), bp(:,3), 'Color', [0 0 0 0.3]);
     set(ax, 'ZDir', 'reverse')
     axis(ax, 'equal');
     axis(ax, 'vis3d');
     axis(ax, 'off');
-    set(f,'color','k')
+%     set(f,'color','k')
 end
     
    
