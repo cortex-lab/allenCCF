@@ -39,6 +39,7 @@ set(slice_figure, 'WindowScrollWheelFcn', @(src,evt)SliceScrollFcn(slice_figure,
 fprintf(1, '\n Controls: \n \n');
 fprintf(1, 'right: save and see next image \n');
 fprintf(1, 'left: save and see previous image \n');
+fprintf(1, 'scroll: rotate slice \n');
 fprintf(1, 's: sharpen \n');
 fprintf(1, 'g: toggle grid \n');
 fprintf(1, 'c: crop slice further \n');
