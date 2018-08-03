@@ -137,6 +137,10 @@ elseif strcmp(keydata.Key,'rightarrow') % break
         end
         set(ud.im, 'CData', current_slice_image);
     end
+else
+% otherwise -- call function to atlas browser    
+    fcn = get(f, 'KeyPressFcn'); 
+    fcn(f, keydata);    
 end
         title(['Probe on Slice Viewer -- Slice ' num2str(ud.all_slices_slice_num) '/' num2str(ud.total_num_files) ud.extra_text ])        
         % plot probe points for that slice
