@@ -5,14 +5,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of probe points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_done\processed';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved probe points
-probe_save_name_suffix = '_tutorial';
+probe_save_name_suffix = '';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';
@@ -37,7 +37,7 @@ distance_past_tip_to_plot = .3;
 
 % set scaling e.g. based on lining up the ephys with the atlas
 % set to *false* to get scaling automatically from the clicked points
-scaling_factor = 1.0; 
+scaling_factor = false; 
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
@@ -134,7 +134,7 @@ hp = plot3(curr_probePoints(:,1), curr_probePoints(:,3), curr_probePoints(:,2), 
 % plot brain entry point
 plot3(m(1), m(3), m(2), 'k*','linewidth',1)
 
-% use the deepest clicked point as the tip of the probe, if no scaling provided
+% use the deepest clicked point as the tip of the probe, if no scaling provided (scaling_factor = false)
 if use_tip_to_get_reference_probe_length
     % find length of probe in reference atlas space
     [depth, tip_index] = max(curr_probePoints(:,2));
@@ -148,23 +148,23 @@ if use_tip_to_get_reference_probe_length
     disp(['probe scaling of ' num2str(shrinkage_factor)]); disp(' ');
     
     % plot line the length of the probe in reference space
-    rpl = round(reference_probe_length_tip);
+    probe_length = round(reference_probe_length_tip);
     
-% use user-defined probe plotting length or scaling factor    
+% if scaling_factor is user-defined as some numer, use it to plot the length of the probe
 else 
-    rpl = round(reference_probe_length * 100); 
+    probe_length = round(reference_probe_length * 100); 
 end
 
 % find the percent of the probe occupied by electrodes
 percent_of_tract_with_active_sites = min([active_probe_length / probe_length, 1.0]);
-active_site_start = rpl*(1-percent_of_tract_with_active_sites);
-apl = round([active_site_start  rpl]);
+active_site_start = probe_length*(1-percent_of_tract_with_active_sites);
+active_probe_position = round([active_site_start  probe_length]);
 
 % plot line the length of the active probe sites in reference space
-plot3(m(1)+p(1)*[apl(1) apl(2)], m(3)+p(3)*[apl(1) apl(2)], m(2)+p(2)*[apl(1) apl(2)], ...
+plot3(m(1)+p(1)*[active_probe_position(1) active_probe_position(2)], m(3)+p(3)*[active_probe_position(1) active_probe_position(2)], m(2)+p(2)*[active_probe_position(1) active_probe_position(2)], ...
     'Color', ProbeColors(selected_probe,:), 'LineWidth', 1);
 % plot line the length of the entire probe in reference space
-plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
+plot3(m(1)+p(1)*[1 probe_length], m(3)+p(3)*[1 probe_length], m(2)+p(2)*[1 probe_length], ...
     'Color', ProbeColors(selected_probe,:), 'LineWidth', 1, 'LineStyle',':');
 
 
@@ -176,7 +176,7 @@ plot3(m(1)+p(1)*[1 rpl], m(3)+p(3)*[1 rpl], m(2)+p(2)*[1 rpl], ...
 error_length = round(probe_radius / 10);
 
 % find and regions the probe goes through, confidence in those regions, and plot them
-borders_table = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
+borders_table = plotDistToNearestToTip(m, p, av, st, probe_length, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
 title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 
 pause(.05)
