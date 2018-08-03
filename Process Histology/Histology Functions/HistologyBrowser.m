@@ -36,6 +36,10 @@ imshow(original_image);
 ud_histology.original_image = original_image;
 ud_histology.adjusted_image = original_image;
 
+if ~use_already_downsampled_image
+    imwrite(ud_histology.adjusted_image, fullfile(ud_histology.save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']))
+end
+
 set(histology_figure, 'UserData', ud_histology);
 
 set(histology_figure, 'KeyPressFcn', @(histology_figure,keydata)HistologyHotkeyFcn(histology_figure, keydata, image_file_names, use_already_downsampled_image));
@@ -137,6 +141,9 @@ if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightar
 
     ud.original_image = original_image;
     ud.adjusted_image = original_image;
+    if ~use_already_downsampled_image
+        imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
+    end
 end
 
 ud.key = keydata.Key;

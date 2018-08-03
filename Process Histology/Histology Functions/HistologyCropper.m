@@ -37,12 +37,12 @@ function ud_histology = crop_and_save_image(ud_histology, histology_figure, save
         slice_position = ud_histology.cropped_slice_rect{end}.getPosition;
         ud_histology.slice_image = ud_histology.hist_image(slice_position(2):slice_position(2)+slice_position(4),slice_position(1):slice_position(1)+slice_position(3),:);
 
-        % save cropped slice
+        % pad if possible (if small enough)
         try; ud_histology.slice_image = padarray(ud_histology.slice_image, [floor((reference_size(1) - size(ud_histology.slice_image,1)) / 2) + mod(size(ud_histology.slice_image,1),2) ...
                                                       floor((reference_size(2) - size(ud_histology.slice_image,2)) / 2) + mod(size(ud_histology.slice_image,2),2)],0);
-        catch; disp(''); disp('image must be under reference brain image size -- make sure to crop in next stage of preprocessing!');
         end         
 
+        % save cropped slice
         imwrite(ud_histology.slice_image, fullfile(save_folder, 'processed', ...
                 [ud_histology.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif']))
         disp([ud_histology.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) ' saved!'])

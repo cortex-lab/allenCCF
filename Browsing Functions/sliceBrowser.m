@@ -1,4 +1,4 @@
-function sliceBrowser(slice_figure, processed_images_folder)
+function sliceBrowser(slice_figure, processed_images_folder, f)
 % -----------------------------------------------------------------
 % browser to go through histology along with the reference browser
 %-----------------------------------------------------------------
@@ -24,7 +24,7 @@ ud_slice.im = plotTVslice(zeros(800,1140, 'uint8'));
 
 % create functions needed to interact with the figure
 set(ud_slice.im, 'ButtonDownFcn', @(slice_figure,k)sliceClickCallback(slice_figure, k));
-set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(slice_figure, keydata));
+set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(slice_figure, keydata, f));
 set(slice_figure, 'UserData', ud_slice)
 
 % adjust figure to user's screen size
@@ -71,7 +71,7 @@ set(f, 'UserData', ud);
 % ------------------------
 % react to keyboard press
 % ------------------------
-function SliceAtlasHotkeyFcn(fig, keydata)
+function SliceAtlasHotkeyFcn(fig, keydata, f)
 
 ud = get(fig, 'UserData');
 
@@ -142,9 +142,14 @@ elseif strcmp(keydata.Key,'d')
     disp('current transform points deleted')
     set(ud.pointHands(:), 'Visible', 'off'); 
     ud.pointList = [];    
+% t -- transform point mode
 elseif strcmp(keydata.Key,'t')
     ud.getPoint = ~ud.getPoint;
         if ud.getPoint; disp('transform point mode!'); end
+else
+% otherwise -- call function to atlas browser    
+    fcn = get(f, 'KeyPressFcn'); 
+    fcn(f, keydata);
 end
 
 

@@ -19,7 +19,8 @@ ud_flip.original_ish_slice_image = ud_flip.current_slice_image;
 
 ud_flip.size = size(ud_flip.original_slice_image);
 if ud_flip.size(1) > 802 || ud_flip.size(2) > 1142
-    disp('please crop this image down to under 800 x 1140 pxl')
+    disp(['Slice ' num2str(ud_flip.slice_num) ' / ' num2str(ud_flip.total_num_files) ' is ' num2str(ud_flip.size(1)) 'x' num2str(ud_flip.size(2)) ' pixels:']);
+        disp('I suggest you crop this image down to under 800 x 1140 pxl')
 end
 ud_flip.grid = zeros(size(ud_flip.current_slice_image),class(ud_flip.original_slice_image)); 
 ud_flip.grid(1:50:end,:,:) = 150 + 20000*(isa(ud_flip.original_slice_image,'uint16')); 
@@ -70,7 +71,8 @@ switch lower(keydata.Key)
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142
-            disp('please crop this image down to under 800 x 1140 pxl')
+            disp(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files) ' is ' num2str(ud.size(1)) 'x' num2str(ud.size(2)) ' pixels:']);
+            disp('I suggest you crop this image down to under 800 x 1140 pxl')
         end
         
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
@@ -87,7 +89,8 @@ switch lower(keydata.Key)
         
         ud.size = size(ud.current_slice_image); 
         if ud.size(1) > 802 || ud.size(2) > 1142
-            disp('please crop this image down to under 800 x 1140 pxl')
+            disp(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files) ' is ' num2str(ud.size(1)) 'x' num2str(ud.size(2)) ' pixels:']);
+            disp('I suggest you crop this image down to under 800 x 1140 pxl')
         end        
         ud.grid = imresize(ud.grid, ud.size(1:2)); 
         ud.rotate_angle = 0;
