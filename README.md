@@ -35,8 +35,13 @@ axis off
 view([-30    25]);
 ```
 
+
 ## Advanced Version (ProcessHistology, AlignHistologyToProbe (using AtlasTransformBrowser), and displayProbeTrack)
 In this version, you can transform each histological brain slice image to more precisely locate regions of interest in your slices. See the User Guide pdf for instructions.
+
+### Locating ROIs that are not probes
+The script Locate_rois.m is an example of how the slice-to-reference transformation generated in AlignHistologyToProbe.m could be used to analyze ROIs of any type.
+
 
 ## Note about annotation volume
 The original volume has numbers that correspond to the "id" field in the structure tree, but since I wanted to make a colormap for these, I re-indexed the annotation volume by the row number of the structure tree. So in this version the values correspond to "index"+1. This also allows using uint16 datatype, cutting file size in half. See setup_utils.m.
