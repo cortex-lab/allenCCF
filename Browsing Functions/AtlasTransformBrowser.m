@@ -155,11 +155,11 @@ switch key_letter
                         catch; screen_size = [1900 1080]./[2560 1440];
                         end
 
-                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
+                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
                         movegui(ud.transformed_slice_figure,'onscreen')        
 
                         highlight_point = false;
-                        transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add)
+                        transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [], add);
                     end; figure(f);
                 end
         else
@@ -197,6 +197,7 @@ switch key_letter
                 end
                 set(ud.pointHands{ud.currentProbe,1}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
                 
+                % switch the order to z y x
                 curr_probePoints = ud.pointList{ud.currentProbe,1}(:, [3 2 1]);
 
                 % get line of best fit through points
@@ -207,6 +208,8 @@ switch key_letter
                 max_y = max(ud.pointList{ud.currentProbe,1}(:,2));
                 min_x = m(3) + (min_y - m(2))  * p(3) / p(2);
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
+%                 min_z = m(1) + (min_y - m(2))  * p(1) / p(2);
+%                 max_z = m(1) + (max_y - m(2))  * p(1) / p(2);
                 ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':');
                 set(ud.pointHands{ud.currentProbe,3}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
                 
@@ -216,17 +219,35 @@ switch key_letter
                     p = -p;
                 end
 
-                % use the z value of the mean as the selected slice
-                ud.currentSlice = round(m(1)); 
+                                
+                % calculate slice angle along probe track -- do so by 
+                % constraining either ML angle or DV angle to zero
 
-                % calculate slice angle along probe track
-                ud.currentAngle(1) = round (400*p(1) / p(2) ) ;
+                position_at_x_center_point = m + (1140/2 - m(3)) * p / p(3);
+                position_at_y_center_point = m + (800/2 - m(2)) * p / p(2);
                 
-                z_shift_above_probe_center = m(2)*p(1) / p(2);
-                ud.currentAngle(2) = round( 570 * (ud.currentAngle(1) - z_shift_above_probe_center) / (m(3) - 570) );
-                p_abs = abs(p);
-                ud.currentAngle(2) = round(ud.currentAngle(2) * ( p_abs(3) / (p_abs(1) + p_abs(3))));
-                  
+                angle_DV_if_constraining_ML = round(400 / (400 - m(2)) * (position_at_y_center_point(1)-m(1)) );
+                angle_ML_if_constraining_DV = round(570 / (570 - m(3)) * (position_at_x_center_point(1)-m(1)) );
+                
+                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV)
+                    ud.currentSlice = round(position_at_y_center_point(1));
+                    ud.currentAngle(1) = angle_DV_if_constraining_ML;
+                    ud.currentAngle(2) = 0;
+                else
+                    ud.currentSlice = round(position_at_x_center_point(1));
+                    ud.currentSlice = angle_ML_if_constraining_DV;
+                    ud.currentAngle(1) = 0;
+                end
+                    
+                % if the angles are too extreme, just show mean slice without angles
+                if abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= ud.currentSlice || ...
+                        abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= 1140-ud.currentSlice
+                    ud.currentAngle(1) = 0;
+                    ud.currentAngle(2) = 0;
+                    ud.currentSlice = round(m(1));
+                    disp('probe angle not ideal for viewing in coronal slice -- angles set to 0')
+                end
+                
 
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
@@ -242,10 +263,10 @@ switch key_letter
                     catch; screen_size = [1900 1080]./[2560 1440];
                     end
 
-                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)])
-                    movegui(ud.transformed_slice_figure,'onscreen')                      
+                    set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
+                    movegui(ud.transformed_slice_figure,'onscreen');                  
                     highlight_point = false;
-                    transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [],0)
+                    transformed_sliceBrowser(ud.transformed_slice_figure, save_location, f, highlight_point, [], [], [], [], [],0);
                 end; figure(f);                
             
                 set(ud.im, 'CData', ud.ref);
@@ -308,14 +329,15 @@ switch key_letter
         slice_points = ud_slice.pointList;
         
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
-        folder_transformations = [save_location 'transformations' filesep];
-        if size(ud.current_pointList_for_transform,1)  && size(slice_points,1) && ud.slice_at_shift_start+ud.slice_shift == ud_slice.slice_num
+        folder_transformations = [save_location filesep 'transformations' filesep];
+        if size(ud.current_pointList_for_transform,1)  && size(slice_points,1) && ud.slice_at_shift_start+ud.slice_shift == ud_slice.slice_num && ~ud.probe_view_mode
             key_letter = 'x'; % save transform automatically
         end
         
         if (ud.histology_overlay == 1 || ud.histology_overlay == 2) && ...
                 ( (size(ud.current_pointList_for_transform,1) && size(slice_points,1)) || ud.loaded)
 
+            try
         if ud.slice_shift > 0
             
             ud.curr_slice_trans = imread([folder_transformations slice_name '_transformed.tif']);
@@ -345,8 +367,10 @@ switch key_letter
                 set(ud.im, 'CData', ud.curr_slice_trans); 
                 ud.curr_im = ud.curr_slice_trans;
             end
-
-        else % ud.histology_overlay == 0
+            ref_mode = false;
+            catch; ref_mode = true; end
+        end
+        if ud.histology_overlay == 0 || ref_mode
             ud.histology_overlay = 0;
             disp('Reference mode!');
             set(ud.im, 'CData', ud.ref);
@@ -643,26 +667,39 @@ else
  
   
   % loop through AP offsets
-  for cur_offset_DV = offset_DV
-      if cur_offset_DV == ud.currentAngle(1); end_index_DV = image_size(1);
-      else; end_index_DV = start_index_DV + floor( image_size(1) / length(offset_DV)) - 1;
+  num_DV_iters_add_ind = floor( (image_size(1) - floor( image_size(1) / length(offset_DV))*length(offset_DV)) / 2);
+  for curr_DV_iter = 1:length(offset_DV)
+      cur_offset_DV = offset_DV(curr_DV_iter);
+      if cur_offset_DV == ud.currentAngle(1)
+          end_index_DV = image_size(1);
+      elseif curr_DV_iter <= num_DV_iters_add_ind  || length(offset_DV - curr_DV_iter) < num_DV_iters_add_ind
+          end_index_DV = start_index_DV + floor( image_size(1) / length(offset_DV));
+      else
+          end_index_DV = start_index_DV + floor( image_size(1) / length(offset_DV)) - 1;
       end
       
        if ud.currentAngle(2)==0;  offset_ML = 0;
        else; offset_ML = -ud.currentAngle(2):sign(ud.currentAngle(2)):ud.currentAngle(2);
        end; start_index_ML = 1;
     % nested: loop through ML offsets
-    for cur_offset_ML = offset_ML
+  num_ML_iters_add_ind = floor( (image_size(2) - floor( image_size(2) / length(offset_ML))*length(offset_ML)) / 2);
+  for curr_ML_iter = 1:length(offset_ML)
+      cur_offset_ML = offset_ML(curr_ML_iter);
       if cur_offset_ML == ud.currentAngle(2)
-         end_index_ML = image_size(2);
+          end_index_ML = image_size(2);
+      elseif curr_ML_iter <= num_ML_iters_add_ind  || length(offset_ML - curr_ML_iter) < num_ML_iters_add_ind
+          end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML));
       else
-         end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML)) - 1;
+          end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML)) - 1;
       end
           
       % update current slice
+      try
      angle_slice(start_index_DV:end_index_DV, start_index_ML:end_index_ML) = ...
          squeeze(allData.tv(ud.currentSlice + cur_offset_DV + cur_offset_ML,start_index_DV:end_index_DV,start_index_ML:end_index_ML));
-
+      catch
+          disp('')
+      end
     
       ud.im_annotation(start_index_DV:end_index_DV,start_index_ML:end_index_ML) = squeeze(allData.av(ud.currentSlice + cur_offset_DV + cur_offset_ML,...
                                                             start_index_DV:end_index_DV,start_index_ML:end_index_ML));
