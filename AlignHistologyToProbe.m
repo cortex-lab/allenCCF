@@ -48,4 +48,3 @@ f = AtlasTransformBrowser(f, tv,av,st, slice_figure_browser, processed_images_fo
 
 % save_location = processed_images_folder;
 % f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
-
