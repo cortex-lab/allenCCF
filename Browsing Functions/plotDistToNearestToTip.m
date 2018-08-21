@@ -204,25 +204,24 @@ end
 yyaxis left
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
-if show_parent_category; set(gca,'Color',[.85 .85 .85]);
+if show_parent_category; set(gca,'Color',[.65 .65 .65]);
 else; set(gca,'Color',[.4 .4 .4]); end
-xlabel('dist to nearest (um)','color','white');
-set(gca,'XColor','white')
-set(gca,'YColor',[.85 .85 .85])
+xlabel('dist to nearest (um)','color','k');
+
 % ylim([0 yc(borders(end-1))])
 ylim([1 yc(end)+1])
 xlim([0 error_length*10]);
-set(fD,'Color','k')
+set(fD,'Color',[1 1 1]*.7)
 fD.InvertHardcopy = 'off';
 
 yyaxis right
 if active_site_start> 0
-set(gca, 'YTick', [1 active_site_start*10 rpl*10 yc(end)], 'YTickLabel', {'0 um' [num2str(active_site_start*10) ' um'] [num2str(rpl*10) ' um'] [num2str(yc(end)) ' um']});
+    set(gca, 'YTick', [1 active_site_start*10 rpl*10 yc(end)], 'YTickLabel', {'0 um' [num2str(active_site_start*10) ' um'] [num2str(rpl*10) ' um'] [num2str(yc(end)) ' um']});
 else
     set(gca, 'YTick', [1 rpl*10 yc(end)], 'YTickLabel', {'0 um' [num2str(rpl*10) ' um'] [num2str(yc(end)) ' um']});
 end
 set(gca, 'YDir','reverse');
-set(gca,'YColor',[.9 1 1])
+set(gca,'YColor',[1 1 1]*.2)
 ylim([1 yc(end)+1])
 
 % plot line(s) indicating active site length

@@ -5,23 +5,27 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of probe points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_done\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved probe points
-probe_save_name_suffix = '';
+probe_save_name_suffix = '_tutorial';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
+<<<<<<< HEAD
 probes_to_analyze = 6; %'all';
+=======
+probes_to_analyze = 1; %'all';
+>>>>>>> philip
 
 % -----------
 % parameters
 % -----------
 % how far into the brain did you go, either for each probe or just one number for all -- in mm
-probe_lengths = 5.0; 
+probe_lengths = 5; 
 
 % from the bottom tip, how much of the probe contained recording sites -- in mm
 active_probe_length = 3.84;
@@ -37,7 +41,7 @@ distance_past_tip_to_plot = .3;
 
 % set scaling e.g. based on lining up the ephys with the atlas
 % set to *false* to get scaling automatically from the clicked points
-scaling_factor = false; 
+scaling_factor = 1; 
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
@@ -50,11 +54,10 @@ black_brain = true;
 
 
 
+
+
 %% GET AND PLOT PROBE VECTOR IN ATLAS SPACE
 
-% -----------------------------------------------
-% load the reference annotations and probe points
-% -----------------------------------------------
 % load the reference brain annotations
 if ~exist('av','var') || ~exist('st','var')
     disp('loading reference atlas...')
@@ -68,7 +71,11 @@ ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25
 % order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','purple','orange','red'};
 fwireframe = [];
 
+<<<<<<< HEAD
 % convert active probe length to unit used below
+=======
+% scale active_probe_length appropriately
+>>>>>>> philip
 active_probe_length = active_probe_length*100;
 
 % determine which probes to analyze
@@ -79,9 +86,11 @@ else
 end 
 
 
-%% ----------------------------------------------------------------
-% plot each probe -- first find its trajectory in reference space
-% ----------------------------------------------------------------
+
+
+
+%% PLOT EACH PROBE -- FIRST FIND ITS TRAJECTORY IN REFERENCE SPACE
+
 for selected_probe = probes
     
 % get the probe points for the currently analyzed probe    
