@@ -3,7 +3,7 @@ function transformed_slice_figure = transformed_sliceBrowser(transformed_slice_f
 
 % go through histology at the same time
 try
-    figure(transformed_slice_figure)
+    figure(transformed_slice_figure);
 catch
     transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
 end
