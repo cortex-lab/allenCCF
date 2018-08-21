@@ -1,5 +1,4 @@
 
-
 function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, save_location, save_suffix)
 % Browser for the allen atlas ccf data in matlab.
 %
@@ -29,7 +28,14 @@ fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
 
-f = figure('Name','Atlas Viewer'); 
+try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+catch; screen_size = [1900 1080]./[2560 1440];
+end
+f = figure;
+set(f,'Name','Atlas Viewer','Position', [1000*screen_size(1) 250*screen_size(2) 1100*screen_size(1) 850*screen_size(2)])
+movegui(f,'onscreen')
+
+ 
 
 ud.bregma = allenCCFbregma; 
 
@@ -48,7 +54,8 @@ ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0; .3 1 1; .7 0 .8; 1 0 0; .
 ud.showAtlas = false;
 ud.histology_overlay = 0; 
 ud.atlasAx = axes('Position', [0.05 0.05 0.9 0.9]);
-
+ud.angleText = annotation('textbox', [.7 0.95 0.4 0.05], ...
+    'EdgeColor', 'none', 'Color', 'k');
 
 ud.im = plotTVslice(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.ref = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
@@ -135,9 +142,9 @@ switch lower(keydata.Key)
                 
                 for probe_point = 1:size(ud.pointHands{ud.currentProbe, 1}(:),1)
                     ud.pointHands{ud.currentProbe, 1}(probe_point) = scatter(ud.atlasAx, ...
-                        ud.pointList{ud.currentProbe,1}(probe_point,1), ud.pointList{ud.currentProbe,1}(probe_point,2), 20, 'ro', ...
-                    'MarkerFaceColor', ud.ProbeColors(ud.currentProbe, :),'MarkerEdgeColor', [0 0 0], ...
-                    'MarkerFaceAlpha',.4,'LineWidth',1.5);
+                            ud.pointList{ud.currentProbe,1}(probe_point,1), ud.pointList{ud.currentProbe,1}(probe_point,2), 20, 'ro', ...
+                        'MarkerFaceColor', ud.ProbeColors(ud.currentProbe, :),'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
+                        'LineWidth',3);
                 end
                 
                 curr_probePoints = ud.pointList{ud.currentProbe,1}(:, [3 2 1]);
@@ -158,23 +165,37 @@ switch lower(keydata.Key)
                 if p(2)<0
                     p = -p;
                 end
-
-                % use the z value of the mean as the selected slice
-                ud.currentSlice = round(m(1)); 
-
-                % calculate slice angle along probe track
-                ud.currentAngle(1) = round (400*p(1) / p(2) );
-                z_shift_above_probe_center = m(2)*p(1) / p(2);
-                ud.currentAngle(2) = round( 570 * (ud.currentAngle(1) - z_shift_above_probe_center) / (m(3) - 570) );
-                p_abs = abs(p);
-                ud.currentAngle(2) = round(ud.currentAngle(2) * ( p_abs(3) / (p_abs(1) + p_abs(3))));
+                                
+                % calculate slice angle along probe track -- do so by 
+                % constraining either ML angle or DV angle to zero
+                position_at_x_center_point = m + (1140/2 - m(3)) * p / p(3);
+                position_at_y_center_point = m + (800/2 - m(2)) * p / p(2);
                 
-%                 z_shift_above_probe_center = m(2)*p(1) / p(2);
-%                 ud.currentAngle(2) = round( 570 * (ud.currentAngle(1) - z_shift_above_probe_center) / (m(3) - 570) );
- 
+                angle_DV_if_constraining_ML = round(400 / (400 - m(2)) * (position_at_y_center_point(1)-m(1)) );
+                angle_ML_if_constraining_DV = round(570 / (570 - m(3)) * (position_at_x_center_point(1)-m(1)) );
+                
+                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV)
+                    ud.currentSlice = round(position_at_y_center_point(1));
+                    ud.currentAngle(1) = angle_DV_if_constraining_ML;
+                    ud.currentAngle(2) = 0;
+                else
+                    ud.currentSlice = round(position_at_x_center_point(1));
+                    ud.currentAngle(2) = angle_ML_if_constraining_DV;
+                    ud.currentAngle(1) = 0;
+                end
+                    
+                % if the angles are too extreme, just show mean slice without angles
+                if abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= ud.currentSlice || ...
+                        abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= 1140-ud.currentSlice
+                    ud.currentAngle(1) = 0;
+                    ud.currentAngle(2) = 0;
+                    ud.currentSlice = round(m(1));
+                    disp('probe angle not ideal for viewing in coronal slice -- angles set to 0')
+                end
+                
                 % update slice
-                update.VerticalScrollCount = 0; set(f, 'UserData', ud);
-                updateSlice(f, update, allData); ud = get(f, 'UserData');                              
+                update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
+                updateSlice(f, update, allData); ud = get(f, 'UserData');                                             
             
             else; disp('probe view mode OFF'); end
 
@@ -214,7 +235,7 @@ switch lower(keydata.Key)
     case 's' % save probe trajectory and points of each probe per histology image (and associated histology name/number)
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
-        save([save_location  'probe_points' save_suffix], 'pointList'); disp('probe points saved');
+        save(fullfile(save_location ,[ 'probe_points' save_suffix]), 'pointList'); disp('probe points saved');
         
     case 'd' % delete current transform or most recent probe point
         if ud.currentProbe
@@ -261,7 +282,8 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
  
    % update title/overlay with brain region
     pixel = getPixel(ud.atlasAx);
-    updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText);
+    updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2));
+
     [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice);
     updateTitle(ud.atlasAx, name, acr)
     if ud.showOverlay    
@@ -276,40 +298,53 @@ else
   image_size = size(squeeze(allData.av(ud.currentSlice,:,:)));
   angle_slice = zeros(image_size);
   
-  if ud.currentAngle(1)==0; offset_AP = 0;
-  else; offset_AP = -ud.currentAngle(1):sign(ud.currentAngle(1)):ud.currentAngle(1);
-  end; start_index_AP = 1; 
+  if ud.currentAngle(1)==0; offset_DV = 0;
+  else; offset_DV = -ud.currentAngle(1):sign(ud.currentAngle(1)):ud.currentAngle(1);
+  end; start_index_DV = 1; 
  
   
   % loop through AP offsets
-  for cur_offset_AP = offset_AP
-      if cur_offset_AP == ud.currentAngle(1); end_index_AP = image_size(1);
-      else; end_index_AP = start_index_AP + floor( image_size(1) / length(offset_AP)) - 1;
+  num_DV_iters_add_ind = floor( (image_size(1) - floor( image_size(1) / length(offset_DV))*length(offset_DV)) / 2);
+  for curr_DV_iter = 1:length(offset_DV)
+      cur_offset_DV = offset_DV(curr_DV_iter);
+      if cur_offset_DV == ud.currentAngle(1)
+          end_index_DV = image_size(1);
+      elseif curr_DV_iter <= num_DV_iters_add_ind  || length(offset_DV - curr_DV_iter) < num_DV_iters_add_ind
+          end_index_DV = start_index_DV + floor( image_size(1) / length(offset_DV));
+      else
+          end_index_DV = start_index_DV + floor( image_size(1) / length(offset_DV)) - 1;
       end
       
        if ud.currentAngle(2)==0;  offset_ML = 0;
        else; offset_ML = -ud.currentAngle(2):sign(ud.currentAngle(2)):ud.currentAngle(2);
        end; start_index_ML = 1;
     % nested: loop through ML offsets
-    for cur_offset_ML = offset_ML
+  num_ML_iters_add_ind = floor( (image_size(2) - floor( image_size(2) / length(offset_ML))*length(offset_ML)) / 2);
+  for curr_ML_iter = 1:length(offset_ML)
+      cur_offset_ML = offset_ML(curr_ML_iter);
       if cur_offset_ML == ud.currentAngle(2)
-         end_index_ML = image_size(2);
+          end_index_ML = image_size(2);
+      elseif curr_ML_iter <= num_ML_iters_add_ind  || length(offset_ML - curr_ML_iter) < num_ML_iters_add_ind
+          end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML));
       else
-         end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML)) - 1;
+          end_index_ML = start_index_ML + floor( image_size(2) / length(offset_ML)) - 1;
       end
           
       % update current slice
-     angle_slice(start_index_AP:end_index_AP, start_index_ML:end_index_ML) = ...
-         squeeze(allData.tv(ud.currentSlice + cur_offset_AP + cur_offset_ML,start_index_AP:end_index_AP,start_index_ML:end_index_ML));
-
+      try
+     angle_slice(start_index_DV:end_index_DV, start_index_ML:end_index_ML) = ...
+         squeeze(allData.tv(ud.currentSlice + cur_offset_DV + cur_offset_ML,start_index_DV:end_index_DV,start_index_ML:end_index_ML));
+      catch
+          disp('')
+      end
     
-      ud.im_annotation(start_index_AP:end_index_AP,start_index_ML:end_index_ML) = squeeze(allData.av(ud.currentSlice + cur_offset_AP + cur_offset_ML,...
-                                                            start_index_AP:end_index_AP,start_index_ML:end_index_ML));
-      ud.offset_map(start_index_AP:end_index_AP, start_index_ML:end_index_ML) = cur_offset_AP + cur_offset_ML;
+      ud.im_annotation(start_index_DV:end_index_DV,start_index_ML:end_index_ML) = squeeze(allData.av(ud.currentSlice + cur_offset_DV + cur_offset_ML,...
+                                                            start_index_DV:end_index_DV,start_index_ML:end_index_ML));
+      ud.offset_map(start_index_DV:end_index_DV, start_index_ML:end_index_ML) = cur_offset_DV + cur_offset_ML;
       
       start_index_ML = end_index_ML + 1;
-    end
-      start_index_AP = end_index_AP + 1;
+   end
+      start_index_DV = end_index_DV + 1;
   end     
   if ~ud.showAtlas
     set(ud.im, 'CData', angle_slice);
@@ -318,6 +353,7 @@ else
   ud.ref = uint8(angle_slice);
 
 end
+
 ud.curr_im = ud.ref;
 
 
@@ -339,7 +375,7 @@ if ud.probe_view_mode && ud.currentProbe
         else
             color = [.33 .33 .33];
         end
-            set(ud.pointHands{probe, 1}(probe_point), 'MarkerFaceColor',color,'MarkerEdgeColor', color, 'SizeData', 20)
+%             set(ud.pointHands{probe, 1}(probe_point), 'MarkerFaceColor',color,'MarkerEdgeColor', color, 'SizeData', 20)
     end
 disp(['mean distance from probe track to points is ' num2str(round(mean_distance*10)) ' microns'])
     if mean_distance < 50
@@ -430,7 +466,7 @@ else; offset = 0;
 end
 
 % show bregma coords
-updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText);
+updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2));
 
 % get annotation for this pixel
 [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice+offset);
@@ -453,12 +489,14 @@ if ~isempty(name)
 end
 
 
-function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText)
+function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle)
 atlasRes = 0.010; % mm
 ap = -(currentSlice-bregma(1))*atlasRes;
 dv = (pixel(1)-bregma(2))*atlasRes;
 ml = (pixel(2)-bregma(3))*atlasRes;
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
+set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/400),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
+
 
 
 function pixel = getPixel(ax)

@@ -106,7 +106,7 @@ if strcmp(keydata.Key,'leftarrow')
         end
     end
     
-% left arrow -- go to next slice    
+% right arrow -- go to next slice    
 elseif strcmp(keydata.Key,'rightarrow') 
     if ud.slice_num < ud.total_num_files
         ud.slice_num = ud.slice_num + 1;
@@ -147,7 +147,8 @@ elseif strcmp(keydata.Key,'t')
     ud.getPoint = ~ud.getPoint;
         if ud.getPoint; disp('transform point mode!'); end
 else
-% otherwise -- call function to atlas browser    
+% otherwise -- call function to atlas browser       
+    figure(f);
     fcn = get(f, 'KeyPressFcn'); 
     fcn(f, keydata);
 end

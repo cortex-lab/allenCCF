@@ -16,7 +16,7 @@ figure(f);
 try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end 
-set(f,'Position', [956*screen_size(1) 401*screen_size(2) 883*screen_size(1) 657*screen_size(2)])
+set(f,'Position', [1000*screen_size(1) 250*screen_size(2) 1100*screen_size(1) 850*screen_size(2)])
 movegui(f,'onscreen')
 
 % initialize user data variables held by the figure
@@ -155,7 +155,7 @@ switch key_letter
                         catch; screen_size = [1900 1080]./[2560 1440];
                         end
 
-                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
+                        set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 12*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
                         movegui(ud.transformed_slice_figure,'onscreen')        
 
                         highlight_point = false;
@@ -180,22 +180,32 @@ switch key_letter
             ud.currentProbe = 1;
         end
             ud.probe_view_mode = ~ud.probe_view_mode; 
-            
+
             if ud.probe_view_mode
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
-                        probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
-                        ud.pointList = probe_points.pointList.pointList;
-                        ud.pointHands = probe_points.pointList.pointHands;
-                end; disp(['activate probe view mode for probe ' num2str(ud.currentProbe)])
-                
-                for probe_point = 1:size(ud.pointHands{ud.currentProbe, 1}(:),1)
-                    ud.pointHands{ud.currentProbe, 1}(probe_point) = scatter(ud.atlasAx, ...
-                        ud.pointList{ud.currentProbe,1}(probe_point,1), ud.pointList{ud.currentProbe,1}(probe_point,2), 20, 'ro', ...
-                    'MarkerFaceColor', ud.ProbeColors(ud.currentProbe, :),'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
-                    'LineWidth',3);
+                    probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
+                    ud.pointList = probe_points.pointList.pointList;
+                    ud.pointHands = probe_points.pointList.pointHands;
+                for probe = 1:size(ud.pointList,1)
+                    for probe_point = 1:size(ud.pointList{probe, 1},1)
+                        ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
+                            ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
+                        'MarkerFaceColor', ud.ProbeColors(probe, :),'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
+                        'LineWidth',3);
+                    end
+                    if probe ~= ud.currentProbe
+                        set(ud.pointHands{probe, 1}(:), 'Visible', 'off'); 
+                    end
                 end
-                set(ud.pointHands{ud.currentProbe,1}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
+                    
+                end; disp(['activate probe view mode for probe ' num2str(ud.currentProbe)])
+            
+                % show probe points
+                set(ud.pointHands{ud.currentProbe, 1}(:), 'Visible', 'on'); 
+                
+                curr_probe_handle = ud.pointHands{ud.currentProbe,1};
+                set(curr_probe_handle, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
                 
                 % switch the order to z y x
                 curr_probePoints = ud.pointList{ud.currentProbe,1}(:, [3 2 1]);
@@ -203,16 +213,15 @@ switch key_letter
                 % get line of best fit through points
                 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
                 [m,p,s] = best_fit_line(curr_probePoints(:,1), curr_probePoints(:,2), curr_probePoints(:,3));
+                disp(['mean square error to line of ' num2str(round(s / size(curr_probePoints,1),2)) ' pxl^2'])
                 
                 min_y = min(ud.pointList{ud.currentProbe,1}(:,2));
                 max_y = max(ud.pointList{ud.currentProbe,1}(:,2));
                 min_x = m(3) + (min_y - m(2))  * p(3) / p(2);
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
-%                 min_z = m(1) + (min_y - m(2))  * p(1) / p(2);
-%                 max_z = m(1) + (max_y - m(2))  * p(1) / p(2);
-                ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':');
+                ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':','linewidth',1.5);
                 set(ud.pointHands{ud.currentProbe,3}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
-                
+                set(f,'color','k');
                 % ensure proper orientation: want 0 at the top of the brain 
                 % and positive distance goes down into the brain
                 if p(2)<0
@@ -222,7 +231,6 @@ switch key_letter
                                 
                 % calculate slice angle along probe track -- do so by 
                 % constraining either ML angle or DV angle to zero
-
                 position_at_x_center_point = m + (1140/2 - m(3)) * p / p(3);
                 position_at_y_center_point = m + (800/2 - m(2)) * p / p(2);
                 
@@ -235,7 +243,7 @@ switch key_letter
                     ud.currentAngle(2) = 0;
                 else
                     ud.currentSlice = round(position_at_x_center_point(1));
-                    ud.currentSlice = angle_ML_if_constraining_DV;
+                    ud.currentAngle(2) = angle_ML_if_constraining_DV;
                     ud.currentAngle(1) = 0;
                 end
                     
@@ -252,7 +260,7 @@ switch key_letter
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
                 updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');   
-                fill([5 5 200 200],[5 50 50 5],[0 0 0]);
+                fill([0 0 250 250],[0 50 50 0],[0 0 0]);
 
                 
                 % show Transformed Slice & Probage Viewer, if not already showing
@@ -272,6 +280,7 @@ switch key_letter
                 set(ud.im, 'CData', ud.ref);
                 ud.curr_im = ud.ref; set(f, 'UserData', ud);
             else; disp('probe view mode OFF'); end
+            
 % t -- toggle mode to register clicks as Points   
     case 't' 
         ud.getPoint_for_transform = ~ud.getPoint_for_transform;
@@ -284,7 +293,7 @@ switch key_letter
 
             % launch transform point mode
             if (ud_slice.slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) || ~size(ud.current_pointList_for_transform,1)) && ~ud.loaded 
-                ud.curr_slice_num = ud_slice.slice_num;
+                ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
                 ud.current_pointList_for_transform = zeros(0,2);
                 set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
                 num_hist_points = size(ud_slice.pointList,1);
@@ -344,7 +353,7 @@ switch key_letter
             
         else
             set(ud.text,'Visible','off');
-            fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+            fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
 
             reference_points = ud.current_pointList_for_transform;
             slice_points = ud_slice.pointList;
@@ -368,7 +377,7 @@ switch key_letter
                 ud.curr_im = ud.curr_slice_trans;
             end
             ref_mode = false;
-            catch; ref_mode = true; end
+            catch; ref_mode = true; disp('Unable to transform -- unequal number of slice points and reference points'); key_letter = 'h'; end
         end
         if ud.histology_overlay == 0 || ref_mode
             ud.histology_overlay = 0;
@@ -397,6 +406,10 @@ switch key_letter
  % s -- save probe trajectory and points of each probe per histology image (and associated histology name/number)     
     case 's'
         pointList.pointList = ud.pointList;
+        for probe = 1:size(ud.pointList,1)
+            set(ud.pointHands{probe,3}, 'ButtonDownFcn', '');  
+            set(ud.pointHands{probe,1}, 'ButtonDownFcn', '');        
+        end
         pointList.pointHands = ud.pointHands;
         warning('off', 'MATLAB:Figure:FigureSavedToMATFile');
         save(fullfile(save_location, ['probe_points' save_suffix]), 'pointList'); disp('probe points saved');        
@@ -445,7 +458,7 @@ switch key_letter
             
             if ~isempty(ud.text)
                 set(ud.text,'Visible','off');
-                fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+                fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
             end
             
             disp('transform loaded -- press ''l'' again now to load probe points');
@@ -458,26 +471,29 @@ switch key_letter
                 disp('probe points not loaded -- there are already some current probe points')
             end
         end
-        
+
         for probe = 1:size(ud.pointList,1)
-             set(ud.pointHands{probe, 1}(:),'Visible','off')
-            for probe_point = 1:size(ud.pointHands{probe, 1}(:),1)
+            % create point plot handles anew
+            try; set(ud.pointHands{probe, 1}(:),'Visible','off'); end
+            for probe_point = 1:size(ud.pointList{probe, 1},1)
                 ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
-                    ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 30, 'ro', ...
+                    ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
                 'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
-               'LineWidth',3);
+                'LineWidth',3);
+            
+            % set the point plot from the current slice visible
+            slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
+            if slice_point_belongs_to == ud_slice.slice_num
+                set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'on');
+            else
+                set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off'); 
+            end  
+            
             end
-             
+            % turn off best fit line if applicable
             set(ud.pointHands{probe, 3}(:),'Visible','off'); ud.pointHands{probe, 3} = [];
-            for probe_point = 1:size(ud.pointList{probe,1},1)
-                slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
-                if slice_point_belongs_to == ud_slice.slice_num
-                    set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'on');
-                else
-                    set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off'); 
-                end
-            end
         end
+        
         ud.slice_shift = 0;
         catch; 
             disp(['loading failed']); end
@@ -506,8 +522,13 @@ if strcmp(key_letter,'x')
         if ~exist(folder_transformations)
             mkdir(folder_transformations)
         end
-
-        slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
+    
+        % find name of slice
+        if ud.slice_shift || ud.slice_at_shift_start ~= ud_slice.slice_num
+            slice_name = ud_slice.processed_image_names{(ud.slice_at_shift_start+ud.slice_shift)}(1:end-4);
+        else
+            slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
+        end
         
         % store transform
         save_transform.transform = ud.transform;
@@ -523,9 +544,11 @@ if strcmp(key_letter,'x')
         save_transform.allen_location = allen_location;
         % save all this
         save(fullfile(folder_transformations, [slice_name '_transform_data.mat']), 'save_transform');
-        
+
         % save transformed histology image
-        current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
+        current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
+%         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+        R = imref2d(size(ud.ref));
         curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
         imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
         
@@ -550,7 +573,6 @@ if ud.scrollMode==0
 
     if ud.currentSlice>size(allData.tv,1); ud.currentSlice = 1; end %wrap around
     if ud.currentSlice<1; ud.currentSlice = size(allData.tv,1); end %wrap around
-    
     
 % scroll through D/V angles        
 elseif ud.scrollMode==1 %&&  abs(ud.currentAngle(1)) < 130
@@ -590,6 +612,7 @@ elseif ud.scrollMode == 3
         end
     end  
   
+    ud.current_pointList_for_transform = zeros(0,2);
     try; load([folder_transformations slice_name '_transform_data.mat']);
        
         % load transform data
@@ -620,14 +643,14 @@ elseif ud.scrollMode == 3
         ud.histology_overlay = 1;
         
         set(ud.text,'Visible','off');
-        fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
+        fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
     catch;
         % if no transform, just show reference
         ud.histology_overlay = 0;
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
-        fill([5 5 200 200],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform found'],'color','white');        
+        fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
     end  
         
 end  
@@ -651,6 +674,7 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
     end  
     ud.ref = uint8(get(ud.im, 'CData'));
     set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+    ud.offset_map = zeros(800,1140); 
     set(f, 'UserData', ud);
     
 % ---------------------------
@@ -730,6 +754,7 @@ if ud.showAtlas
     updateBoundaries(f,ud, allData)
 end
 
+
 % in normal mode, show only the probe points for that slice
 % in probe view mode, color depends on distance from point
 if ud.probe_view_mode && ud.currentProbe
@@ -743,7 +768,7 @@ if ud.probe_view_mode && ud.currentProbe
         else
             color = [.33 .33 .33];
         end
-            set(ud.pointHands{probe, 1}(probe_point), 'MarkerFaceColor',color,'MarkerEdgeColor', color, 'SizeData', 20)
+            set(ud.pointHands{probe, 1}(probe_point),'MarkerEdgeColor', color, 'SizeData', 20)
     end
 disp(['mean distance from this slice to probe points is ' num2str(round(mean_distance*10)) ' microns'])
     if mean_distance < 50
@@ -848,11 +873,9 @@ elseif ud.currentProbe > 0
     slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start + ud.slice_shift}(1:end-4);
     ud.pointList{ud.currentProbe,3}{end+1} = slice_name;
    
-    
-    ud.pointHands{ud.currentProbe, 1}(end+1) = scatter(ud.atlasAx, clickX, clickY, 30, 'ro', ...
+    ud.pointHands{ud.currentProbe, 1}(end+1) = scatter(ud.atlasAx, clickX, clickY, 20, 'ro', ...
                 'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
                 'LineWidth',3);
-        
                 
     ud.pointHands{ud.currentProbe, 2}(end+1) = ud_slice.slice_num + ud.slice_shift;
     
@@ -862,17 +885,17 @@ elseif ud.getPoint_for_transform
     clickY = round(keydata.IntersectionPoint(2));
     if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
     
-    if ud.curr_slice_num ~= ud_slice.slice_num
+    if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift %ud_slice.slice_num
         if ~ud.loaded
         ud.current_pointList_for_transform = zeros(0,2);
-        ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
+%         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
         disp('transforming new slice');
         end
-        ud.curr_slice_num = ud_slice.slice_num;
+        ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
-    set(ud.pointHands_for_transform(:), 'color', [.6 0 0]);
+    set(ud.pointHands_for_transform(:), 'color', [.7 .3 .3]);
     ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'LineWidth',2,'markers',4);    
         
     ud.slice_at_shift_start = ud_slice.slice_num;
