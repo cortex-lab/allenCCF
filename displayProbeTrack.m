@@ -15,7 +15,7 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 probe_save_name_suffix = '';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
-probes_to_analyze = 'all';
+probes_to_analyze = 6; %'all';
 
 % -----------
 % parameters
@@ -30,7 +30,7 @@ active_probe_length = 3.84;
 probe_radius = 100; 
 
 % overlay the distance between parent regions in gray (this takes a while)
-show_parent_category = false; 
+show_parent_category = true; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
 distance_past_tip_to_plot = .3;
@@ -63,10 +63,13 @@ if ~exist('av','var') || ~exist('st','var')
 end
 
 % load probe points
-probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
+% probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
 ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
 % order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','purple','orange','red'};
 fwireframe = [];
+
+% convert active probe length to unit used below
+active_probe_length = active_probe_length*100;
 
 % determine which probes to analyze
 if strcmp(probes_to_analyze,'all')
