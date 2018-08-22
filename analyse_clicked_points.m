@@ -6,14 +6,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of object points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed_3';
+processed_images_folder = 'C:\Drive\Histology\PAG\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved object points
-object_save_name_suffix = 'oriol';
+object_save_name_suffix = 'vgat';
 
 % either set to 'all' or a list of indices from the clicked objects in this file, e.g. [2,3]
 objects_to_analyze = 'all';
