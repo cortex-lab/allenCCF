@@ -1,4 +1,4 @@
-function HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, ...
+function HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, folder_processed_images, image_file_are_individual_slices, ...
                 use_already_downsampled_image, microns_per_pixel, microns_per_pixel_after_downsampling, gain)
 
 % display image and set up user controls for contrast change        
@@ -10,7 +10,11 @@ ud_histology.contrast_type = 1;
 ud_histology.channel = 3;
 ud_histology.file_num = 1;
 ud_histology.num_files = length(image_file_names);
-ud_histology.save_folder = save_folder;
+if image_file_are_individual_slices
+    ud_histology.save_folder = folder_processed_images;
+else
+    ud_histology.save_folder = save_folder;
+end
 ud_histology.image_folder = image_folder;
 ud_histology.microns_per_pixel = microns_per_pixel;
 ud_histology.microns_per_pixel_after_downsampling = microns_per_pixel_after_downsampling;
@@ -22,9 +26,9 @@ disp(['loading image ' num2str(ud_histology.file_num) '...'])
 
 % load already processed image
 if use_already_downsampled_image
-    image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
+    image = imread(fullfile(ud_histology.save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
 else %process image now
-    image = imread(fullfile(image_folder,image_file_names{ud_histology.file_num}));
+    image = imread(fullfile(ud_histology.image_folder,image_file_names{ud_histology.file_num}));
     original_image_size = size(image);
 
     % resize (downsample) image to 25 micron pixels

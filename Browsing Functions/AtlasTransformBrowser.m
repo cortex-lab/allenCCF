@@ -292,7 +292,7 @@ switch key_letter
             ud.currentProbe = 0;
 
             % launch transform point mode
-            if (ud_slice.slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) || ~size(ud.current_pointList_for_transform,1)) && ~ud.loaded 
+            if ~size(ud.current_pointList_for_transform,1)% ) (ud.curr_slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) ||  && ~ud.loaded 
                 ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
                 ud.current_pointList_for_transform = zeros(0,2);
                 set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
@@ -326,6 +326,7 @@ switch key_letter
         ud.scrollMode = 3;
         if ~ud.slice_at_shift_start
             ud.slice_at_shift_start = ud_slice.slice_num;
+            ud.slice_shift = 0;
         end
         disp('switch scroll mode -- scroll along slice images')     
 % h -- toggle viewing of histology / histology overlay
@@ -360,7 +361,7 @@ switch key_letter
             
             current_slice_image = flip(get(ud_slice.im, 'CData'),1);
             if ~ud.loaded  % use loaded version if 'l' was just pressed 
-                ud.transform = fitgeotrans(slice_points,reference_points,'projective'); %can use 'affine', 'projective', or 'pwl'
+                ud.transform = fitgeotrans(slice_points,reference_points,'projective'); %can use 'affine', 'projective', 'polynomial', or 'pwl'
             end
             R = imref2d(size(ud.ref));
             ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
@@ -530,8 +531,13 @@ if strcmp(key_letter,'x')
             slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
         end
         
-        % store transform
+
+        if isempty(ud.current_pointList_for_transform)
+            ud.transform = [];
+        end
+        % store transform, if applicable
         save_transform.transform = ud.transform;
+        
         % store transform points
         transform_points = cell(2,1); transform_points{1} = ud.current_pointList_for_transform;
         if ~isempty(ud_slice.pointList)
@@ -544,7 +550,8 @@ if strcmp(key_letter,'x')
         save_transform.allen_location = allen_location;
         % save all this
         save(fullfile(folder_transformations, [slice_name '_transform_data.mat']), 'save_transform');
-
+        disp('atlas location saved')
+        
         % save transformed histology image
         current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
 %         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
@@ -552,7 +559,7 @@ if strcmp(key_letter,'x')
         curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
         imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
         
-        disp('transform and atlas location saved.')
+        disp('transform saved')
         catch
             disp('transform not saved')
         end
@@ -640,6 +647,8 @@ elseif ud.scrollMode == 3
         update.VerticalScrollCount = 0; set(f, 'UserData', ud);
         ud.loaded = true;
         
+        ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
+        
         ud.histology_overlay = 1;
         
         set(ud.text,'Visible','off');
@@ -647,6 +656,7 @@ elseif ud.scrollMode == 3
     catch;
         % if no transform, just show reference
         ud.histology_overlay = 0;
+        ud.current_pointList_for_transform = zeros(0,2);
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
@@ -887,9 +897,9 @@ elseif ud.getPoint_for_transform
     
     if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift %ud_slice.slice_num
         if ~ud.loaded
-        ud.current_pointList_for_transform = zeros(0,2);
-%         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
-        disp('transforming new slice');
+            ud.current_pointList_for_transform = zeros(0,2);
+    %         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
+            disp('transforming new slice');
         end
         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
     end

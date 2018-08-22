@@ -65,6 +65,13 @@ switch lower(keydata.Key)
         ud.slice_num = ud.slice_num - 1*(ud.slice_num>1);
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
+        
+        % pad if possible (if small enough)
+        try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((reference_size(1) - size(ud.current_slice_image,1)) / 2) + mod(size(ud.current_slice_image,1),2) ...
+                                                      floor((reference_size(2) - size(ud.current_slice_image,2)) / 2) + mod(size(ud.current_slice_image,2),2)],0);
+%             disp('padding added')
+        end  
+        
         ud.original_slice_image = ud.current_slice_image;        
         ud.original_ish_slice_image = ud.current_slice_image;   
 %         ud.current_slice_image = localcontrast(ud.current_slice_image);
@@ -83,6 +90,13 @@ switch lower(keydata.Key)
         ud.slice_num = ud.slice_num + 1*(ud.slice_num < length(ud.processed_image_names));
         ud.processed_image_name = ud.processed_image_names{ud.slice_num};
         ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
+        
+        % pad if possible (if small enough)
+        try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((reference_size(1) - size(ud.current_slice_image,1)) / 2) + mod(size(ud.current_slice_image,1),2) ...
+                                                      floor((reference_size(2) - size(ud.current_slice_image,2)) / 2) + mod(size(ud.current_slice_image,2),2)],0);
+%             disp('padding added')
+        end          
+        
         ud.original_slice_image = ud.current_slice_image;             
         ud.original_ish_slice_image = ud.current_slice_image;   
 %         ud.current_slice_image = localcontrast(ud.current_slice_image);        

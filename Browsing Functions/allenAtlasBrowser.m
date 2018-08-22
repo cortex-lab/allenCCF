@@ -135,7 +135,7 @@ switch lower(keydata.Key)
             if ud.probe_view_mode
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
-                        probe_points = load([save_location 'probe_points' save_suffix]);  disp('loading probe points')
+                        probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
                         ud.pointList = probe_points.pointList.pointList;
                         ud.pointHands = probe_points.pointList.pointHands;
                 end; disp(['activate probe view mode for probe ' num2str(ud.currentProbe)])
@@ -235,7 +235,7 @@ switch lower(keydata.Key)
     case 's' % save probe trajectory and points of each probe per histology image (and associated histology name/number)
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
-        save(fullfile(save_location ,[ 'probe_points' save_suffix]), 'pointList'); disp('probe points saved');
+        save(fullfile(save_location ,['probe_points' save_suffix]), 'pointList'); disp('probe points saved');
         
     case 'd' % delete current transform or most recent probe point
         if ud.currentProbe
@@ -377,7 +377,7 @@ if ud.probe_view_mode && ud.currentProbe
         end
 %             set(ud.pointHands{probe, 1}(probe_point), 'MarkerFaceColor',color,'MarkerEdgeColor', color, 'SizeData', 20)
     end
-disp(['mean distance from probe track to points is ' num2str(round(mean_distance*10)) ' microns'])
+disp(['mean distance from slice to points is ' num2str(round(mean_distance*10)) ' microns'])
     if mean_distance < 50
         color = abs((ud.ProbeColors(probe,:) * (50 - mean_distance) + [0 0 0] * mean_distance) / 50);
     else
