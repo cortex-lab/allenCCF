@@ -15,19 +15,26 @@
 % If you have high-res individual images, put
 % them in this image_folder, and just skip the 'crop and save' cell below)
 %
-image_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
+image_folder = 'C:\Drive\Histology\PAG';
 
 % directory to save the processed images -- can be the same as the above image_folder
-save_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
+save_folder = 'C:\Drive\Histology\PAG';
 
 % name of images, in order anterior to posterior or vice versa
 % once these are downsampled, using the HistologyBrowser function, they
 % will be saved in the save_folder, and named the ['original name' '_processed.tif']
-image_file_names = {'slide no 2_RGB.tif','slide no 3_RGB.tif','slide no 4_RGB.tif'};
+image_file_names = dir([image_folder filesep '*.tif']);
+image_file_names = natsortfiles({image_file_names.name});
+% image_file_names = {'slide no 2_RGB.tif','slide no 3_RGB.tif','slide no 4_RGB.tif'};
+
+% if the images are individual slices as opposed to an image of multiple
+% slices, which must each be cropped and saved
+image_file_are_individual_slices = true;
                         
+% if the images are cropped (image_file_are_individual_slices = false),
 % name to save cropped slices as; e.g. the third cropped slice from the 2nd
 % image containing many slices will be saved as: save_folder/processed/save_file_name2_3.tif
-save_file_name = 'SS096_';
+save_file_name = 'PAG_';
 
 % pixel size parameters: microns_per_pixel of large images in the image
 % folder (if use_already_downsampled_images below is set to false);
@@ -84,7 +91,7 @@ if adjust_histology_contrast || ~use_already_downsampled_image
     warning('off', 'images:initSize:adjustingMag'); warning('off', 'MATLAB:colon:nonIntegerIndex');
     
     % Function to downsample and adjust histology image
-    HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, ...
+    HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, folder_processed_images, image_file_are_individual_slices, ...
                 use_already_downsampled_image, microns_per_pixel, microns_per_pixel_after_downsampling, gain)
 else
     % if use_already_downsampled_image = true and adjust_histology_contrast = false
