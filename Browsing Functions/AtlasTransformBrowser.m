@@ -24,7 +24,7 @@ ud.bregma = allenCCFbregma;
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
 ud.scrollMode = 0;
-ud.offset_map = zeros(800,1140); % size of reference image
+
 ud.oldContour = [];
 ud.showContour = false;
 ud.showOverlay = false; ud.overlayAx = [];
@@ -36,6 +36,7 @@ ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky',
 ud.getPoint_for_transform = false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
 ud.current_pointList_for_transform = zeros(0,2); ud.curr_slice_num = 1;
 ud.showAtlas = false;
+ud.viewColorAtlas = false;
 ud.histology_overlay = 0; 
 ud.atlasAx = axes('Position', [0.05 0.05 0.9 0.9]);
 ud.transform = [];
@@ -45,12 +46,15 @@ ud.loaded_slice = 0;
 ud.slice_at_shift_start = 1;
 ud.text = [];
 
-ud.im = plotTVslice(squeeze(templateVolume(ud.currentSlice,:,:)));
+reference_image = squeeze(templateVolume(ud.currentSlice,:,:));
+ud.im = plotTVslice(reference_image);
+ud.ref_size = size(reference_image);
 ud.ref = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.curr_im = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
 ud.curr_slice_trans = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
-ud.im_annotation = zeros(800,1140,'uint16');
-ud.atlas_boundaries = zeros(800,1140,'uint16');;
+ud.im_annotation = squeeze(annotationVolume(ud.currentSlice,:,:));
+ud.atlas_boundaries = zeros(ud.ref_size,'uint16');;
+ud.offset_map = zeros(ud.ref_size);
 ud.loaded = 0;
 
 % create functions needed to interact with the figure
@@ -74,23 +78,37 @@ set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_lo
 function display_controls
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
-fprintf(1, 'scroll: move between slices \n');
-fprintf(1, 'g: add/remove gridlines \n');
-fprintf(1, 'o: add/remove overlay of current region extent \n');
-fprintf(1, 'h: add/remove overlay of current histology slice \n');
-fprintf(1, 'a: switch to viewing annotations (or switch back) \n');
-fprintf(1, 'p: enable/disable mode where clicks are logged for probe or switch probes \n');
-fprintf(1, 't: enable/disable mode where clicks are logged for transform \n');
-fprintf(1, 'x: save transform \n');
-fprintf(1, 'l: load transform for current slice; press again to load probe points \n');
-fprintf(1, 'n: add a new probe \n');
-fprintf(1, 's: save current probe \n');
-fprintf(1, 'w: enable/disable probe viewer mode for current probe  \n');
-fprintf(1, 'd: delete most recent probe point or all transform points \n');
-
+fprintf(1, 'Navigation: \n');
 fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
+fprintf(1, 'scroll: move between slices \n');
+
+fprintf(1, '\n Registration: \n');
+fprintf(1, 't: toggle mode where clicks are logged for transform \n');
+fprintf(1, 'h: toggle overlay of current histology slice \n');
+fprintf(1, 'p: toggle mode where clicks are logged for probe or switch probes \n');
+fprintf(1, 'n: add a new probe \n');
+fprintf(1, 'x: save transform and current atlas location \n');
+fprintf(1, 'l: load transform for current slice; press again to load probe points \n');
+fprintf(1, 's: save current probe \n');
+fprintf(1, 'd: delete most recent probe point or all transform points \n');
+fprintf(1, 'w: enable/disable probe viewer mode for current probe  \n');
+
+fprintf(1, '\n Viewing modes: \n');
+fprintf(1, 'o: toggle overlay of current region extent \n');
+fprintf(1, 'a: toggle to viewing boundaries \n');
+fprintf(1, 'v: toggle to color atlas mode \n');
+fprintf(1, 'g: toggle gridlines \n');
+
+
+
+
+
+
+
+
+
 
 fprintf(1, 'space: display controls \n \n');
 
@@ -122,8 +140,8 @@ switch key_letter
     case 'g' 
         if ~isfield(ud, 'gridlines') || isempty(ud.gridlines)
             axes(ud.atlasAx); hold on;
-            gridY = 100:100:700; % assuming the size of the atlas for this for now
-            gridX = 70:100:1140; 
+            gridY = 100:100:ud.ref_size(1); % assuming the size of the atlas for this for now
+            gridX = 70:100:ud.ref_size(2); 
             xl = xlim(); yl = ylim();
             gx = arrayfun(@(x)plot(x*[1 1], yl, 'w'), gridX, 'uni', false);
             gy = arrayfun(@(y)plot(xl, y*[1 1], 'w'), gridY, 'uni', false);
@@ -168,6 +186,11 @@ switch key_letter
         end
 % w -- toggle mode to visualize probe trajectory           
     case 'w'
+        % remove color atlas
+        ud.viewColorAtlas = false;
+        set(ud.im, 'CData', ud.ref)
+        colormap(ud.atlasAx, 'gray'); caxis(ud.atlasAx, [0 400]);
+        
         % remove overlay
         ud.showOverlay = 0;
         delete(ud.overlayAx); ud.overlayAx = [];
@@ -221,7 +244,7 @@ switch key_letter
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
                 ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':','linewidth',1.5);
                 set(ud.pointHands{ud.currentProbe,3}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
-                set(f,'color','k');
+  
                 % ensure proper orientation: want 0 at the top of the brain 
                 % and positive distance goes down into the brain
                 if p(2)<0
@@ -231,11 +254,11 @@ switch key_letter
                                 
                 % calculate slice angle along probe track -- do so by 
                 % constraining either ML angle or DV angle to zero
-                position_at_x_center_point = m + (1140/2 - m(3)) * p / p(3);
-                position_at_y_center_point = m + (800/2 - m(2)) * p / p(2);
+                position_at_x_center_point = m + (ud.ref_size(2)/2 - m(3)) * p / p(3);
+                position_at_y_center_point = m + (ud.ref_size(1)/2 - m(2)) * p / p(2);
                 
-                angle_DV_if_constraining_ML = round(400 / (400 - m(2)) * (position_at_y_center_point(1)-m(1)) );
-                angle_ML_if_constraining_DV = round(570 / (570 - m(3)) * (position_at_x_center_point(1)-m(1)) );
+                angle_DV_if_constraining_ML = round(ud.ref_size(1)/2 / (ud.ref_size(1)/2 - m(2)) * (position_at_y_center_point(1)-m(1)) );
+                angle_ML_if_constraining_DV = round(ud.ref_size(2)/2 / (ud.ref_size(2)/2 - m(3)) * (position_at_x_center_point(1)-m(1)) );
                 
                 if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV)
                     ud.currentSlice = round(position_at_y_center_point(1));
@@ -249,7 +272,7 @@ switch key_letter
                     
                 % if the angles are too extreme, just show mean slice without angles
                 if abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= ud.currentSlice || ...
-                        abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= 1140-ud.currentSlice
+                        abs(ud.currentAngle(1))+abs(ud.currentAngle(2)) >= ud.ref_size(2)-ud.currentSlice
                     ud.currentAngle(1) = 0;
                     ud.currentAngle(2) = 0;
                     ud.currentSlice = round(m(1));
@@ -312,6 +335,28 @@ switch key_letter
         else % return to image
             set(ud.im, 'CData', ud.curr_im)
         end
+        
+% v -- toggle viewing of Color Atlas        
+    case 'v' 
+        ud.viewColorAtlas = ~ud.viewColorAtlas;
+        ud.histology_overlay = 0;
+        
+        if ud.viewColorAtlas    
+            set(ud.im, 'CData', ud.im_annotation)
+            ud.curr_im = ud.im_annotation;
+            cmap = allen_ccf_colormap('2017');
+            colormap(ud.atlasAx, cmap); caxis(ud.atlasAx, [1 size(cmap,1)]);   
+            fill([5 5 250 250],[5 50 50 5],[1 1 1],'edgecolor',[1 1 1]);
+        else           
+            set(ud.im, 'CData', ud.ref)
+            ud.curr_im = ud.ref;
+            colormap(ud.atlasAx, 'gray'); caxis(ud.atlasAx, [0 400]);
+            fill([5 5 250 250],[5 50 50 5],[0 0 0]);
+        end       
+        
+        if ud.showAtlas % superimpose boundaries           
+            updateBoundaries(f,ud, allData);
+        end
 
     case 'uparrow' % scroll angles along M/L axis
         ud.scrollMode = 1;
@@ -332,9 +377,14 @@ switch key_letter
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
+        % remove color atlas
+        ud.viewColorAtlas = false;
+        set(ud.im, 'CData', ud.ref)
+        colormap(ud.atlasAx, 'gray'); caxis(ud.atlasAx, [0 400]);
         % remove overlay
         ud.showOverlay = 0;
         ref_mode = false;
+
         delete(ud.overlayAx); ud.overlayAx = [];
         
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
@@ -485,8 +535,8 @@ switch key_letter
             for probe_point = 1:size(ud.pointList{probe, 1},1)
                 ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
                     ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
-                'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
-                'LineWidth',3);
+                'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
+                'LineWidth',2);
             
             % set the point plot from the current slice visible
             slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
@@ -673,24 +723,32 @@ end
 
 % update coordinates at the top
 pixel = getPixel(ud.atlasAx);
-updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2));
+updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size);
     
 % ----------------------------------------
 % if no angle, just change reference slice
 % ----------------------------------------
 if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
     
-    set(ud.im, 'CData', squeeze(allData.tv(ud.currentSlice,:,:)));
+    reference_slice = squeeze(allData.tv(ud.currentSlice,:,:));
+    ud.im_annotation = squeeze(allData.av(ud.currentSlice,:,:));    
  
+    if ud.viewColorAtlas
+        set(ud.im, 'CData', ud.im_annotation);
+    else
+        set(ud.im, 'CData', reference_slice);
+    end 
+    
+    
    % update title/overlay with brain region
     [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice);
     updateTitle(ud.atlasAx, name, acr)
     if ud.showOverlay    
         updateOverlay(f, allData, ann, slice_figure, save_location);
     end  
-    ud.ref = uint8(get(ud.im, 'CData'));
+    ud.ref = uint8(reference_slice);
     set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-    ud.offset_map = zeros(800,1140); 
+    ud.offset_map = zeros(ud.ref_size); 
     set(f, 'UserData', ud);
     
 % ---------------------------
@@ -749,9 +807,11 @@ else
     end
       start_index_DV = end_index_DV + 1;
   end     
-  if ~ud.showAtlas
-    set(ud.im, 'CData', angle_slice);
-  end
+  if ud.viewColorAtlas
+      set(ud.im, 'CData', ud.im_annotation);
+  elseif ~ud.showAtlas  
+      set(ud.im, 'CData', angle_slice);
+  end  
 
   ud.ref = uint8(angle_slice);
   set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
@@ -762,7 +822,11 @@ end
 if ud.histology_overlay == 1 || ud.histology_overlay == 2
     updateHistology(f,ud); ud = get(f, 'UserData');
 else
-    ud.curr_im = ud.ref;
+    if ud.viewColorAtlas
+        ud.curr_im = ud.im_annotation;
+    else
+        ud.curr_im = ud.ref;
+    end    
 end
 
 % then update boundary overlay
@@ -890,8 +954,8 @@ elseif ud.currentProbe > 0
     ud.pointList{ud.currentProbe,3}{end+1} = slice_name;
    
     ud.pointHands{ud.currentProbe, 1}(end+1) = scatter(ud.atlasAx, clickX, clickY, 20, 'ro', ...
-                'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
-                'LineWidth',3);
+                'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
+                'LineWidth',2);
                 
     ud.pointHands{ud.currentProbe, 2}(end+1) = ud_slice.slice_num + ud.slice_shift;
     
@@ -904,11 +968,8 @@ elseif ud.getPoint_for_transform
     if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift 
         if ~ud.loaded
             ud.current_pointList_for_transform = zeros(0,2);
-    %         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
             disp('transforming new slice');
         end
-%         ud.slice_at_shift_start = ud_slice.slice_num;
-%         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
@@ -933,13 +994,13 @@ ax = ud.atlasAx;
 pixel = getPixel(ax);
 
 %get offset due to angling
-if 0<pixel(1) && pixel(1)<=800 && 0<pixel(2) && pixel(2)<=1140
+if 0<pixel(1) && pixel(1)<=ud.ref_size(1) && 0<pixel(2) && pixel(2)<=ud.ref_size(2)
     offset = ud.offset_map(pixel(1),pixel(2));
 else; offset = 0;
 end
 
 % show bregma coords
-updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2));
+updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size);
 
 % get annotation for this pixel
 [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice+offset);
@@ -964,13 +1025,13 @@ end
 % ---------------------------------------------
 % update the coordinates shown in the top left
 % ---------------------------------------------
-function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle)
+function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle, ref_size)
 atlasRes = 0.010; % mm
 ap = -(currentSlice-bregma(1))*atlasRes;
 dv = (pixel(1)-bregma(2))*atlasRes;
 ml = (pixel(2)-bregma(3))*atlasRes;
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
-set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/400),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
+set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
 
 % ---------------------------------
 % update the current mouse location

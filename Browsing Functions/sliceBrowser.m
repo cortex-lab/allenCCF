@@ -1,4 +1,4 @@
-function sliceBrowser(slice_figure, processed_images_folder, f)
+function sliceBrowser(slice_figure, processed_images_folder, f, reference_size)
 % -----------------------------------------------------------------
 % browser to go through histology along with the reference browser
 %-----------------------------------------------------------------
@@ -14,13 +14,14 @@ ud_slice.key = 1;
 ud_slice.pointList = []; 
 ud_slice.pointHands = [];
 ud_slice.getPoint = 0;
+ud_slice.ref_size = reference_size(2:3);
 
 ud_slice.processed_images = processed_images;
 ud_slice.processed_images_folder = processed_images_folder;
 ud_slice.sliceAx = axes('Position', [0.05 0.05 0.9 0.9]);
 hold(ud_slice.sliceAx, 'on');
 set(ud_slice.sliceAx, 'HitTest', 'off');
-ud_slice.im = plotTVslice(zeros(800,1140, 'uint8'));
+ud_slice.im = plotTVslice(zeros(ud_slice.ref_size, 'uint8'));
 
 % create functions needed to interact with the figure
 set(ud_slice.im, 'ButtonDownFcn', @(slice_figure,k)sliceClickCallback(slice_figure, k));
@@ -49,10 +50,10 @@ if ud.getPoint
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
 
-    ud.pointList(end+1, :) = [clickX, 800 - clickY];
+    ud.pointList(end+1, :) = [clickX, ud.ref_size(1) - clickY];
     ud.pointHands(end+1) = plot(ud.sliceAx, clickX, clickY, 'ro', 'color', [0 .5 0],'linewidth',2,'markers',4);    
     
-     if clickX < 100 && (800 - clickY) < 100 % if click in corner, break
+     if clickX < 100 && (ud.ref_size(1) - clickY) < 100 % if click in corner, break
         ud.pointList = []; 
         set(ud.pointHands(:), 'Visible', 'off');     
      end
@@ -106,9 +107,9 @@ function ud = updateSliceImage(ud)
     
     processed_image_name = ud.processed_image_names{ud.slice_num};
     current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
-    if size(current_slice_image,1) > 802 || size(current_slice_image,2) > 1142
-        disp('shrinking image to reference size 800 x 1140 pxl')
-        current_slice_image = imresize(current_slice_image, [800 1140]);
+    if size(current_slice_image,1) > ud.ref_size(1)+2 || size(current_slice_image,2) > ud.ref_size(2)+2
+        disp(['shrinking image to reference size ' num2str(ud.ref_size(1)) ' x ' num2str(ud.ref_size(2)) ' pxl'])
+        current_slice_image = imresize(current_slice_image, ud.ref_size);
     end          
     set(ud.im, 'CData', current_slice_image); 
 
