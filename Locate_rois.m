@@ -88,24 +88,29 @@ for pixel = 1:length(pixels_row)
     
     % use this and the slice number to get the AP, DV, and ML coordinates
     ap = -(slice_num-bregma(1)+offset)*atlas_resolution;
-    dv = (pixels_column(pixel)-bregma(2))*atlas_resolution;
-    ml = (pixels_row(pixel)-bregma(3))*atlas_resolution;
+    dv = (pixels_row(pixel)-bregma(2))*atlas_resolution;
+    ml = (pixels_column(pixel)-bregma(3))*atlas_resolution;
 
     roi_location(pixel,:) = [ap dv ml];
     
     % finally, find the annotation, name, and acronym of the current ROI pixel
     ann = av(slice_num+offset,pixels_row(pixel),pixels_column(pixel));
-    name = st.safe_name(ann);
-    acr = st.acronym(ann);
+    name = st.safe_name{ann};
+    acr = st.acronym{ann};
     
     roi_annotation{pixel,1} = ann;
     roi_annotation{pixel,2} = name;
     roi_annotation{pixel,3} = acr;
 
 end
+ 
+ roi_table = table(roi_annotation(:,2),roi_annotation(:,3), ...
+                    roi_location(:,1),roi_location(:,2),roi_location(:,3), roi_annotation(:,1), ...
+     'VariableNames', {'name', 'acronym', 'AP_location', 'DV_location', 'ML_location', 'avIndex'});
 
-
-% now, use roi_locations and roi_annotations for your furhter analyses
+ disp(roi_table(1:10,:))
+ 
+% now, use roi_locations and roi_annotations for your further analyses
 
 
 

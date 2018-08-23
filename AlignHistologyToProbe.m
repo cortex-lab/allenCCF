@@ -36,16 +36,18 @@ f = figure('Name','Atlas Viewer');
 % show histology in Slice Viewer
 try; figure(slice_figure_browser); title('');
 catch; slice_figure_browser = figure('Name','Slice Viewer'); end
-sliceBrowser(slice_figure_browser, processed_images_folder, f);
+reference_size = size(tv);
+sliceBrowser(slice_figure_browser, processed_images_folder, f, reference_size);
 
 
 % use application in Atlas Transform Viewer
-f = AtlasTransformBrowser(f, tv,av,st, slice_figure_browser, processed_images_folder, probe_save_name_suffix); % use this function if you a processed_images_folder with appropriately processed .tif histology images
+% use this function if you have a processed_images_folder with appropriately processed .tif histology images
+f = AtlasTransformBrowser(f, tv,av,st, slice_figure_browser, processed_images_folder, probe_save_name_suffix); 
 
 
 % use the simpler version, which does not interface with processed slice images
 % just run these two lines instead of the previous 5 lines of code
-
+% 
 % save_location = processed_images_folder;
 % f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
 

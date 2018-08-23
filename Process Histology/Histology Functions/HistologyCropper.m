@@ -1,4 +1,4 @@
-function HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name)
+function HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name, use_already_downsampled_image)
 
 % set up histology figure
 ud_histology.file_num = 1;
@@ -6,7 +6,12 @@ ud_histology.num_files = length(image_file_names);
 ud_histology.slice_num = ones(length(image_file_names),1);
 ud_histology.save_file_name =save_file_name;
 
-ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
+if use_already_downsampled_image
+    ud_histology.file_name_suffix = '';
+else
+    ud_histology.file_name_suffix = '_processed';
+end
+ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) ud_histology.file_name_suffix '.tif']));
 figure(histology_figure); 
 ud_histology.im = imshow(ud_histology.hist_image);
 warning('off', 'MATLAB:colon:nonIntegerIndex');
@@ -44,8 +49,8 @@ function ud_histology = crop_and_save_image(ud_histology, histology_figure, save
 
         % save cropped slice
         imwrite(ud_histology.slice_image, fullfile(save_folder, 'processed', ...
-                [ud_histology.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) '.tif']))
-        disp([ud_histology.save_file_name num2str(ud_histology.file_num) '.' num2str(ud_histology.slice_num(ud_histology.file_num)) ' saved!'])
+                [ud_histology.save_file_name num2str(ud_histology.file_num,'%.2d') '.' num2str(ud_histology.slice_num(ud_histology.file_num),'%.3d') '.tif']))
+        disp([ud_histology.save_file_name num2str(ud_histology.file_num,'%.2d') '.' num2str(ud_histology.slice_num(ud_histology.file_num),'%.3d') ' saved!'])
 
         ud_histology.slice_num(ud_histology.file_num) = ud_histology.slice_num(ud_histology.file_num) + 1;
 
@@ -75,7 +80,7 @@ ud_histology = get(histology_figure, 'UserData');
         if ud_histology.file_num + 1 <= ud_histology.num_files
             ud_histology.file_num = ud_histology.file_num + 1;
 
-            ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
+            ud_histology.hist_image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) ud_histology.file_name_suffix '.tif']));
             figure(histology_figure); 
             set(ud_histology.im, 'CData', ud_histology.hist_image); 
 
