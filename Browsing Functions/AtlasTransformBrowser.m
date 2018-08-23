@@ -92,7 +92,7 @@ fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
 
-fprintf(1, 'space: display controls \n');
+fprintf(1, 'space: display controls \n \n');
 
 
 % ------------------------
@@ -260,7 +260,7 @@ switch key_letter
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
                 updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');   
-                fill([0 0 250 250],[0 50 50 0],[0 0 0]);
+                fill([5 5 250 250],[5 50 50 5],[0 0 0]);
 
                 
                 % show Transformed Slice & Probage Viewer, if not already showing
@@ -331,8 +331,10 @@ switch key_letter
         disp('switch scroll mode -- scroll along slice images')     
 % h -- toggle viewing of histology / histology overlay
     case 'h'
+        disp('  ');
         % remove overlay
         ud.showOverlay = 0;
+        ref_mode = false;
         delete(ud.overlayAx); ud.overlayAx = [];
         
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
@@ -354,7 +356,7 @@ switch key_letter
             
         else
             set(ud.text,'Visible','off');
-            fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+            fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
 
             reference_points = ud.current_pointList_for_transform;
             slice_points = ud_slice.pointList;
@@ -377,8 +379,12 @@ switch key_letter
                 set(ud.im, 'CData', ud.curr_slice_trans); 
                 ud.curr_im = ud.curr_slice_trans;
             end
-            ref_mode = false;
-            catch; ref_mode = true; disp('Unable to transform -- unequal number of slice points and reference points'); key_letter = 'h'; end
+            catch; 
+                ref_mode = true;
+                disp(['Unable to transform -- ' num2str(size(ud_slice.pointList,1)) ...
+                     ' slice points and ' num2str(size(ud.current_pointList_for_transform,1)) ' reference points']);
+                key_letter = 'h'; 
+            end
         end
         if ud.histology_overlay == 0 || ref_mode
             ud.histology_overlay = 0;
@@ -459,7 +465,7 @@ switch key_letter
             
             if ~isempty(ud.text)
                 set(ud.text,'Visible','off');
-                fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+                fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
             end
             
             disp('transform loaded -- press ''l'' again now to load probe points');
@@ -652,7 +658,7 @@ elseif ud.scrollMode == 3
         ud.histology_overlay = 1;
         
         set(ud.text,'Visible','off');
-        fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
+        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
     catch;
         % if no transform, just show reference
         ud.histology_overlay = 0;
@@ -660,7 +666,7 @@ elseif ud.scrollMode == 3
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
-        fill([0 0 250 250],[0 50 50 0],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
+        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
     end  
         
 end  
@@ -895,13 +901,14 @@ elseif ud.getPoint_for_transform
     clickY = round(keydata.IntersectionPoint(2));
     if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
     
-    if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift %ud_slice.slice_num
+    if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift 
         if ~ud.loaded
             ud.current_pointList_for_transform = zeros(0,2);
     %         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
             disp('transforming new slice');
         end
-        ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
+%         ud.slice_at_shift_start = ud_slice.slice_num;
+%         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
@@ -910,6 +917,7 @@ elseif ud.getPoint_for_transform
         
     ud.slice_at_shift_start = ud_slice.slice_num;
     ud.slice_shift = 0;
+    ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     ud.loaded = 0;
 end
 set(f, 'UserData', ud);

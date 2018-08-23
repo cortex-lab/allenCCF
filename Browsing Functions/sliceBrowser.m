@@ -35,15 +35,7 @@ set(slice_figure,'Position', [121*screen_size(1) 542*screen_size(2) 822*screen_s
 movegui(slice_figure,'onscreen')
 
 % set up first slice image
-processed_image_name = ud_slice.processed_image_names{ud_slice.slice_num};
-current_slice_image = flip(imread(fullfile(ud_slice.processed_images_folder, processed_image_name)),1);
-if size(current_slice_image,1) > 802 || size(current_slice_image,1) > 1142
-    disp('shrinking image to reference 800 x 1140 pxl')
-    current_slice_image = imresize(current_slice_image, [800 1140]);
-end  
-set(ud_slice.im, 'CData', current_slice_image);
-title('Slice Viewer');
-
+ud_slice = updateSliceImage(ud_slice);
 
 % ------------------------------------------------    
 % Clicking function to register transform points  
@@ -79,63 +71,14 @@ ud = get(fig, 'UserData');
 if strcmp(keydata.Key,'leftarrow')    
     if ud.slice_num > 1
         ud.slice_num = ud.slice_num - 1;
-        
-        processed_image_name = ud.processed_image_names{ud.slice_num};
-        current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
-        if size(current_slice_image,1) > 802 || size(current_slice_image,1) > 1142
-            disp('shrinking image to reference size 800 x 1140 pxl')
-            current_slice_image = imresize(current_slice_image, [800 1140]);
-        end        
-        set(ud.im, 'CData', current_slice_image); 
-        
-        title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files)])
-        file_transformations = fullfile(ud.processed_images_folder, 'transformations\\' ,...
-                                [processed_image_name(1:end-4) '_transform_data.mat']);
-                            
-        set(ud.pointHands(:), 'Visible', 'off'); 
-        
-        if exist(file_transformations,'file')
-            % load transform data
-            transform_data = load(file_transformations);
-            transform_data = transform_data.save_transform;
-            if ~isempty(transform_data.transform_points{2})
-                ud.pointList = transform_data.transform_points{2};
-            end
-        else
-            ud.pointList = [];
-        end
+        ud = updateSliceImage(ud);
     end
     
 % right arrow -- go to next slice    
 elseif strcmp(keydata.Key,'rightarrow') 
     if ud.slice_num < ud.total_num_files
         ud.slice_num = ud.slice_num + 1;
-        
-        processed_image_name = ud.processed_image_names{ud.slice_num};
-        current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
-        if size(current_slice_image,1) > 802 || size(current_slice_image,1) > 1142
-            disp('shrinking image to reference size 800 x 1140 pxl')
-            current_slice_image = imresize(current_slice_image, [800 1140]);
-        end          
-        set(ud.im, 'CData', current_slice_image); 
-        
-        title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files)])
-        
-        file_transformations = fullfile(ud.processed_images_folder, 'transformations\\' ,...
-                                [processed_image_name(1:end-4) '_transform_data.mat']);
-                            
-        set(ud.pointHands(:), 'Visible', 'off'); 
-        
-        if exist(file_transformations,'file')
-            % load transform data
-            transform_data = load(file_transformations);
-            transform_data = transform_data.save_transform;
-            if ~isempty(transform_data.transform_points{2})
-                ud.pointList = transform_data.transform_points{2};
-            end
-        else
-            ud.pointList = [];
-        end
+        ud = updateSliceImage(ud);
     end
 % d -- delete current transform points
 elseif strcmp(keydata.Key,'d') 
@@ -155,3 +98,35 @@ end
 
 
 set(fig, 'UserData', ud);
+
+
+function ud = updateSliceImage(ud)
+
+    title_ending = '';
+    
+    processed_image_name = ud.processed_image_names{ud.slice_num};
+    current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
+    if size(current_slice_image,1) > 802 || size(current_slice_image,2) > 1142
+        disp('shrinking image to reference size 800 x 1140 pxl')
+        current_slice_image = imresize(current_slice_image, [800 1140]);
+    end          
+    set(ud.im, 'CData', current_slice_image); 
+
+
+    file_transformations = fullfile(ud.processed_images_folder, 'transformations\\' ,...
+                            [processed_image_name(1:end-4) '_transform_data.mat']);
+
+    set(ud.pointHands(:), 'Visible', 'off'); 
+
+    if exist(file_transformations,'file')
+        % load transform data
+        transform_data = load(file_transformations);
+        transform_data = transform_data.save_transform;
+        if ~isempty(transform_data.transform_points{2})
+            ud.pointList = transform_data.transform_points{2};
+            title_ending = ' (transform points loaded)';
+        end
+    else
+        ud.pointList = [];
+    end
+    title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    
