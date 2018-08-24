@@ -1,61 +1,60 @@
-function HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, ...
+function HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, folder_processed_images, image_file_are_individual_slices, ...
                 use_already_downsampled_image, microns_per_pixel, microns_per_pixel_after_downsampling, gain)
 
 % display image and set up user controls for contrast change        
-ud_histology.contrast = [0 1]; 
-ud_histology.break = 0; 
-ud_histology.key = 0; 
-ud_histology.show_original = 0; 
-ud_histology.contrast_type = 1;
-ud_histology.channel = 3;
-ud_histology.file_num = 1;
-ud_histology.num_files = length(image_file_names);
-ud_histology.save_folder = save_folder;
-ud_histology.image_folder = image_folder;
-ud_histology.microns_per_pixel = microns_per_pixel;
-ud_histology.microns_per_pixel_after_downsampling = microns_per_pixel_after_downsampling;
-ud_histology.gain = gain;
+ud.show_original = 0; 
+ud.adjusting_contrast = 0;
+ud.file_num = 1;
+ud.num_files = length(image_file_names);
+if image_file_are_individual_slices
+    ud.save_folder = folder_processed_images;
+else
+    ud.save_folder = save_folder;
+end
+ud.image_folder = image_folder;
+ud.microns_per_pixel = microns_per_pixel;
+ud.microns_per_pixel_after_downsampling = microns_per_pixel_after_downsampling;
+ud.gain = gain;
 
 % load histology image
-disp(['loading image ' num2str(ud_histology.file_num) '...'])
+disp(['loading image ' num2str(ud.file_num) '...'])
 
+% load first image
+image = imread(fullfile(ud.image_folder,image_file_names{ud.file_num}));
+ud.channel = size(image,3);
 
-% load already processed image
-if use_already_downsampled_image
-    image = imread(fullfile(save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']));
-else %process image now
-    image = imread(fullfile(image_folder,image_file_names{ud_histology.file_num}));
+if ~use_already_downsampled_image
+    % resize (downsample) image to reference atlas size
+    disp('downsampling image...')
     original_image_size = size(image);
-
-    % resize (downsample) image to 25 micron pixels
     image = imresize(image, [round(original_image_size(1)*microns_per_pixel/microns_per_pixel_after_downsampling)  NaN]);
+    ud.file_name_suffix = '_processed';
+else
+    ud.file_name_suffix = '';
 end
 original_image = image*gain;
 imshow(original_image);
+title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
+                    'color',[1==ud.channel 2==ud.channel 3==ud.channel])
+                
+ud.original_image = original_image;
+ud.adjusted_image = original_image;
 
-ud_histology.original_image = original_image;
-ud_histology.adjusted_image = original_image;
+imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
 
-if ~use_already_downsampled_image
-    imwrite(ud_histology.adjusted_image, fullfile(ud_histology.save_folder, [image_file_names{ud_histology.file_num}(1:end-4) '_processed.tif']))
-end
-
-set(histology_figure, 'UserData', ud_histology);
+set(histology_figure, 'UserData', ud);
 
 set(histology_figure, 'KeyPressFcn', @(histology_figure,keydata)HistologyHotkeyFcn(histology_figure, keydata, image_file_names, use_already_downsampled_image));
-set(histology_figure, 'WindowScrollWheelFcn', @(src,evt)HistologyScrollFcn(histology_figure, evt))
 
 fprintf(1, '\n Controls: \n \n');
-fprintf(1, 'scroll: adjust contrast \n');
-fprintf(1, 'space: switch btwn adjusting upper and lower saturation points \n');
+fprintf(1, 'space: adjust contrast for current channel \n');
 fprintf(1, 'e: view original version \n');
-fprintf(1, 'any other key: return to modified version \n');
+fprintf(1, 'any key: return to modified version \n');
 fprintf(1, 'r: reset to original \n');
 fprintf(1, 'c: move to next channel \n');
 fprintf(1, 's: save image \n');
 fprintf(1, 'left/right arrow: save and move to next slide image \n');
 
-fprintf(1, '\n adjusting minimum intensity limit \n');
 
 
 
@@ -66,128 +65,96 @@ function HistologyHotkeyFcn(fig, keydata, image_file_names, use_already_downsamp
 
 ud = get(fig, 'UserData');
 
-switch lower(keydata.Key)    
-    case 'e' % show original
-        figure(fig);
-        imshow(ud.original_image)
-    case 'r' % return to original
-        ud.contrast = [0 1];       
-    case 'space'
-        contrast_effect = {'minimum intensity limit','maximum intensity limit'};
-        if ud.contrast_type==2
-            ud.contrast_type = 1;
-        elseif ud.contrast_type==1
-            ud.contrast_type = 2;
-        end
-        disp(['switch contrast effect -- now adjusting ' contrast_effect{ud.contrast_type}])
-    case 'c' % break
-        disp('next channel')
-        ud.channel = ud.channel + 1 - (ud.channel==3)*3;
-        ud.contrast = [0 1];
-        ud.contrast_type = 1;
-        disp('adjusting minimum intensity limit')        
-    case 's' % save image
-        disp('saving downsampled and processed image');
-        imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
-        imshow(ud.adjusted_image)
-    case 'leftarrow' % save image and move to previous image
-    disp('saving downsampled and processed image');
-    imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
-    imshow(ud.adjusted_image)           
-        if ud.file_num > 1
-            ud.file_num = ud.file_num - 1;
-            move_on = true;
-        else
-            move_on = false;
-        end
-    case 'rightarrow' % save image and move to next image
-    disp('saving downsampled and processed image');
-    imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
-    imshow(ud.adjusted_image)               
-        if ud.file_num < ud.num_files;
-            ud.file_num = ud.file_num + 1;
-            move_on = true;        
-        else
-            disp('that''s all, folks; continue to the next cell')
-            move_on = false;
-        end
-    otherwise
-        imshow(ud.adjusted_image)
-end
+if strcmp(lower(keydata.Key), 'space') % adjust contrast
+    ud.adjusting_contrast = ~ud.adjusting_contrast;
 
-if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightarrow')) && move_on
-            
-    % load histology image
-    disp(['loading image ' num2str(ud.file_num) '...'])
+    if ud.adjusting_contrast
+        disp(['adjust contrast on channel ' num2str(ud.channel)])
+        imshow(ud.adjusted_image(:,:,ud.channel))
+        imcontrast(fig)
+    else
+        adjusted_image_channel = fig.Children.Children.CData;
+        ud.adjusted_image(:,:,ud.channel) = adjusted_image_channel;
+    end    
+% ignore commands while adjusting contrast    
+elseif ~ud.adjusting_contrast     
+    switch lower(keydata.Key)    
+        case 'e' % show original
+            ud.show_original = ~ud.show_original;
+            if ud.show_original 
+                disp('showing original image (press any key to return)')
+                imshow(ud.original_image)
+            end    
+        case 'r' % return to original
+            disp('revert to original image')
+            ud.adjusted_image = ud.original_image;    
+        case 'c' % break
+            disp('next channel')
+            ud.channel = ud.channel + 1 - (ud.channel==3)*3;
 
-    % reinitialize parameters
-    ud.contrast = [0 1];
-    ud.contrast_type = 1;
-    ud.channel = 1;
-    disp('adjusting minimum intensity limit')
-    
-    % load already processed image
-    if use_already_downsampled_image
-        image = imread(fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']));
-    else %process image now
-        image = imread(fullfile(ud.image_folder, image_file_names{ud.file_num}));
-        original_image_size = size(image);
-
-        % resize (downsample) image to 25 micron pixels
-        image = imresize(image, [round(original_image_size(1)*ud.microns_per_pixel/ud.microns_per_pixel_after_downsampling)  NaN]);
+        case 's' % save image
+            disp(['saving processed image ' num2str(ud.file_num)]);
+            imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+            imshow(ud.adjusted_image)
+        case 'leftarrow' % save image and move to previous image
+            disp(['saving processed image ' num2str(ud.file_num)]);
+            imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+        
+            if ud.file_num > 1
+                ud.file_num = ud.file_num - 1;
+                move_on = true;
+            else
+                move_on = false;
+            end
+        case 'rightarrow' % save image and move to next image
+            disp(['saving processed image ' num2str(ud.file_num)]);
+            imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+             
+            if ud.file_num < ud.num_files;
+                ud.file_num = ud.file_num + 1;
+                move_on = true;        
+            else
+                disp('that''s all, folks; continue to the next cell')
+                move_on = false;
+            end
     end
-    original_image = image*ud.gain;
-    imshow(original_image);
+    if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightarrow')) && move_on
 
-    ud.original_image = original_image;
-    ud.adjusted_image = original_image;
-    if ~use_already_downsampled_image
-        imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) '_processed.tif']))
+        % load image
+        try
+            image = imread(fullfile(ud.image_folder, image_file_names{ud.file_num}) );
+        disp(['image ' num2str(ud.file_num) ' loaded'])
+        if ~use_already_downsampled_image
+            % resize (downsample) image to reference size
+            disp('downsampling image...')
+            original_image_size = size(image);
+            image = imresize(image, [round(original_image_size(1)*ud.microns_per_pixel/ud.microns_per_pixel_after_downsampling)  NaN]);
+        end
+        original_image = image*ud.gain;
+
+        ud.original_image = original_image;
+        ud.adjusted_image = original_image;
+
+        % save immediately
+        imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+
     end
+else % if pressing commands while adjusting contrast
+    disp(' ')
+    disp('Please press space to exit contrast adjustment before issuing other commands')
+    disp('If you are dissatisfied with your changes, you can then press ''r'' to revert to the original image')
 end
 
-ud.key = keydata.Key;
-set(fig, 'UserData', ud);
 
 
-
-% --------------------
-% Scrolling function
-% --------------------
-function HistologyScrollFcn(fig, evt)
-
-ud = get(fig, 'UserData');
-ud.key = 'scroll';
-
-
-%modify based on scrolling
-if ud.contrast(1) < ud.contrast(2)
-    ud.contrast(ud.contrast_type) = ud.contrast(ud.contrast_type) + evt.VerticalScrollCount*.05;
-else
-    disp('contrast limit hit')
-    ud.contrast(ud.contrast_type) = ud.contrast(3 - ud.contrast_type) - .1 * (2*(ud.contrast_type==1)-1);
+% show the image, unless in other viewing modes
+figure(fig)
+if ~(ud.adjusting_contrast || (strcmp(lower(keydata.Key),'e')&&ud.show_original) )
+    imshow(ud.adjusted_image)
 end
-
-% make sure within limit of 0 to 1
-if ud.contrast(ud.contrast_type) < 0
-    ud.contrast(ud.contrast_type) = 0;
-    disp('contrast limit hit')
-elseif ud.contrast(ud.contrast_type) > 1
-    ud.contrast(ud.contrast_type) = 1;
-    disp('contrast limit hit')
-end
-
-try
-adjusted_image_slice = imadjust(ud.original_image(:,:,ud.channel),ud.contrast);
-ud.adjusted_image(:,:,ud.channel) = adjusted_image_slice; 
-imshow(ud.adjusted_image)
-catch
-    disp('parameter out of bounds')
-end
-    
+title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
+            'color',[1==ud.channel 2==ud.channel 3==ud.channel])
 
 set(fig, 'UserData', ud);
 
 
-
-    

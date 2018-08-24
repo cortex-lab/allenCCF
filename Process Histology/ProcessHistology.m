@@ -23,8 +23,15 @@ save_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
 % name of images, in order anterior to posterior or vice versa
 % once these are downsampled, using the HistologyBrowser function, they
 % will be saved in the save_folder, and named the ['original name' '_processed.tif']
-image_file_names = {'slide no 2_RGB.tif','slide no 3_RGB.tif','slide no 4_RGB.tif'};
+image_file_names = dir([image_folder filesep '*.tif']);
+image_file_names = natsortfiles({image_file_names.name});
+% image_file_names = {'slide no 2_RGB.tif','slide no 3_RGB.tif','slide no 4_RGB.tif'};
+
+% if the images are individual slices as opposed to an image of multiple
+% slices, which must each be cropped and saved
+image_file_are_individual_slices = false;
                         
+% if the images are cropped (image_file_are_individual_slices = false),
 % name to save cropped slices as; e.g. the third cropped slice from the 2nd
 % image containing many slices will be saved as: save_folder/processed/save_file_name2_3.tif
 save_file_name = 'SS096_';
@@ -46,10 +53,9 @@ gain = 1;
 use_already_downsampled_image = false; 
 
 % adjust the contrast of the large histology images before cropping them
-adjust_histology_contrast = false; 
+adjust_histology_contrast = true; 
 
-% size in pixels of reference atlas brain coronal slice -- currently also
-% hardcorded into certain parts of the code :/
+% size in pixels of reference atlas brain coronal slice
 reference_size = [800 1140]; 
 
 
@@ -84,11 +90,12 @@ if adjust_histology_contrast || ~use_already_downsampled_image
     warning('off', 'images:initSize:adjustingMag'); warning('off', 'MATLAB:colon:nonIntegerIndex');
     
     % Function to downsample and adjust histology image
-    HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, ...
+    HistologyBrowser(histology_figure, save_folder, image_folder, image_file_names, folder_processed_images, image_file_are_individual_slices, ...
                 use_already_downsampled_image, microns_per_pixel, microns_per_pixel_after_downsampling, gain)
 else
     % if use_already_downsampled_image = true and adjust_histology_contrast = false
-    disp('downsampled images already available')
+    disp('downsampled images already available:')
+    disp(image_file_names)
 end
   
 
@@ -104,7 +111,7 @@ close all
 % would like to process im each image, by drawing rectangles around them in the figure. 
 % These can then be further processed in the next cell
 histology_figure = figure('Name','Histology Viewer');
-HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name)
+HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name, use_already_downsampled_image)
 
 
 

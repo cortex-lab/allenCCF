@@ -30,17 +30,17 @@ hold(ud_transformed_slice.sliceAx, 'on');
 set(ud_transformed_slice.sliceAx, 'HitTest', 'off');
 title('Probe on Slice Viewer');
 
-ud_transformed_slice.im = plotTVslice(zeros(800,1140, 'uint8'));
+ud_transformed_slice.im = plotTVslice(zeros(ud.ref_size, 'uint8'));
 
 % for probe view mode
 if highlight_point
     ud_transformed_slice.all_slices_slice_num = relevant_slice;
     if min_dist < 10
         x_plot = ud.pointList{ud.currentProbe,1}(point_ind,1);
-        y_plot = 800-ud.pointList{ud.currentProbe,1}(point_ind,2);
+        y_plot = ud.ref_size(1)-ud.pointList{ud.currentProbe,1}(point_ind,2);
     else
         x_plot = clickX;
-        y_plot = 800 - clickY;        
+        y_plot = ud.ref_size(1) - clickY;        
     end
         figure(transformed_slice_figure)
         ud_transformed_slice.quiver_plot{1} = scatter(ud_transformed_slice.sliceAx, x_plot, y_plot, 200, 'ro', ...
@@ -150,7 +150,7 @@ end
             for point = 1:size(ud_atlas_viewer.pointList{probe,1},1)
                 if ud.all_slices_slice_num == ud_atlas_viewer.pointList{probe,2}(point)
                     ud.current_plot_handles(end+1) = scatter(ud.sliceAx, ud_atlas_viewer.pointList{probe,1}(point,1), ...
-                        800-ud_atlas_viewer.pointList{probe,1}(point,2), 20, 'ro', 'MarkerFaceColor',[ .1 .1 .1],...
+                        ud_atlas_viewer.ref_size(1)-ud_atlas_viewer.pointList{probe,1}(point,2), 20, 'ro', 'MarkerFaceColor',[ .1 .1 .1],...
                     'MarkerEdgeColor', ud_atlas_viewer.ProbeColors(probe, :), 'MarkerFaceAlpha',.4,'LineWidth',1.5);
                 end
             end
