@@ -108,11 +108,8 @@ fprintf(1, 'g: toggle gridlines \n');
 
 
 
-<<<<<<< HEAD
-=======
 
 
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
 fprintf(1, 'space: display controls \n \n');
 
 
@@ -247,11 +244,7 @@ switch key_letter
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
                 ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':','linewidth',1.5);
                 set(ud.pointHands{ud.currentProbe,3}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
-<<<<<<< HEAD
-                set(f,'color','k');
-=======
   
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
                 % ensure proper orientation: want 0 at the top of the brain 
                 % and positive distance goes down into the brain
                 if p(2)<0
@@ -261,13 +254,8 @@ switch key_letter
                                 
                 % calculate slice angle along probe track -- do so by 
                 % constraining either ML angle or DV angle to zero
-<<<<<<< HEAD
-                position_at_x_center_point = m + (1140/2 - m(3)) * p / p(3);
-                position_at_y_center_point = m + (800/2 - m(2)) * p / p(2);
-=======
                 position_at_x_center_point = m + (ud.ref_size(2)/2 - m(3)) * p / p(3);
                 position_at_y_center_point = m + (ud.ref_size(1)/2 - m(2)) * p / p(2);
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
                 
                 angle_DV_if_constraining_ML = round(ud.ref_size(1)/2 / (ud.ref_size(1)/2 - m(2)) * (position_at_y_center_point(1)-m(1)) );
                 angle_ML_if_constraining_DV = round(ud.ref_size(2)/2 / (ud.ref_size(2)/2 - m(3)) * (position_at_x_center_point(1)-m(1)) );
@@ -389,11 +377,6 @@ switch key_letter
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
-<<<<<<< HEAD
-        % remove overlay
-        ud.showOverlay = 0;
-        ref_mode = false;
-=======
         % remove color atlas
         ud.viewColorAtlas = false;
         set(ud.im, 'CData', ud.ref)
@@ -402,7 +385,6 @@ switch key_letter
         ud.showOverlay = 0;
         ref_mode = false;
 
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
         delete(ud.overlayAx); ud.overlayAx = [];
         
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
@@ -553,13 +535,8 @@ switch key_letter
             for probe_point = 1:size(ud.pointList{probe, 1},1)
                 ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
                     ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
-<<<<<<< HEAD
-                'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
-                'LineWidth',3);
-=======
                 'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
                 'LineWidth',2);
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
             
             % set the point plot from the current slice visible
             slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
@@ -771,11 +748,7 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
     end  
     ud.ref = uint8(reference_slice);
     set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-<<<<<<< HEAD
-    ud.offset_map = zeros(800,1140); 
-=======
     ud.offset_map = zeros(ud.ref_size); 
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
     set(f, 'UserData', ud);
     
 % ---------------------------
@@ -981,13 +954,8 @@ elseif ud.currentProbe > 0
     ud.pointList{ud.currentProbe,3}{end+1} = slice_name;
    
     ud.pointHands{ud.currentProbe, 1}(end+1) = scatter(ud.atlasAx, clickX, clickY, 20, 'ro', ...
-<<<<<<< HEAD
-                'MarkerFaceColor', [0 0 0],'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
-                'LineWidth',3);
-=======
                 'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(ud.currentProbe, :), ...
                 'LineWidth',2);
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
                 
     ud.pointHands{ud.currentProbe, 2}(end+1) = ud_slice.slice_num + ud.slice_shift;
     
@@ -1000,16 +968,8 @@ elseif ud.getPoint_for_transform
     if ud.curr_slice_num ~= ud.slice_at_shift_start+ud.slice_shift 
         if ~ud.loaded
             ud.current_pointList_for_transform = zeros(0,2);
-<<<<<<< HEAD
-    %         ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
             disp('transforming new slice');
         end
-%         ud.slice_at_shift_start = ud_slice.slice_num;
-%         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
-=======
-            disp('transforming new slice');
-        end
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];

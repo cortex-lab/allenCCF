@@ -15,7 +15,7 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 probe_save_name_suffix = '_tutorial';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
-probes_to_analyze = 1; %'all';
+probes_to_analyze = 'all'; % [1 2]
 
 % -----------
 % parameters

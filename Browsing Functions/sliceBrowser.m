@@ -107,15 +107,9 @@ function ud = updateSliceImage(ud)
     
     processed_image_name = ud.processed_image_names{ud.slice_num};
     current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
-<<<<<<< HEAD
-    if size(current_slice_image,1) > 802 || size(current_slice_image,2) > 1142
-        disp('shrinking image to reference size 800 x 1140 pxl')
-        current_slice_image = imresize(current_slice_image, [800 1140]);
-=======
     if size(current_slice_image,1) > ud.ref_size(1)+2 || size(current_slice_image,2) > ud.ref_size(2)+2
         disp(['shrinking image to reference size ' num2str(ud.ref_size(1)) ' x ' num2str(ud.ref_size(2)) ' pxl'])
         current_slice_image = imresize(current_slice_image, ud.ref_size);
->>>>>>> a3d0eca698601fd8d717b75b439eb31a7736dbb3
     end          
     set(ud.im, 'CData', current_slice_image); 
 

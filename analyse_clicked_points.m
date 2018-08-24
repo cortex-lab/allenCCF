@@ -6,14 +6,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of object points
-processed_images_folder = 'C:\Drive\Histology\PAG\processed';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved object points
-object_save_name_suffix = 'vgat';
+object_save_name_suffix = 'eggy';
 
 % either set to 'all' or a list of indices from the clicked objects in this file, e.g. [2,3]
 objects_to_analyze = 'all';
@@ -74,7 +74,7 @@ for object_num = objects
     hp = plot3(curr_objectPoints(:,1), curr_objectPoints(:,3), curr_objectPoints(:,2), '.','linewidth',2, 'color',[ProbeColors(object_num,:) .2],'markers',10);   
 
     % use the point's position in the atlas to get the AP, DV, and ML coordinates
-    ap = -(curr_objectPoints(:,1)-bregma(1)+offset)*atlas_resolution;
+    ap = -(curr_objectPoints(:,1)-bregma(1))*atlas_resolution;
     dv = (curr_objectPoints(:,2)-bregma(2))*atlas_resolution;
     ml = (curr_objectPoints(:,3)-bregma(3))*atlas_resolution;
 
