@@ -15,10 +15,10 @@
 % If you have high-res individual images, put
 % them in this image_folder, and just skip the 'crop and save' cell below)
 %
-image_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
+image_folder = 'C:\Drive\Histology\for tutorial - sample data\slices';
 
 % directory to save the processed images -- can be the same as the above image_folder
-save_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_raw';
+save_folder = 'C:\Drive\Histology\for tutorial - sample data\slices';
 
 % name of images, in order anterior to posterior or vice versa
 % once these are downsampled, using the HistologyBrowser function, they
@@ -29,12 +29,10 @@ image_file_names = natsortfiles({image_file_names.name});
 
 % if the images are individual slices as opposed to an image of multiple
 % slices, which must each be cropped and saved
-image_file_are_individual_slices = false;
-                        
-% if the images are cropped (image_file_are_individual_slices = false),
-% name to save cropped slices as; e.g. the third cropped slice from the 2nd
-% image containing many slices will be saved as: save_folder/processed/save_file_name2_3.tif
-save_file_name = 'SS096_';
+image_file_are_individual_slices = true;
+
+% use images that are already at reference atlas (here, 10um/pixel) resolution
+use_already_downsampled_image = false; 
 
 % pixel size parameters: microns_per_pixel of large images in the image
 % folder (if use_already_downsampled_images below is set to false);
@@ -46,17 +44,22 @@ microns_per_pixel_after_downsampling = 10;
 % ----------------------
 % additional parameters
 % ----------------------
+
+% if the images are cropped (image_file_are_individual_slices = false),
+% name to save cropped slices as; e.g. the third cropped slice from the 2nd
+% image containing many slices will be saved as: save_folder/processed/save_file_name2_3.tif
+save_file_name = 'SS096_';
+
+% adjust the contrast of the histology images before cropping them, even if
+% they are already downsampled
+adjust_histology_contrast = true; 
+
 % increase gain if for some reason the images are not bright enough
 gain = 1; 
 
-% use images that are already at reference atlas (here, 10um/pixel) resolution
-use_already_downsampled_image = false; 
-
-% adjust the contrast of the large histology images before cropping them
-adjust_histology_contrast = true; 
-
 % size in pixels of reference atlas brain coronal slice
 reference_size = [800 1140]; 
+
 
 
 
@@ -82,8 +85,7 @@ close all
 %
 % if the images are already downsampled (use_already_downsampled_image = true), this will allow
 % you to adjust the contrast of each channel if adjust_histology_contrast = true
-if adjust_histology_contrast || ~use_already_downsampled_image
-
+if  adjust_histology_contrast || ~use_already_downsampled_image
     % Open Histology Viewer figure
     try; figure(histology_figure);
     catch; histology_figure = figure('Name','Histology Viewer'); end
@@ -99,7 +101,7 @@ else
 end
   
 
-%% CROP AND SAVE SLICES -- run once the above is done
+%% CROP AND SAVE SLICES -- run once the above is done, if image_file_are_individual_slices = false
 
 % close all figures
 close all
@@ -110,9 +112,12 @@ close all
 % in the save_folder -- this function allows you to crop all the slices you 
 % would like to process im each image, by drawing rectangles around them in the figure. 
 % These can then be further processed in the next cell
-histology_figure = figure('Name','Histology Viewer');
-HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name, use_already_downsampled_image)
-
+if ~image_file_are_individual_slices
+    histology_figure = figure('Name','Histology Viewer');
+    HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name, use_already_downsampled_image)
+else
+    disp('individually cropped slices already available')
+end
 
 
 %% GO THROUGH TO FLIP HORIZONTAL SLICE ORIENTATION, ROTATE, SHARPEN, and CHANGE ORDER

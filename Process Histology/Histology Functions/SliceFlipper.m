@@ -8,17 +8,11 @@ ud.total_num_files = size(processed_images,1); disp(['found ' num2str(ud.total_n
 ud.slice_num = 1;
 ud.flip = 0; 
 ud.rotate_angle = 0;
+ud.reference_size = reference_size;
 
-ud.processed_image_name = ud.processed_image_names{ud.slice_num};
-ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
-ud.original_slice_image = ud.current_slice_image;
-ud.original_ish_slice_image = ud.current_slice_image;
+ud.grid = 0;
+ud = load_next_slice(ud,folder_processed_images);
 
-ud.size = size(ud.original_slice_image);
-if ud.size(1) > 802 || ud.size(2) > 1142
-    disp(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files) ' is ' num2str(ud.size(1)) 'x' num2str(ud.size(2)) ' pixels:']);
-        disp(['I suggest you crop this image down to under ' num2str(reference_size(1)) ' x ' num2str(reference_size(2)) ' pxl'])
-end
 ud.grid = zeros(size(ud.current_slice_image),class(ud.original_slice_image)); 
 ud.grid(1:50:end,:,:) = 150 + 20000*(isa(ud.original_slice_image,'uint16')); 
 ud.grid(:,1:50:end,:) = 150 + 20000*(isa(ud.original_slice_image,'uint16'));    
@@ -28,8 +22,13 @@ title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 set(slice_figure, 'UserData', ud);
 
 
+        
+
+
+
+
 % key function for slice
-set(slice_figure, 'KeyPressFcn', @(slice_figure,keydata)SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images, reference_size));
+set(slice_figure, 'KeyPressFcn', @(slice_figure,keydata)SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images));
 % scroll function for slice
 set(slice_figure, 'WindowScrollWheelFcn', @(src,evt)SliceScrollFcn(slice_figure, evt))
 
@@ -49,7 +48,7 @@ fprintf(1, 'delete: delete current image \n');
 % --------------------
 % respond to keypress
 % --------------------
-function SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images, reference_size)
+function SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images)
 
 ud = get(slice_figure, 'UserData');
 
@@ -59,10 +58,12 @@ switch lower(keydata.Key)
     case 'leftarrow' % save and previous slice
         imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))        
         ud.slice_num = ud.slice_num - 1*(ud.slice_num>1);
+        ud = load_next_slice(ud,folder_processed_images);
 
     case 'rightarrow' % save and next slice      
         imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))
         ud.slice_num = ud.slice_num + 1*(ud.slice_num < length(ud.processed_image_names));
+        ud = load_next_slice(ud,folder_processed_images);
         
     case 'delete' % delete and previous slice
         delete(fullfile(folder_processed_images, ud.processed_image_name));
@@ -71,6 +72,7 @@ switch lower(keydata.Key)
         processed_images = dir([folder_processed_images filesep '*tif']);
         ud.processed_image_names = natsortfiles({processed_images.name});
         ud.total_num_files = size(processed_images,1); disp(['found ' num2str(ud.total_num_files) ' processed slice images']);
+        ud = load_next_slice(ud,folder_processed_images);
 
     case 'g' % grid
         if sum(ud.grid(:)) == 0
@@ -88,8 +90,8 @@ switch lower(keydata.Key)
         catch; disp('crop out of bounds'); 
         end        
         
-        try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((reference_size(1) - size(ud.current_slice_image,1)) / 2) + ...
-                                mod(size(ud.current_slice_image,1),2) floor((reference_size(2) - size(ud.current_slice_image,2)) / 2) + ...
+        try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((ud.reference_size(1) - size(ud.current_slice_image,1)) / 2) + ...
+                                mod(size(ud.current_slice_image,1),2) floor((ud.reference_size(2) - size(ud.current_slice_image,2)) / 2) + ...
                                 mod(size(ud.current_slice_image,2),2)],0);
             ud.original_ish_slice_image = ud.current_slice_image;                            
         catch; disp('saving failed; image must be under reference brain image size');
@@ -129,29 +131,6 @@ switch lower(keydata.Key)
 
 end
 
-% the following is common to all commands that move onto the next slice
-if strcmp(lower(keydata.Key) ,'leftarrow') || strcmp(lower(keydata.Key) ,'rightarrow') || strcmp(lower(keydata.Key) ,'delete')
-    
-        ud.processed_image_name = ud.processed_image_names{ud.slice_num};
-        ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
-        
-        % pad if possible (if small enough)
-        try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((reference_size(1) - size(ud.current_slice_image,1)) / 2) + mod(size(ud.current_slice_image,1),2) ...
-                                                      floor((reference_size(2) - size(ud.current_slice_image,2)) / 2) + mod(size(ud.current_slice_image,2),2)],0);
-        end          
-        
-        ud.original_slice_image = ud.current_slice_image;             
-        ud.original_ish_slice_image = ud.current_slice_image;        
-        
-        ud.size = size(ud.current_slice_image); 
-        if ud.size(1) > 802 || ud.size(2) > 1142
-            disp(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files) ' is ' num2str(ud.size(1)) 'x' num2str(ud.size(2)) ' pixels:']);
-            disp(['I suggest you crop this image down to under ' num2str(reference_size(1)) ' x ' num2str(reference_size(2)) ' pxl'])
-        end        
-        ud.grid = imresize(ud.grid, ud.size(1:2)); 
-        ud.rotate_angle = 0;
-        
-end
 
 
 % in all cases, update image and title
@@ -161,6 +140,25 @@ title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 
 set(slice_figure, 'UserData', ud);
 
+function ud = load_next_slice(ud,folder_processed_images)
+    ud.processed_image_name = ud.processed_image_names{ud.slice_num};
+    ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
+
+    % pad if possible (if small enough)
+    try; ud.current_slice_image = padarray(ud.current_slice_image, [floor((ud.reference_size(1) - size(ud.current_slice_image,1)) / 2) + mod(size(ud.current_slice_image,1),2) ...
+                                                  floor((ud.reference_size(2) - size(ud.current_slice_image,2)) / 2) + mod(size(ud.current_slice_image,2),2)],0);
+    end          
+
+    ud.original_slice_image = ud.current_slice_image;             
+    ud.original_ish_slice_image = ud.current_slice_image;        
+
+    ud.size = size(ud.current_slice_image); 
+    if ud.size(1) > ud.reference_size(1)+1 || ud.size(2) > ud.reference_size(2)+2
+        disp(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files) ' is ' num2str(ud.size(1)) 'x' num2str(ud.size(2)) ' pixels:']);
+        disp(['I suggest you crop this image down to under ' num2str(ud.reference_size(1)) ' x ' num2str(ud.reference_size(2)) ' pxl'])
+    end        
+    ud.grid = imresize(ud.grid, ud.size(1:2)); 
+    ud.rotate_angle = 0;
 
 
 % function to rotate slice by scrolling

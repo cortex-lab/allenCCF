@@ -28,10 +28,8 @@ if ~use_already_downsampled_image
     disp('downsampling image...')
     original_image_size = size(image);
     image = imresize(image, [round(original_image_size(1)*microns_per_pixel/microns_per_pixel_after_downsampling)  NaN]);
-    ud.file_name_suffix = '_processed';
-else
-    ud.file_name_suffix = '';
 end
+ud.file_name_suffix = '_processed';
 original_image = image*gain;
 imshow(original_image);
 title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
@@ -75,7 +73,8 @@ if strcmp(lower(keydata.Key), 'space') % adjust contrast
     else
         adjusted_image_channel = fig.Children.Children.CData;
         ud.adjusted_image(:,:,ud.channel) = adjusted_image_channel;
-    end    
+    end   
+
 % ignore commands while adjusting contrast    
 elseif ~ud.adjusting_contrast     
     switch lower(keydata.Key)    
@@ -121,9 +120,9 @@ elseif ~ud.adjusting_contrast
     if (strcmp(lower(keydata.Key),'leftarrow') || strcmp(lower(keydata.Key),'rightarrow')) && move_on
 
         % load image
-        try
-            image = imread(fullfile(ud.image_folder, image_file_names{ud.file_num}) );
+        image = imread(fullfile(ud.image_folder, image_file_names{ud.file_num}) );
         disp(['image ' num2str(ud.file_num) ' loaded'])
+        
         if ~use_already_downsampled_image
             % resize (downsample) image to reference size
             disp('downsampling image...')
