@@ -15,7 +15,7 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 probe_save_name_suffix = '_tutorial';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
-probes_to_analyze = 'all'; % [1 2]
+probes_to_analyze = 'all';  % [1 2]
 
 % -----------
 % parameters
@@ -33,11 +33,11 @@ probe_radius = 100;
 show_parent_category = false; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
-distance_past_tip_to_plot = .3;
+distance_past_tip_to_plot = .5;
 
 % set scaling e.g. based on lining up the ephys with the atlas
 % set to *false* to get scaling automatically from the clicked points
-scaling_factor = 1; 
+scaling_factor = false; 
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
@@ -47,7 +47,6 @@ black_brain = true;
 
 
 % close all
-
 
 
 
@@ -63,7 +62,7 @@ end
 
 % load probe points
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
-ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
+ProbeColors = .75*[1.3 1.3 1.3; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 .9; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
 % order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','purple','orange','red'};
 fwireframe = [];
 

@@ -94,7 +94,7 @@ switch lower(keydata.Key)
                                 mod(size(ud.current_slice_image,1),2) floor((ud.reference_size(2) - size(ud.current_slice_image,2)) / 2) + ...
                                 mod(size(ud.current_slice_image,2),2)],0);
             ud.original_ish_slice_image = ud.current_slice_image;                            
-        catch; disp('saving failed; image must be under reference brain image size');
+        catch; disp('cropping failed');
         end              
         
         ud.size = size(ud.current_slice_image); 

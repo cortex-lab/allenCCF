@@ -99,16 +99,16 @@ end
 if ann_type == 1
     uAnn = unique(ann);
     nC = numel(unique(ann(ann>1)));
-    distinctCmap = distinguishable_colors(nC);
+    distinctCmap = flip(distinguishable_colors(nC+2));
 
     if any(uAnn==1)
         distinctCmap = vertcat([1 1 1], distinctCmap); % always make white be ann==1, outside the brain
     end
-    dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap;
+    dc = zeros(max(uAnn),3); dc(uAnn,:) = distinctCmap(1:end-2,:);
     cmD = dc(ann,:);
-    if ~show_parent_category; cmD = cmD*.8; end
+    if ~show_parent_category; cmD = cmD*.6; end
 else
-    cmD = ones(length(ann),3) * .15;
+    cmD = ones(length(ann),3) * .05;
 end
 
 % algorithm for finding areas and labels
@@ -152,7 +152,7 @@ for b = 1:length(borders)-1
     
 
     if max(theseYC) < active_site_start*10  || max(theseYC) > rpl*10
-        cur_alpha = .75 / ann_type;
+        cur_alpha = .4 / ann_type;
     else
         cur_alpha = 1  / ann_type;
     end   
@@ -204,14 +204,14 @@ end
 yyaxis left
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
-if show_parent_category; set(gca,'Color',[.65 .65 .65]);
-else; set(gca,'Color',[.4 .4 .4]); end
+if show_parent_category; set(gca,'Color',[1 1 1]*.8);
+else; set(gca,'Color',[1 1 1]*.7); end
 xlabel('dist to nearest (um)','color','k');
 
 % ylim([0 yc(borders(end-1))])
 ylim([1 yc(end)+1])
 xlim([0 error_length*10]);
-set(fD,'Color',[1 1 1]*.7)
+set(fD,'Color',[1 1 1]*.85)
 fD.InvertHardcopy = 'off';
 
 yyaxis right

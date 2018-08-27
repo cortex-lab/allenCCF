@@ -7,10 +7,10 @@
 
 
 % directory of histology
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_done\processed'; 
+processed_images_folder = 'C:\Drive\Histology\cfos\processed'; 
 
 % name the saved probe points, to avoid overwriting another set of probes going in the same folder
-probe_save_name_suffix = '_tutorial'; 
+probe_save_name_suffix = ''; 
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
@@ -30,7 +30,7 @@ if ~exist('av','var') || ~exist('st','var') || ~exist('tv','var')
     tv = readNPY(template_volume_location);
 end
 
-% create Atals viewer figure
+% create Atlas viewer figure
 f = figure('Name','Atlas Viewer'); 
 
 % show histology in Slice Viewer
@@ -49,4 +49,5 @@ f = AtlasTransformBrowser(f, tv,av,st, slice_figure_browser, processed_images_fo
 % just run these two lines instead of the previous 5 lines of code
 % 
 % save_location = processed_images_folder;
-% f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix); % use this function if you lack a processed_images_folder
+% f = allenAtlasBrowser(tv,av,st, save_location, probe_save_name_suffix);
+

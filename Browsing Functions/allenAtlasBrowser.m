@@ -210,6 +210,17 @@ switch lower(keydata.Key)
                     disp('probe angle not ideal for viewing in coronal slice -- angles set to 0')
                 end
                 
+                % report estimated probe angle
+                AP_angle = round(atand(angle_DV_if_constraining_ML/(ud.ref_size(1)/2)),1);
+                ML_angle = round(atand((max_x - min_x)/(max_y - min_y)),1);
+                disp(' ');
+                disp('estimated probe insertion angle: ')
+                direction_AP = {'posterior','anterior'};
+                disp([num2str(abs(AP_angle)) ' degrees in the ' direction_AP{(AP_angle<0)+1} ' direction'])
+                direction_ML = {'medial','lateral'};
+                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0)+1} ' direction']);       
+                disp(' ');                 
+                
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
                 updateSlice(f, update, allData); ud = get(f, 'UserData');                                             

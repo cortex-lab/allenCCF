@@ -45,7 +45,7 @@ set(histology_figure, 'UserData', ud);
 set(histology_figure, 'KeyPressFcn', @(histology_figure,keydata)HistologyHotkeyFcn(histology_figure, keydata, image_file_names, use_already_downsampled_image));
 
 fprintf(1, '\n Controls: \n \n');
-fprintf(1, 'space: adjust contrast for current channel \n');
+fprintf(1, 'space: adjust contrast for current channel / return to image-viewing mode \n');
 fprintf(1, 'e: view original version \n');
 fprintf(1, 'any key: return to modified version \n');
 fprintf(1, 'r: reset to original \n');

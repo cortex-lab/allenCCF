@@ -13,6 +13,7 @@ transformed_slice_location = 'C:\Drive\Histology\for tutorial - sample data\SS09
 % file location of ROIs (image / array of the same size as the reference ie 800 x 1140)
 roi_location = 'C:\Drive\Histology\for tutorial - sample data\SS096_1_1_ROIs.tif';
 
+
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';

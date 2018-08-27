@@ -25,6 +25,8 @@ ud.currentSlice = ud.bregma(1);
 ud.currentAngle = zeros(2,1);
 ud.scrollMode = 0;
 
+ud.transform_type = 'projective'; %can change to 'affine' or 'pwl'
+
 ud.oldContour = [];
 ud.showContour = false;
 ud.showOverlay = false; ud.overlayAx = [];
@@ -101,16 +103,7 @@ fprintf(1, 'a: toggle to viewing boundaries \n');
 fprintf(1, 'v: toggle to color atlas mode \n');
 fprintf(1, 'g: toggle gridlines \n');
 
-
-
-
-
-
-
-
-
-
-fprintf(1, 'space: display controls \n \n');
+fprintf(1, '\n space: display controls \n \n');
 
 
 % ------------------------
@@ -236,7 +229,7 @@ switch key_letter
                 % get line of best fit through points
                 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
                 [m,p,s] = best_fit_line(curr_probePoints(:,1), curr_probePoints(:,2), curr_probePoints(:,3));
-                disp(['mean square error to line of ' num2str(round(s / size(curr_probePoints,1),2)) ' pxl^2'])
+                disp(['root mean square error to line of ' num2str(sqrt(round(s / size(curr_probePoints,1),2))*10) ' micron'])
                 
                 min_y = min(ud.pointList{ud.currentProbe,1}(:,2));
                 max_y = max(ud.pointList{ud.currentProbe,1}(:,2));
@@ -278,8 +271,18 @@ switch key_letter
                     ud.currentSlice = round(m(1));
                     disp('probe angle not ideal for viewing in coronal slice -- angles set to 0')
                 end
+               
+                % report estimated probe angle
+                AP_angle = round(atand(angle_DV_if_constraining_ML/(ud.ref_size(1)/2)),1);
+                ML_angle = round(atand((max_x - min_x)/(max_y - min_y)),1);
+                disp(' ');
+                disp('estimated probe insertion angle: ')
+                direction_AP = {'posterior','anterior'};
+                disp([num2str(abs(AP_angle)) ' degrees in the ' direction_AP{(AP_angle<0)+1} ' direction'])
+                direction_ML = {'medial','lateral'};
+                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0)+1} ' direction']);       
+                disp(' '); 
                 
-
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
                 updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');   
@@ -413,7 +416,7 @@ switch key_letter
             
             current_slice_image = flip(get(ud_slice.im, 'CData'),1);
             if ~ud.loaded  % use loaded version if 'l' was just pressed 
-                ud.transform = fitgeotrans(slice_points,reference_points,'projective'); %can use 'affine', 'projective', 'polynomial', or 'pwl'
+                ud.transform = fitgeotrans(slice_points,reference_points,ud.transform_type); %can use 'affine', 'projective', 'polynomial', or 'pwl'
             end
             R = imref2d(size(ud.ref));
             ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
@@ -850,7 +853,7 @@ if ud.probe_view_mode && ud.currentProbe
         end
             set(ud.pointHands{probe, 1}(probe_point),'MarkerEdgeColor', color, 'SizeData', 20)
     end
-disp(['mean distance from this slice to probe points is ' num2str(round(mean_distance*10)) ' microns'])
+% disp(['mean distance from this slice to probe points is ' num2str(round(mean_distance*10)) ' microns'])
     if mean_distance < 50
         color = abs((ud.ProbeColors(probe,:) * (50 - mean_distance) + [0 0 0] * mean_distance) / 50);
     else

@@ -6,14 +6,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of object points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
+save_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved object points
-object_save_name_suffix = 'eggy';
+object_save_name_suffix = 'object_points';
 
 % either set to 'all' or a list of indices from the clicked objects in this file, e.g. [2,3]
 objects_to_analyze = 'all';
@@ -32,7 +32,7 @@ if ~exist('av','var') || ~exist('st','var')
 end
 
 % load object points
-objectPoints = load(fullfile(processed_images_folder, ['probe_points' object_save_name_suffix]));
+objectPoints = load(fullfile(save_folder, ['probe_points' object_save_name_suffix]));
 
 % determine which objects to analyze
 if strcmp(objects_to_analyze,'all')
