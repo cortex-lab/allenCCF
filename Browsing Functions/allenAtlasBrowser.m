@@ -50,7 +50,9 @@ ud.showOverlay = false; ud.overlayAx = [];
 ud.pointList = cell(1,3); ud.pointList{1} = zeros(0,3); 
 ud.pointHands = cell(1,3);
 ud.probe_view_mode = false;
-ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0; .3 1 1; .7 0 .8; 1 0 0; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .8 .95 .5]; 
+ud.currentProbe = 0; 
+ud.ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .5 0 .6; 1 .6 0]; 
+ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','red','purple','orange'};
 ud.showAtlas = false;
 ud.viewColorAtlas = false;
 ud.histology_overlay = 0; 
@@ -120,8 +122,7 @@ switch lower(keydata.Key)
         ud.probe_view_mode = 0;
         if ud.currentProbe < size(ud.pointList,1)
             ud.currentProbe = ud.currentProbe + 1;
-            ProbeColor =  {'white','gold','turquoise','purple','red','fern','bubble gum','overcast sky', 'rawhide', 'green apple'};
-            disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ProbeColor{ud.currentProbe} ')']); 
+            disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ud.ProbeColor{ud.currentProbe} ')']); 
         else
             ud.currentProbe = 0;
             disp(['probe point mode OFF']);
@@ -151,7 +152,7 @@ switch lower(keydata.Key)
         end
             ud.probe_view_mode = ~ud.probe_view_mode; 
             
-            if ud.probe_view_mode
+            if ud.probe_view_mode && ~isempty(ud.pointList{ud.currentProbe,1})
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
                         probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
@@ -170,19 +171,22 @@ switch lower(keydata.Key)
                 % get line of best fit through points
                 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
                 [m,p,s] = best_fit_line(curr_probePoints(:,1), curr_probePoints(:,2), curr_probePoints(:,3));
-                
+                atlas_res = 0.010;
+                disp(['root mean square error to line of ' num2str(round(sqrt(s / size(curr_probePoints,1))*(atlas_res*1000),1)) ' micron'])
+
                 min_y = min(ud.pointList{ud.currentProbe,1}(:,2));
                 max_y = max(ud.pointList{ud.currentProbe,1}(:,2));
                 min_x = m(3) + (min_y - m(2))  * p(3) / p(2);
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
-                ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':');
+                max_z = m(1) + (max_y - m(2))  * p(1) / p(2);
+                ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':','linewidth',1.5);
                 
                 % ensure proper orientation: want 0 at the top of the brain 
                 % and positive distance goes down into the brain
                 if p(2)<0
                     p = -p;
                 end
-                                
+        
                 % calculate slice angle along probe track -- do so by 
                 % constraining either ML angle or DV angle to zero
                 position_at_x_center_point = m + (ud.ref_size(2)/2 - m(3)) * p / p(3);
@@ -191,7 +195,7 @@ switch lower(keydata.Key)
                 angle_DV_if_constraining_ML = round(ud.ref_size(1)/2 / (ud.ref_size(1)/2 - m(2)) * (position_at_y_center_point(1)-m(1)) );
                 angle_ML_if_constraining_DV = round(ud.ref_size(2)/2 / (ud.ref_size(2)/2 - m(3)) * (position_at_x_center_point(1)-m(1)) );
                 
-                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV)
+                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV) || abs(angle_DV_if_constraining_ML) < 150
                     ud.currentSlice = round(position_at_y_center_point(1));
                     ud.currentAngle(1) = angle_DV_if_constraining_ML;
                     ud.currentAngle(2) = 0;
@@ -213,12 +217,19 @@ switch lower(keydata.Key)
                 % report estimated probe angle
                 AP_angle = round(atand(angle_DV_if_constraining_ML/(ud.ref_size(1)/2)),1);
                 ML_angle = round(atand((max_x - min_x)/(max_y - min_y)),1);
+                position_at_bregma_depth = [ (m(3) + (0 - m(2)) * p(3) / p(2)) ((m(1) + (0 - m(2)) * p(1) / p(2)))];
+                ML_position = round((position_at_bregma_depth(1)-ud.bregma(3))*atlas_res,2);
+                AP_position = round((ud.bregma(1) - position_at_bregma_depth(2))*atlas_res,2);
                 disp(' ');
-                disp('estimated probe insertion angle: ')
+                disp('---estimated probe insertion---')
+                disp(['entry position at DV = 0: AP = ' num2str(AP_position) ' mm, ' ...
+                                                'ML = ' num2str(ML_position) ' mm']) 
+                insertion_dist = sqrt((position_at_bregma_depth(1) - max_x)^2+(position_at_bregma_depth(2)-max_z)^2+(0-max_y)^2);
+                disp(['insertion distance from the above position: ' num2str(round(insertion_dist*atlas_res,3)) ' mm'])
                 direction_AP = {'posterior','anterior'};
                 disp([num2str(abs(AP_angle)) ' degrees in the ' direction_AP{(AP_angle<0)+1} ' direction'])
                 direction_ML = {'medial','lateral'};
-                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0)+1} ' direction']);       
+                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0&ML_position<0)+1} ' direction']);       
                 disp(' ');                 
                 
                 % update slice
@@ -264,7 +275,7 @@ switch lower(keydata.Key)
         disp('switch scroll mode -- scroll along A/P axis')
  
     case 'n' % new probe
-        new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added!']);
+        new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added (' ud.ProbeColor{new_num_probes} ')']);
         probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
         for prev_probe = 1:new_num_probes-1
             probe_point_list{prev_probe,1} = ud.pointList{prev_probe,1};
@@ -432,7 +443,7 @@ if ud.probe_view_mode && ud.currentProbe
         end
             set(ud.pointHands{probe, 1}(probe_point), 'MarkerFaceColor',color,'MarkerEdgeColor', color, 'SizeData', 20)
     end
-disp(['mean distance from slice to points is ' num2str(round(mean_distance*10)) ' microns'])
+% disp(['mean distance from slice to points is ' num2str(round(mean_distance*10)) ' microns'])
     if mean_distance < 50
         color = abs((ud.ProbeColors(probe,:) * (50 - mean_distance) + [0 0 0] * mean_distance) / 50);
     else
@@ -489,9 +500,8 @@ ud = get(f, 'UserData');
 if ud.currentProbe > 0
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
+    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end % overlay inverts Yn
     clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
-    
-    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
     
     ud.pointList{ud.currentProbe,1}(end+1, :) = [clickX, clickY, clickZ];
     ud.pointList{ud.currentProbe,2}(end+1, :) = 0;

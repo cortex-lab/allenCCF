@@ -5,14 +5,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of probe points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\SS096_done\processed';
+processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved probe points
-probe_save_name_suffix = '_tutorial';
+probe_save_name_suffix = 'electrode_track_1';
 
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';  % [1 2]
@@ -20,8 +20,8 @@ probes_to_analyze = 'all';  % [1 2]
 % -----------
 % parameters
 % -----------
-% how far into the brain did you go, either for each probe or just one number for all -- in mm
-probe_lengths = 5; 
+% how far into the brain did you go from the surface, either for each probe or just one number for all -- in mm
+probe_lengths = 4; 
 
 % from the bottom tip, how much of the probe contained recording sites -- in mm
 active_probe_length = 3.84;
@@ -107,7 +107,10 @@ end
 % get line of best fit through points
 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
 [m,p,s] = best_fit_line(curr_probePoints(:,1), curr_probePoints(:,2), curr_probePoints(:,3));
-
+if isnan(m(1))
+    disp(['no points found for probe ' num2str(selected_probe)])
+    continue
+end
 
 % ensure proper orientation: want 0 at the top of the brain and positive distance goes down into the brain
 if p(2)<0

@@ -197,7 +197,7 @@ switch key_letter
         end
             ud.probe_view_mode = ~ud.probe_view_mode; 
 
-            if ud.probe_view_mode
+            if ud.probe_view_mode ~isempty(ud.pointList{ud.currentProbe,1})
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
                     probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
@@ -229,12 +229,14 @@ switch key_letter
                 % get line of best fit through points
                 % m is the mean value of each dimension; p is the eigenvector for largest eigenvalue
                 [m,p,s] = best_fit_line(curr_probePoints(:,1), curr_probePoints(:,2), curr_probePoints(:,3));
-                disp(['root mean square error to line of ' num2str(sqrt(round(s / size(curr_probePoints,1),2))*10) ' micron'])
+                atlas_res = 0.010;
+                disp(['root mean square error to line of ' num2str(round(sqrt(s / size(curr_probePoints,1))*(atlas_res*1000),1)) ' micron'])
                 
                 min_y = min(ud.pointList{ud.currentProbe,1}(:,2));
                 max_y = max(ud.pointList{ud.currentProbe,1}(:,2));
                 min_x = m(3) + (min_y - m(2))  * p(3) / p(2);
                 max_x = m(3) + (max_y - m(2))  * p(3) / p(2);
+                max_z = m(1) + (max_y - m(2))  * p(1) / p(2);
                 ud.pointHands{ud.currentProbe, 3} = plot([min_x max_x],[min_y max_y],'color',ud.ProbeColors(ud.currentProbe,:),'linestyle',':','linewidth',1.5);
                 set(ud.pointHands{ud.currentProbe,3}, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k, slice_figure, save_location));
   
@@ -253,7 +255,7 @@ switch key_letter
                 angle_DV_if_constraining_ML = round(ud.ref_size(1)/2 / (ud.ref_size(1)/2 - m(2)) * (position_at_y_center_point(1)-m(1)) );
                 angle_ML_if_constraining_DV = round(ud.ref_size(2)/2 / (ud.ref_size(2)/2 - m(3)) * (position_at_x_center_point(1)-m(1)) );
                 
-                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV)
+                if abs(angle_DV_if_constraining_ML) < abs(angle_ML_if_constraining_DV) || abs(angle_DV_if_constraining_ML) < 150
                     ud.currentSlice = round(position_at_y_center_point(1));
                     ud.currentAngle(1) = angle_DV_if_constraining_ML;
                     ud.currentAngle(2) = 0;
@@ -275,13 +277,20 @@ switch key_letter
                 % report estimated probe angle
                 AP_angle = round(atand(angle_DV_if_constraining_ML/(ud.ref_size(1)/2)),1);
                 ML_angle = round(atand((max_x - min_x)/(max_y - min_y)),1);
+                position_at_bregma_depth = [ (m(3) + (0 - m(2)) * p(3) / p(2)) ((m(1) + (0 - m(2)) * p(1) / p(2)))];
+                ML_position = round((position_at_bregma_depth(1)-ud.bregma(3))*atlas_res,2);
+                AP_position = round((ud.bregma(1) - position_at_bregma_depth(2))*atlas_res,2);
                 disp(' ');
-                disp('estimated probe insertion angle: ')
+                disp('---estimated probe insertion---')
+                disp(['entry position at DV = 0: AP = ' num2str(AP_position) ' mm, ' ...
+                                                'ML = ' num2str(ML_position) ' mm']) 
+                insertion_dist = sqrt((position_at_bregma_depth(1) - max_x)^2+(position_at_bregma_depth(2)-max_z)^2+(0-max_y)^2);
+                disp(['insertion distance from the above position: ' num2str(round(insertion_dist*atlas_res,3)) ' mm'])
                 direction_AP = {'posterior','anterior'};
                 disp([num2str(abs(AP_angle)) ' degrees in the ' direction_AP{(AP_angle<0)+1} ' direction'])
                 direction_ML = {'medial','lateral'};
-                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0)+1} ' direction']);       
-                disp(' '); 
+                disp([num2str(abs(ML_angle)) ' degrees in the ' direction_ML{(ML_angle<0&ML_position<0)+1} ' direction']);       
+                disp(' ');   
                 
                 % update slice
                 update.VerticalScrollCount = 0; ud.scrollMode = 0; ud.histology_overlay = 0; set(f, 'UserData', ud);
@@ -451,7 +460,7 @@ switch key_letter
 % n -- start marking a new probe        
     case 'n' 
         new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added! (' ud.ProbeColor{new_num_probes} ')']);
-        ud.probe_view_mode = 0;
+%         ud.probe_view_mode = 0;
         probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
         for prev_probe = 1:new_num_probes-1
             probe_point_list{prev_probe,1} = ud.pointList{prev_probe,1};
@@ -927,12 +936,13 @@ ud_slice = get(slice_figure, 'UserData');
 % probe view mode
 if ud.probe_view_mode && ud.currentProbe
     clickX = round(keydata.IntersectionPoint(1));
-    clickY = round(keydata.IntersectionPoint(2));
-    clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
-    
+    clickY = round(keydata.IntersectionPoint(2));   
     if ud.showOverlay 
         clickY = size(ud.ref,1) - clickY;
     end
+    clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
+    
+    
     % find the probe point closest to this clicked point
     [min_dist, point_ind] = min( sqrt(sum(([clickX clickY clickZ] - ud.pointList{ud.currentProbe}).^2,2)));
     
@@ -946,10 +956,9 @@ if ud.probe_view_mode && ud.currentProbe
 % selecting probe points mode    
 elseif ud.currentProbe > 0
     clickX = round(keydata.IntersectionPoint(1));
-    clickY = round(keydata.IntersectionPoint(2));
+    clickY = round(keydata.IntersectionPoint(2));   
+    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end % overlay inverts Y
     clickZ = ud.currentSlice + ud.offset_map(clickY,clickX);
-    
-    if ud.showOverlay; clickY = size(ud.ref,1) - clickY; end
        
     ud.pointList{ud.currentProbe,1}(end+1, :) = [clickX, clickY, clickZ];
     ud.pointList{ud.currentProbe,2}(end+1, :) = ud.slice_at_shift_start + ud.slice_shift;
