@@ -275,18 +275,21 @@ switch lower(keydata.Key)
         disp('switch scroll mode -- scroll along A/P axis')
  
     case 'n' % new probe
-        new_num_probes = size(ud.pointList,1) + 1; disp(['probe ' num2str(new_num_probes) ' added (' ud.ProbeColor{new_num_probes} ')']);
-        probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
-        for prev_probe = 1:new_num_probes-1
-            probe_point_list{prev_probe,1} = ud.pointList{prev_probe,1};
-            probe_point_list{prev_probe,2} = ud.pointList{prev_probe,2};
-            probe_point_list{prev_probe,3} = ud.pointList{prev_probe,3};
-            probe_hands_list{prev_probe, 1} = ud.pointHands{prev_probe, 1};
-            probe_hands_list{prev_probe, 2} = ud.pointHands{prev_probe, 2};
-            probe_hands_list{prev_probe, 3} = ud.pointHands{prev_probe, 3};
-        end; probe_point_list{new_num_probes,1} = zeros(0,3);
-        ud.pointList = probe_point_list; ud.pointHands = probe_hands_list;
-        ud.currentProbe = new_num_probes;
+        new_num_probes = size(ud.pointList,1) + 1; 
+        if new_num_probes <= size(ud.ProbeColors,1)
+            disp(['probe ' num2str(new_num_probes) ' added (' ud.ProbeColor{new_num_probes} ')']);
+            probe_point_list = cell(new_num_probes,1); probe_hands_list = cell(new_num_probes,3); 
+            for prev_probe = 1:new_num_probes-1
+                probe_point_list{prev_probe,1} = ud.pointList{prev_probe,1};
+                probe_point_list{prev_probe,2} = ud.pointList{prev_probe,2};
+                probe_point_list{prev_probe,3} = ud.pointList{prev_probe,3};
+                probe_hands_list{prev_probe, 1} = ud.pointHands{prev_probe, 1};
+                probe_hands_list{prev_probe, 2} = ud.pointHands{prev_probe, 2};
+                probe_hands_list{prev_probe, 3} = ud.pointHands{prev_probe, 3};
+            end; probe_point_list{new_num_probes,1} = zeros(0,3);
+            ud.pointList = probe_point_list; ud.pointHands = probe_hands_list;
+            ud.currentProbe = new_num_probes;
+        end
     case 's' % save probe trajectory and points of each probe per histology image (and associated histology name/number)
         pointList.pointList = ud.pointList;
         pointList.pointHands = ud.pointHands;
