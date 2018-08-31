@@ -1,6 +1,6 @@
 # allen CCF tools
 
-Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version. 
+Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version. See the Wiki for detailed instructions.
 
 
 ## Requirements
@@ -40,7 +40,7 @@ view([-30    25]);
 In this version, you can transform each histological brain slice image to more precisely locate regions of interest in your slices. See the wiki for instructions.
 
 ### Locating ROIs that are not probes
-The script Locate_rois.m is an example of how the slice-to-reference transformation generated in AlignHistologyToProbe.m could be used to analyze ROIs of any type.
+The scripts Locate_rois.m and analyse_clicked_points.m provide examples of how the slice-to-reference transformation generated in AlignHistologyToProbe.m could be used to analyze ROIs of any type.
 
 
 ## Note about annotation volume
