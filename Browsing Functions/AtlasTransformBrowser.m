@@ -197,7 +197,7 @@ switch key_letter
         end
             ud.probe_view_mode = ~ud.probe_view_mode; 
 
-            if ud.probe_view_mode ~isempty(ud.pointList{ud.currentProbe,1})
+            if ud.probe_view_mode && ~isempty(ud.pointList{ud.currentProbe,1})
                  % load probe points if none are already up
                 if ~size(ud.pointList{1,1},1)
                     probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('loading probe points')
