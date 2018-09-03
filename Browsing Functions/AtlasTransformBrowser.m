@@ -127,7 +127,7 @@ switch key_letter
         if ~ud.showOverlay
             delete(ud.overlayAx); ud.overlayAx = [];
             disp('Overlay OFF');
-        else; disp('Overlay on!');
+        elseif ~ud.viewColorAtlas; disp('Overlay on!');
         end
 % g -- toggle showing Gridlines    
     case 'g' 
@@ -353,7 +353,11 @@ switch key_letter
         ud.viewColorAtlas = ~ud.viewColorAtlas;
         ud.histology_overlay = 0;
         
-        if ud.viewColorAtlas    
+        if ud.viewColorAtlas  
+            % remove overlay
+            ud.showOverlay = 0;
+            ref_mode = false;
+            delete(ud.overlayAx); ud.overlayAx = [];            
             set(ud.im, 'CData', ud.im_annotation)
             ud.curr_im = ud.im_annotation;
             cmap = allen_ccf_colormap('2017');
@@ -396,7 +400,6 @@ switch key_letter
         % remove overlay
         ud.showOverlay = 0;
         ref_mode = false;
-
         delete(ud.overlayAx); ud.overlayAx = [];
         
         ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);

@@ -115,7 +115,7 @@ switch lower(keydata.Key)
         if ~ud.showOverlay
             delete(ud.overlayAx); ud.overlayAx = [];
             disp('Overlay OFF');
-        else; disp('Overlay on!');
+        elseif ~ud.viewColorAtlas; disp('Overlay on!');
         end
 
     case 'p' % toggle mode to register clicks as Probe points
@@ -251,7 +251,11 @@ switch lower(keydata.Key)
     case 'v' % toggle View Color Atlas
         ud.viewColorAtlas = ~ud.viewColorAtlas;
         
-        if ud.viewColorAtlas  
+        if ud.viewColorAtlas
+            % turn off overlay first
+            ud.showOverlay = 0;
+            ref_mode = false;
+            delete(ud.overlayAx); ud.overlayAx = [];            
             set(ud.im, 'CData', ud.im_annotation)
             cmap = allen_ccf_colormap('2017');
             colormap(ud.atlasAx, cmap); caxis(ud.atlasAx, [1 size(cmap,1)]);   
