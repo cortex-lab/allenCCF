@@ -35,8 +35,9 @@ ud.pointHands = cell(1,3);
 ud.probe_view_mode = false;
 ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .5 0 .6; 1 .6 0]; 
 ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','red','purple','orange'};
-ud.getPoint_for_transform = false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
+ud.getPoint_for_transform =false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
 ud.current_pointList_for_transform = zeros(0,2); ud.curr_slice_num = 1;
+ud.clicked = false;
 ud.showAtlas = false;
 ud.viewColorAtlas = false;
 ud.histology_overlay = 0; 
@@ -402,7 +403,10 @@ switch key_letter
         ref_mode = false;
         delete(ud.overlayAx); ud.overlayAx = [];
         
-        ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
+        if ~ud.clicked || ~ud.histology_overlay;
+            ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
+        end
+        ud.clicked = false;
         slice_points = ud_slice.pointList;
         
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
@@ -492,7 +496,7 @@ switch key_letter
     case 'l' 
         slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
         folder_transformations = fullfile(save_location, ['transformations' filesep]);
-        
+        ud.clicked = false;
         try
         if ud.loaded_slice+ud.slice_shift ~= ud_slice.slice_num
             
@@ -696,6 +700,8 @@ elseif ud.scrollMode == 3
     ud.current_pointList_for_transform = zeros(0,2);
     try; load([folder_transformations slice_name '_transform_data.mat']);
        
+        ud.clicked = false;
+        
         % load transform data
         transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
         transform_data = transform_data.save_transform;
@@ -998,6 +1004,7 @@ elseif ud.getPoint_for_transform
     ud.slice_shift = 0;
     ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     ud.loaded = 0;
+    ud.clicked = true;
 end
 set(f, 'UserData', ud);
 
