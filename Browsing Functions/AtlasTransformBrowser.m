@@ -78,6 +78,7 @@ set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figure, save_location))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
+% display user controls in the console
 function display_controls
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
@@ -402,59 +403,58 @@ switch key_letter
         ud.showOverlay = 0;
         ref_mode = false;
         delete(ud.overlayAx); ud.overlayAx = [];
-        
+        % toggle which mode is active
         if ~ud.clicked || ~ud.histology_overlay;
             ud.histology_overlay = ud.histology_overlay + 1 - 3*(ud.histology_overlay==2);
         end
         ud.clicked = false;
+        % get clicked points and slice info from the slice figure
         slice_points = ud_slice.pointList;
-        
         slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
         folder_transformations = [save_location filesep 'transformations' filesep];
         if size(ud.current_pointList_for_transform,1)  && size(slice_points,1) && ud.slice_at_shift_start+ud.slice_shift == ud_slice.slice_num && ~ud.probe_view_mode
             key_letter = 'x'; % save transform automatically
         end
-        
+        % if in one of the transformation modes, perform the transform
         if (ud.histology_overlay == 1 || ud.histology_overlay == 2) && ...
                 ( (size(ud.current_pointList_for_transform,1) && size(slice_points,1)) || ud.loaded)
-
             try
-        if ud.slice_shift > 0
-            
-            ud.curr_slice_trans = imread([folder_transformations slice_name '_transformed.tif']);
-            
-        else
-            set(ud.text,'Visible','off');
-            fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+                if ud.slice_shift > 0
+                    ud.curr_slice_trans = imread([folder_transformations slice_name '_transformed.tif']);
+                else
+                    set(ud.text,'Visible','off');
+                    fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
 
-            reference_points = ud.current_pointList_for_transform;
-            slice_points = ud_slice.pointList;
+                    reference_points = ud.current_pointList_for_transform;
+                    slice_points = ud_slice.pointList;
+
+                    current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+                    if ~ud.loaded  % use loaded version if 'l' was just pressed 
+                        ud.transform = fitgeotrans(slice_points,reference_points,ud.transform_type); %can use 'affine', 'projective', 'polynomial', or 'pwl'
+                    end
+                    R = imref2d(size(ud.ref));
+                    ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+                end
             
-            current_slice_image = flip(get(ud_slice.im, 'CData'),1);
-            if ~ud.loaded  % use loaded version if 'l' was just pressed 
-                ud.transform = fitgeotrans(slice_points,reference_points,ud.transform_type); %can use 'affine', 'projective', 'polynomial', or 'pwl'
-            end
-            R = imref2d(size(ud.ref));
-            ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
-        end
-            
-            image_blend =  imfuse(uint8(ud.ref*.6), ud.curr_slice_trans(:,:,:),'blend','Scaling','none');
-            if ud.histology_overlay == 2 % 2 ~ blend
-                disp('Slice + Reference mode!');
-                set(ud.im, 'CData', image_blend);
-                ud.curr_im = image_blend;
-            else % 1 ~ just see slice
-                disp('Slice mode!');
-                set(ud.im, 'CData', ud.curr_slice_trans); 
-                ud.curr_im = ud.curr_slice_trans;
-            end
-            catch; 
+                image_blend =  imfuse(uint8(ud.ref*.6), ud.curr_slice_trans(:,:,:),'blend','Scaling','none');
+                if ud.histology_overlay == 2 % 2 ~ blend
+                    disp('Slice + Reference mode!');
+                    set(ud.im, 'CData', image_blend);
+                    ud.curr_im = image_blend;
+                else % 1 ~ just see slice
+                    disp('Slice mode!');
+                    set(ud.im, 'CData', ud.curr_slice_trans); 
+                    ud.curr_im = ud.curr_slice_trans;
+                end
+            % if wrong number of points clicked
+            catch
                 ref_mode = true;
                 disp(['Unable to transform -- ' num2str(size(ud_slice.pointList,1)) ...
                      ' slice points and ' num2str(size(ud.current_pointList_for_transform,1)) ' reference points']);
                 key_letter = 'h'; 
             end
         end
+        % if not doing transform, just show reference atlas
         if ud.histology_overlay == 0 || ref_mode
             ud.histology_overlay = 0;
             disp('Reference mode!');
@@ -467,6 +467,7 @@ switch key_letter
 % n -- start marking a new probe        
     case 'n' 
         new_num_probes = size(ud.pointList,1) + 1; 
+        ud.getPoint_for_transform = false;
         if new_num_probes <= size(ud.ProbeColors,1)
             disp(['probe ' num2str(new_num_probes) ' added! (' ud.ProbeColor{new_num_probes} ')']);
 %         ud.probe_view_mode = 0;
@@ -722,7 +723,7 @@ elseif ud.scrollMode == 3
 
         % create transformed histology image
         ud.curr_slice_trans = imread([folder_transformations slice_name '_transformed.tif']);
-        
+       
         % update figure
         update.VerticalScrollCount = 0; set(f, 'UserData', ud);
         ud.loaded = true;
