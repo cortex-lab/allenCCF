@@ -13,10 +13,10 @@ display_controls
 % create figure and adjust to user's screen size
 % f = figure('Name','Atlas Viewer'); 
 figure(f);
-try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end 
-set(f,'Position', [1000*screen_size(1) 250*screen_size(2) 1100*screen_size(1) 850*screen_size(2)])
+set(f,'Position', [1050*screen_size(1) 560*screen_size(2) 880*screen_size(1) 620*screen_size(2)])
 movegui(f,'onscreen')
 
 % initialize user data variables held by the figure
@@ -429,6 +429,9 @@ switch key_letter
                     slice_points = ud_slice.pointList;
 
                     current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+                    
+                    % ** this is where the transform happens, using the
+                    % clicked points from the reference and histology images
                     if ~ud.loaded  % use loaded version if 'l' was just pressed 
                         ud.transform = fitgeotrans(slice_points,reference_points,ud.transform_type); %can use 'affine', 'projective', 'polynomial', or 'pwl'
                     end
@@ -1057,7 +1060,7 @@ ap = -(currentSlice-bregma(1))*atlasRes;
 dv = (pixel(1)-bregma(2))*atlasRes;
 ml = (pixel(2)-bregma(3))*atlasRes;
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
-set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
+set(angleText, 'String', ['Slice ' num2str((bregma(1) - slice_num)/100) ' AP, DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
 
 % ---------------------------------
 % update the current mouse location

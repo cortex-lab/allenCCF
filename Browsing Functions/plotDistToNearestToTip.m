@@ -14,18 +14,18 @@ scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of an
 
 % plot labelled probe tract
 fD = figure('Name','Probe Tract');
-try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
     
-set(fD,'Position', [700*screen_size(1) 80*screen_size(2) 280*screen_size(1) 1250*screen_size(2)])
+set(fD,'Position', [600*screen_size(1) 50*screen_size(2) 200*screen_size(1) 1275*screen_size(2)])
 movegui(fD,'onscreen')
 box off;
 
 for ann_type = 1:1+show_parent_category % loop between specific and parent region annotations
     
     if ann_type == 2
-        disp('calculting confidences for the parent regions...');
+        disp('calculating confidences for the parent regions...');
     end
 % collect annotations along the track
 annotation_square = ones(size(t,2), error_length*2+1, error_length*2+1);
@@ -48,7 +48,12 @@ for ind = 1:length(t)
             ann(ind) = av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind)));
             cm(ind,:) = allenCmap(ann(ind),:);    % also add color map?         
         elseif ann_type == 2
-            ann(ind) = st(av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind))),:).parent_structure_id; % get annotation for parent region
+            id_path = st(av(ceil(x(ind)), ceil(y(ind)), ceil(z(ind))),:).structure_id_path; % get annotation for parent region
+            id_path_array = regexp(id_path, '/*/', 'split');
+            if size(id_path_array{1},2) > 4
+                ann(ind) = str2num(id_path_array{1}{size(id_path_array{1},2)-3});
+            end            
+            
         end
         
         % go in square orthogonal to probe tract and get other regions
@@ -58,16 +63,12 @@ for ind = 1:length(t)
               % get index of square index projected onto plane orthogonal to probe  
               project_index_onto_ortho_plane = round(projection_matrix * [index1 0 index2]' / scaling_factor);
               % use this index and register its annotation
-              
               if ann_type == 1
                  annotation_square(ind,error_length+1+index1,error_length+1+index2) = av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
                                                           ceil(z(ind)+project_index_onto_ortho_plane(3)));
+                % get parent annotations
               elseif ann_type == 2
-%                  annotation_square(ind,error_length+1+index1,error_length+1+index2) = st(av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
-%                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
-%                                                           ceil(z(ind)+project_index_onto_ortho_plane(3))),10).parent_structure_id;           
-
                  id_path = st(av(ceil(x(ind)+project_index_onto_ortho_plane(1)), ...
                                                           ceil(y(ind)+project_index_onto_ortho_plane(2)), ...
                                                           ceil(z(ind)+project_index_onto_ortho_plane(3))),14).structure_id_path;   
@@ -83,9 +84,11 @@ for ind = 1:length(t)
         end
         catch; disp('you''re way out of the brain');end
         
+        % square of annotations orthogonal to point
         cur_annotation_square = squeeze(annotation_square(ind,:,:));
-        
         currSqVec = cur_annotation_square(:);
+        
+        % find where the annotation isn't equal to that at the curent point
         otherInd = find(currSqVec(distOrder)~=currSqVec(distOrder(1)),1); 
         if isempty(otherInd)
             otherDist(ind) = dists(end);
@@ -95,7 +98,7 @@ for ind = 1:length(t)
     end
 end
 
-
+% get the color map
 if (ann_type == 1 && ~show_parent_category) || (ann_type == 2 && show_parent_category)
     uAnn = unique(ann);
     nC = numel(unique(ann(ann>1)));
@@ -114,6 +117,7 @@ end
 
 % algorithm for finding areas and labels
 region_borders = [0; find(diff(ann)~=0)'; length(yc)]';
+
 if ann_type == 1
     midY = zeros(numel(region_borders)-1 - logical( sum(region_borders==round(rpl)) ) - logical(sum(region_borders==round(active_site_start))) ,1);
     acr = {}; 
@@ -145,7 +149,7 @@ borders = region_borders;
 
 
 
-
+% plot a 2D shape at each border
 for b = 1:length(borders)-1    
      
     ycInds = (borders(b):min(borders(b+1)-1, length(yc)))+1;
@@ -218,9 +222,9 @@ fD.InvertHardcopy = 'off';
 
 yyaxis right
 if active_site_start> 0
-    set(gca, 'YTick', [1 active_site_start*10 rpl*10 yc(end)], 'YTickLabel', {'0 \mum' [num2str(active_site_start*10) ' \mum'] [num2str(rpl*10) ' \mum'] [num2str(yc(end)) ' \mum']});
+    set(gca, 'YTick', [1 active_site_start*10 rpl*10 yc(end)+(1-probage_past_tip_to_plot)*100], 'YTickLabel', {'0 ' [num2str(active_site_start*10) ' '] [num2str(rpl*10) ' '] [num2str(yc(end)+(1-probage_past_tip_to_plot)*100) ' ']});
 else
-    set(gca, 'YTick', [1 rpl*10 yc(end)], 'YTickLabel', {'0 \mum' [num2str(rpl*10) ' \mum'] [num2str(yc(end)) ' \mum']});
+    set(gca, 'YTick', [1 rpl*10 yc(end)+(1-probage_past_tip_to_plot)*100], 'YTickLabel', {'0' [num2str(rpl*10) ' '] [num2str(yc(end)+(1-probage_past_tip_to_plot)*100) ' ']});
 end
 set(gca, 'YDir','reverse');
 set(gca,'YColor',[1 1 1]*.2)

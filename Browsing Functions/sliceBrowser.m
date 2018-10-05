@@ -29,10 +29,10 @@ set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(sli
 set(slice_figure, 'UserData', ud_slice)
 
 % adjust figure to user's screen size
-try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
-set(slice_figure,'Position', [121*screen_size(1) 542*screen_size(2) 822*screen_size(1) 542*screen_size(2)])
+set(slice_figure,'Position', [150*screen_size(1) 560*screen_size(2) 880*screen_size(1) 620*screen_size(2)])
 movegui(slice_figure,'onscreen')
 
 % set up first slice image
