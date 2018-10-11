@@ -1,17 +1,31 @@
 # allen CCF tools
 
-Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version. See the Wiki for detailed instructions.
+Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10µm voxel 2017 version.
+
+## Slice Histology Alignment, Registration, and Probe Track analysis (SHARP-Track)
+
+SHARP-Track is a MATLAB user interface to explore the Allen Mouse Brain Atlas, register asymmetric slice images to the atlas using manual input, 
+and interactively analyze electrode tracks that span several slices. It can also be used to localize other ROIs such as labelled neurons
+or to determine the parameters needed to target particular brain regions with an electrode. All user-directed scripts can be found in the 'SHARP-Track' folder. 
+
+See this repository's wiki for instructions.
+
+If you use this tool, please cite our bioRxiv paper at *(coming soon)*
+
+---
+
+## Basic functionality
+
+### Requirements
+- A computer mouse with a scroll wheel
+- MATLAB (R2017 on a Windows computer was used for all testing)
+- This repository (add all folders and subfolders to your MATLAB path)
+- [The npy-matlab repository](http://github.com/kwikteam/npy-matlab)
+- [The Allen Mouse Brain Atlas volume and annotations](http://data.cortexlab.net/allenCCF/) (download all 4 files from this link) 
+If you have access, you could also locate the data files at //zserver/Lab/Atlas/allenCCF. Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html to access the data directly via the Allen Inst python API.
 
 
-## Requirements
-You need the npy-matlab repository to load the data: https://github.com/kwikteam/npy-matlab
-
-You also need the data files, which can be found at http://data.cortexlab.net/allenCCF/ (or, if you have access, at //zserver/Lab/Atlas/allenCCF)
-Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html to access the data directly via the Allen Inst python API.
-
-
-## Usage examples:
-### Run the Atlas Browser
+### To run the Atlas Browser
 ```
 >> tv = readNPY('template_volume_10um.npy'); % grey-scale "background signal intensity"
 >> av = readNPY('annotation_volume_10um_by_index.npy'); % the number at each pixel labels the area, see note below
@@ -23,7 +37,7 @@ Alternatively, see setup_utils to download and preprocess the files yourself. Se
 >> f = allenAtlasBrowser(tv, av, st, file_save_location, probe_name);
 ```
 
-### Plot wire mesh of brain
+### To plot wire mesh of brain
 ```
 bregma = allenCCFbregma();
 isBrain = av>1; % >0 for original av, >1 for by_index
@@ -34,13 +48,6 @@ axis equal
 axis off
 view([-30    25]);
 ```
-
-
-## Advanced Version (ProcessHistology, AlignHistologyToProbe (using AtlasTransformBrowser), and displayProbeTrack)
-In this version, you can transform each histological brain slice image to more precisely locate regions of interest in your slices. See the wiki for instructions.
-
-### Locating ROIs that are not probes
-The scripts Locate_rois.m and analyse_clicked_points.m provide examples of how the slice-to-reference transformation generated in AlignHistologyToProbe.m could be used to analyze ROIs of any type.
 
 
 ## Note about annotation volume
