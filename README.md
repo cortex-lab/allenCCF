@@ -12,7 +12,6 @@ See this repository's wiki for instructions.
 
 If you use this tool, please cite our bioRxiv paper at *(coming soon)*
 
----
 
 ## Basic functionality
 
@@ -50,7 +49,7 @@ view([-30    25]);
 ```
 
 
-## Note about annotation volume
+### Note about annotation volume
 The original volume has numbers that correspond to the "id" field in the structure tree, but since I wanted to make a colormap for these, I re-indexed the annotation volume by the row number of the structure tree. So in this version the values correspond to "index"+1. This also allows using uint16 datatype, cutting file size in half. See setup_utils.m.
 
 ## Source
