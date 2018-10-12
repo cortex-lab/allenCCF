@@ -211,8 +211,8 @@ yyaxis left
 set(gca, 'YTick', midY, 'YTickLabel', acr);
 set(gca, 'YDir','reverse');
 set(gca,'Color',[1 1 1]*.85);
-xlabel('dist to nearest (um)','color','k');
-set(gca,'fontsize',14)
+xlabel('dist to nearest (\mum)','color','k');
+set(gca,'fontsize',10)
 
 % ylim([0 yc(borders(end-1))])
 ylim([1 yc(end)+1])

@@ -47,7 +47,7 @@ save_file_name = 'SS096_';
 gain = 1; 
 
 % size in pixels of reference atlas brain coronal slice, typically 800 x 1140
-reference_size = [800 1140]; 
+atlas_reference_size = [800 1140]; 
 
 
 
@@ -99,7 +99,7 @@ close all
 % these will be further processed in the next cell
 if ~image_files_are_individual_slices
     histology_figure = figure('Name','Histology Viewer');
-    HistologyCropper(histology_figure, save_folder, image_file_names, reference_size, save_file_name, use_already_downsampled_image)
+    HistologyCropper(histology_figure, save_folder, image_file_names, atlas_reference_size, save_file_name, use_already_downsampled_image)
 else
     disp('individually cropped slices already available')
 end
@@ -120,6 +120,6 @@ close all
 % note -- presssing left or right arrow saves the modified image, so be
 % sure to do this even after modifying the last slice in the folder
 slice_figure = figure('Name','Slice Viewer');
-SliceFlipper(slice_figure, folder_processed_images, reference_size)
+SliceFlipper(slice_figure, folder_processed_images, atlas_reference_size)
 
 

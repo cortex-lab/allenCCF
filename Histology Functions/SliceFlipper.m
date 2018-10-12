@@ -166,13 +166,12 @@ function SliceScrollFcn(fig, evt)
 
 ud = get(fig, 'UserData');
 
-
 %modify based on scrolling
 ud.rotate_angle = ud.rotate_angle + evt.VerticalScrollCount*.75;
 
 ud.current_slice_image = imrotate(ud.original_ish_slice_image,ud.rotate_angle,'nearest','crop');
 imshow(ud.current_slice_image+ud.grid)
-
+title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 
 set(fig, 'UserData', ud);
 

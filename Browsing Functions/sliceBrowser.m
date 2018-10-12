@@ -32,7 +32,7 @@ set(slice_figure, 'UserData', ud_slice)
 try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
-set(slice_figure,'Position', [150*screen_size(1) 560*screen_size(2) 880*screen_size(1) 620*screen_size(2)])
+set(slice_figure,'Position', [150*screen_size(1) 660*screen_size(2) 880*screen_size(1) 650*screen_size(2)])
 movegui(slice_figure,'onscreen')
 
 % set up first slice image

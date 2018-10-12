@@ -16,7 +16,7 @@ figure(f);
 try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end 
-set(f,'Position', [1050*screen_size(1) 560*screen_size(2) 880*screen_size(1) 620*screen_size(2)])
+set(f,'Position', [1050*screen_size(1) 660*screen_size(2) 880*screen_size(1) 650*screen_size(2)])
 movegui(f,'onscreen')
 
 % initialize user data variables held by the figure

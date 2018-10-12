@@ -13,7 +13,7 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 
 % name of the saved probe points
 probe_save_name_suffix = 'electrode_track_1';
-
+probe_save_name_suffix = '';
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';  % [1 2]
 
@@ -30,7 +30,7 @@ active_probe_length = 3.84;
 probe_radius = 100; 
 
 % overlay the distance between parent regions in gray (this takes a while)
-show_parent_category = false; 
+show_parent_category = true; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
 distance_past_tip_to_plot = .5;
