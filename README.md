@@ -6,7 +6,7 @@ Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10Â
 
 SHARP-Track is a MATLAB user interface to explore the Allen Mouse Brain Atlas, register asymmetric slice images to the atlas using manual input, 
 and interactively analyze electrode tracks that span several slices. It can also be used to localize other ROIs such as labelled neurons
-or to determine the parameters needed to target particular brain regions with an electrode. All user-directed scripts can be found in the 'SHARP-Track' folder. 
+or to determine the parameters needed to target particular brain regions with an electrode. All user-oriented scripts can be found in the 'SHARP-Track' folder. 
 
 See this repository's wiki for instructions.
 
