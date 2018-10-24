@@ -21,11 +21,7 @@ imshow(ud.current_slice_image + ud.grid)
 title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 set(slice_figure, 'UserData', ud);
 
-
-        
-
-
-
+     
 
 % key function for slice
 set(slice_figure, 'KeyPressFcn', @(slice_figure,keydata)SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images));
@@ -159,6 +155,8 @@ function ud = load_next_slice(ud,folder_processed_images)
     end        
     ud.grid = imresize(ud.grid, ud.size(1:2)); 
     ud.rotate_angle = 0;
+    
+    imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name)) 
 
 
 % function to rotate slice by scrolling
