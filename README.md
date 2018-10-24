@@ -10,7 +10,7 @@ or to determine the parameters needed to target particular brain regions with an
 
 See this repository's wiki for instructions.
 
-If you use this tool, please cite our bioRxiv paper at *(coming soon)*
+If you use this tool, please cite [our bioRxiv paper](https://www.biorxiv.org/content/early/2018/10/19/447995).
 
 
 ## Basic functionality
