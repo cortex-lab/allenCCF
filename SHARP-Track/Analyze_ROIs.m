@@ -23,6 +23,17 @@ structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2
 % rois = zeros(800,1140,'uint8');
 % rois(250:300, 600:610) = 200; rois(480:500, 200:210) = 200;
 % imwrite(rois,roi_location)
+% 
+% Using a set of x and y coordinates from the ImageJ function Analyze Particles to generate an ROI image
+% roi_array = zeros(800,1140,'uint8');
+% roi_array_values = csvread('C:\ROI_files\cfos_cells.csv', 1, 5);
+% y = roi_array_values(:, 1);
+% x = roi_array_values(:, 2);
+% 
+% for i = 1:length(roi_array_values)-1
+%     roi_array(x(i),y(i)) = 200;   
+% end
+    
 
 
 %% LOAD THE DATA
