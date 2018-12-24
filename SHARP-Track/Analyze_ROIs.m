@@ -55,6 +55,11 @@ slice_angle = transform_data.allen_location{2};
 % load the rois
 rois = imread(roi_location);
 
+% if the rois come from a transformed roi image of non-contiguous roi
+% pixels (e.g. an ROI pixel for each neuron), then run this line to ensure
+% a one-to-one mapping between ROIs in the original and transformed images:
+% rois = uint8(imregionalmax(rois));
+
 % load the reference brain annotations
 if ~exist('av','var') || ~exist('st','var')
     disp('loading reference atlas...')
