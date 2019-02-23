@@ -7,7 +7,7 @@ function structureTreeTable = loadStructureTree(fn)
 
 if nargin<1
     p = mfilename('fullpath');
-    fn = fullfile(fileparts(p), 'structure_tree_safe_2017.csv');
+    fn = fullfile(fileparts(fileparts(p)), 'structure_tree_safe_2017.csv');
 end
 
 [~, fnBase] = fileparts(fn);
