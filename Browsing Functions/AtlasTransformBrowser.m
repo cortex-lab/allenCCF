@@ -635,11 +635,11 @@ if strcmp(key_letter,'x')
         disp('atlas location saved')
         
         % save transformed histology image
-        current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
-%         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
-        R = imref2d(size(ud.ref));
-        curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
-        imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
+%         current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
+% %         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+%         R = imref2d(size(ud.ref));
+%         curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+        imwrite(ud.curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
         
         disp('transform saved')
         catch
