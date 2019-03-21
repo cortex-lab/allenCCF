@@ -48,12 +48,12 @@ axis off
 view([-30    25]);
 ```
 
+### GUI for determining probe tract over atlas
+allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles
 
 ### Note about annotation volume
 
-## GUI for determining probe tract over atlas
-```
-allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles
+
 
 
 
