@@ -48,8 +48,10 @@ axis off
 view([-30    25]);
 ```
 
-### GUI for determining probe tract over atlas
-allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles
+### Probe trajectory with atlas GUI
+allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles. 
+
+Can either load in atlas first and call 'allen_atlas_probe(tv,av,st)', or define CCF path and load automatically with 'allen_atlas_probe'
 
 ### Note about annotation volume
 
