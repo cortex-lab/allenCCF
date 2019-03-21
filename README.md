@@ -50,6 +50,13 @@ view([-30    25]);
 
 
 ### Note about annotation volume
+
+## GUI for determining probe tract over atlas
+```
+allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles
+
+
+
 The original volume has numbers that correspond to the "id" field in the structure tree, but since I wanted to make a colormap for these, I re-indexed the annotation volume by the row number of the structure tree. So in this version the values correspond to "index"+1. This also allows using uint16 datatype, cutting file size in half. See setup_utils.m.
 
 ## Source
