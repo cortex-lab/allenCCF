@@ -1,14 +1,8 @@
 function allen_atlas_probe(tv,av,st)
 % allen_browser_test_gui(tv,av,st)
 %
-% This gui is for looking at trajectories in the brain with the Allen CCF
-% 
-% Coordinates in: plot [ap,ml,dv], volume [ap,dv,ml]
-%
-% TO DO: 
-% - actual coordinates in bregma (they're off from Paxinos to some degree)
-% - bregma-lambda scaling and angle adjustment
-% - mouse over structure names?
+% This gui is for looking at trajectories in the brain with the Allen CCF, 
+% keypress function is displayed on startup
 
 % Initialize gui_data structure
 gui_data = struct;
@@ -21,10 +15,13 @@ bregma = allenCCFbregma;
 
 % If not already loaded in, load in atlas
 if nargin < 3
-    cd('C:\Users\Andrew\OneDrive for Business\Documents\Atlases\AllenCCF')
-    tv = readNPY('template_volume_10um.npy'); % grey-scale "background signal intensity"
-    av = readNPY('annotation_volume_10um_by_index.npy'); % the number at each pixel labels the area, see note below
-    st = loadStructureTree('structure_tree_safe_2017.csv'); % a table of what all the labels mean
+    allen_atlas_path = '';
+    if isempty(allen_atlas_path)
+        error('Enter path where Allen CCF is stored');
+    end
+    tv = readNPY([allen_atlas_path filesep 'template_volume_10um.npy']); % grey-scale "background signal intensity"
+    av = readNPY([allen_atlas_path filesep 'annotation_volume_10um_by_index.npy']); % the number at each pixel labels the area, see note below
+    st = loadStructureTree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean
 end
 
 % Set up the gui and axes
@@ -121,9 +118,12 @@ fprintf(['Controls: \n' ...
     'numpad 8/2 : raise and lower probe \n' ...
     'b : toggle brain grid visibility \n' ...
     's : toggle brain slice visibility \n' ...
+    'p: toggle probe trajectory visibility \n' ...
     '+/- : add 3D brain structure \n' ...
     'm : toggle 3D brain structure visibility \n' ...
-    'x : export probe coordinates to workspace \n']);
+    'x : export probe coordinates to workspace \n', ...
+    'h : load probe coordiates from histology \n', ...
+    'r : toggle rotatability of brain']);
 
 end
 
@@ -170,7 +170,7 @@ switch eventdata.Key
         update_slice(probe_atlas_gui);
         update_probe_coordinates(probe_atlas_gui);
         
-    case '1'
+    case 'numpad2'
         
         probe_offset = -10;
         old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
@@ -185,7 +185,7 @@ switch eventdata.Key
         
         update_probe_coordinates(probe_atlas_gui);
         
-    case '2'
+    case 'numpad8'
         
         probe_offset = 10;
         old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
@@ -251,13 +251,18 @@ switch eventdata.Key
         % Get updated guidata
         gui_data = guidata(probe_atlas_gui);
         
-    case 'x'
+    case 'add'
         % Add structure(s) to display
         slice_spacing = 10;
 
-        % Prompt for which structures to show
-        plot_structures = listdlg('PromptString','Select a structure to add:', ...
-            'ListString',gui_data.st.safe_name,'ListSize',[520,500]);
+        % Prompt for which structures to show (only structures which are
+        % labelled in the slice-spacing downsampled annotated volume)
+        parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
+            1:slice_spacing:end,1:slice_spacing:end),[],1));
+        plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+            'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
+        
+        plot_structures = parsed_structures(plot_structures_parsed);
         
         for curr_plot_structure = plot_structures
             % If this label isn't used, don't plot
@@ -289,12 +294,16 @@ switch eventdata.Key
             gui_data.handles.structure_patch(remove_structures) = [];
         end
         
-    case 'g'
+    case 'x'
         % Export the probe coordinates in Allen CCF to the workspace
         probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
-        probe_vector_ccf = round(probe_vector([1,3,2],:))'*10;
+        probe_vector_ccf = round(probe_vector([1,3,2],:))';
         assignin('base','probe_vector_ccf',probe_vector_ccf)
         disp('Copied probe vector coordinates to workspace');
+        
+    case 'h'
+        % Load probe histology points, plot line of best fit
+        probe_histology
 end
 
 % Upload gui_data
@@ -474,23 +483,24 @@ set(gui_data.probe_coordinates_text,'String',probe_text);
 end
 
 
-%% PROBE HISTOLOGY: TO-DO
-
 function probe_histology
-% IN PROGRESS: plot best-fit line through probe histology points
-% this isn't implemented yet, just keeping this code here for whenever
+% Load histology points from P Shamash's program and draw best-fit line
 
-histology_points = AP015_probe_coords_1;
+% (AP_cortexlab_filename option: 'probe_histology')
+[probe_file,probe_path] = uigetfile('*.mat','Choose probe coordinate file');
+load([probe_path,probe_file]);
 
-r0 = mean(histology_points);
+histology_points = pointList.pointList{1};
+
+r0 = mean(histology_points,1);
 xyz = bsxfun(@minus,histology_points,r0);
 [~,~,V] = svd(xyz,0);
 histology_probe_direction = V(:,1);
 
 t = [-1000,1000];
 P = bsxfun(@plus,bsxfun(@times,t',histology_probe_direction'),r0);
-% plot3(histology_points(:,3),histology_points(:,1),histology_points(:,2),'.b','MarkerSize',20);
-line(P(:,3),P(:,1),P(:,2),'color','r','linewidth',2)
+plot3(histology_points(:,3),histology_points(:,1),histology_points(:,2),'.b','MarkerSize',20);
+line(P(:,3),P(:,1),P(:,2),'color','k','linewidth',2)
 
 end
 
