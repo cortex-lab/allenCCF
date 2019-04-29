@@ -15,6 +15,7 @@ bregma = allenCCFbregma;
 
 % If not already loaded in, load in atlas
 if nargin < 3
+    % Enter the path where the Allen CCF is stored
     allen_atlas_path = '';
     if isempty(allen_atlas_path)
         error('Enter path where Allen CCF is stored');
@@ -63,7 +64,7 @@ probe_ref_vector = [probe_ref_top',probe_ref_bottom'];
 probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vector(3,:), ...
     'linewidth',1.5,'color','r','linestyle','--');
 
-probe_length = 382.0; % IMEC phase 3 (in 10 ums)
+probe_length = 384.0; % IMEC phase 3 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
 probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','g','linestyle','-');
@@ -264,7 +265,7 @@ switch eventdata.Key
         
         plot_structures = parsed_structures(plot_structures_parsed);
         
-        for curr_plot_structure = plot_structures
+        for curr_plot_structure = reshape(plot_structures,[],2)
             % If this label isn't used, don't plot
             if ~any(reshape(gui_data.av( ...
                     1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
