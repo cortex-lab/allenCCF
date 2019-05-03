@@ -1,7 +1,7 @@
 function allen_atlas_probe(tv,av,st)
 % allen_browser_test_gui(tv,av,st)
 %
-% This gui is for looking at trajectories in the brain with the Allen CCF, 
+% This gui is for looking at trajectories in the brain with the Allen CCF,
 % keypress function is displayed on startup
 
 % Initialize gui_data structure
@@ -10,13 +10,12 @@ gui_data = struct;
 % Allen CCF-bregma transform (this is total estimate)
 % [AP,DV,ML,angle]
 % bregma = [540,0,570,0];
-% Get this from Nick's function 
+% Get this from Nick's function
 bregma = allenCCFbregma;
 
 % If not already loaded in, load in atlas
 if nargin < 3
-    % Enter the path where the Allen CCF is stored
-    allen_atlas_path = '';
+    allen_atlas_path = 'C:\Users\Andrew\OneDrive for Business\Documents\Atlases\AllenCCF';
     if isempty(allen_atlas_path)
         error('Enter path where Allen CCF is stored');
     end
@@ -30,7 +29,7 @@ probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
     'Name','Atlas-probe viewer');
 colormap(gray);
 
-axes_3d = axes('ZDir','reverse');
+axes_3d = axes('ZDir','reverse','YDir','reverse');
 hold(axes_3d,'on');
 warning off
 axis vis3d equal off manual
@@ -84,7 +83,7 @@ gui_data.structure_plot_idx = []; % Plotted structures
 gui_data.probe_angle = [0;90]; % Probe angles in ML/DV
 
 %Store handles
-gui_data.handles.cortex_outline = brain_outline; 
+gui_data.handles.cortex_outline = brain_outline;
 gui_data.handles.structure_patch = []; % Plotted structures
 gui_data.handles.axes_3d = axes_3d; % Axes with 3D atlas
 gui_data.handles.slice_plot = surface('EdgeColor','none'); % Slice on 3D atlas
@@ -93,7 +92,7 @@ gui_data.handles.probe_line = probe_line; % Probe reference line on 3D atlas
 gui_data.probe_coordinates_text = probe_coordinates_text; % Probe coordinates text
 
 % Set functions for key presses
-set(probe_atlas_gui,'KeyPressFcn',@key_press); 
+set(probe_atlas_gui,'KeyPressFcn',@key_press);
 
 % Make 3D rotation the default state (toggle on/off with 'r')
 h = rotate3d(axes_3d);
@@ -113,18 +112,27 @@ update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
 % Print controls
-fprintf(['Controls: \n' ...
-    'a : change probe angle \n' ...
-    'arrow keys : move probe \n' ...
-    'numpad 8/2 : raise and lower probe \n' ...
-    'b : toggle brain grid visibility \n' ...
-    's : toggle brain slice visibility \n' ...
-    'p: toggle probe trajectory visibility \n' ...
-    '+/- : add 3D brain structure \n' ...
-    'm : toggle 3D brain structure visibility \n' ...
-    'x : export probe coordinates to workspace \n', ...
-    'h : load probe coordiates from histology \n', ...
-    'r : toggle rotatability of brain']);
+CreateStruct.Interpreter = 'tex';
+CreateStruct.WindowStyle = 'non-modal';
+msgbox( ...
+    {'\fontsize{12}' ...
+    '\bf Probe: \rm' ...
+    'Arrow keys : translate probe' ...
+    'Alt + up/down : raise/lower probe' ...
+    'Ctrl + Arrow keys : rotate probe' ...   
+    'm : set probe location manually', ...
+    '\bf Brain areas: \rm' ...
+    '+/- : add/remove brain areas' ...
+    '\bf Visibility: \rm' ...
+    'b : brain outline' ...
+    'a : brain areas' ...
+    's : atlas slice' ...
+    'p : probe' ...
+    '\bf Other: \rm' ...
+    'r : toggle clickable rotation' ...
+    'x : export probe coordinates to workspace' ...
+    'h : load and plot SHARP-Track histology'}, ...
+    'Controls',CreateStruct);
 
 end
 
@@ -136,80 +144,107 @@ gui_data = guidata(probe_atlas_gui);
 switch eventdata.Key
     
     case 'uparrow'
-        
-        ap_offset = -10;
-        
-        set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
-        set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
-        update_slice(probe_atlas_gui);
-        update_probe_coordinates(probe_atlas_gui);
+        if isempty(eventdata.Modifier)
+            % Up: move probe anterior
+            ap_offset = -10;
+            set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
+            set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
+            update_slice(probe_atlas_gui);
+            update_probe_coordinates(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'control'))
+            % Ctrl-up: increase DV angle
+            angle_change = [0;1];
+            new_angle = gui_data.probe_angle + angle_change;
+            gui_data.probe_angle = new_angle;
+            update_probe_angle(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'alt'))
+            % Alt-up: raise probe
+            probe_offset = -10;
+            old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+            
+            move_probe_vector = diff(old_probe_vector,[],2)./ ...
+                norm(diff(old_probe_vector,[],2))*probe_offset;
+            
+            new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
+            
+            set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
+            
+            update_probe_coordinates(probe_atlas_gui);
+        end
         
     case 'downarrow'
-        
-        ap_offset = 10;
-        
-        set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
-        set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
-        update_slice(probe_atlas_gui);
-        update_probe_coordinates(probe_atlas_gui);
+        if isempty(eventdata.Modifier)
+            % Down: move probe posterior
+            ap_offset = 10;
+            set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
+            set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
+            update_slice(probe_atlas_gui);
+            update_probe_coordinates(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'control'))
+            % Ctrl-down: decrease DV angle
+            angle_change = [0;-1];
+            new_angle = gui_data.probe_angle + angle_change;
+            gui_data.probe_angle = new_angle;
+            update_probe_angle(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'alt'))
+            % Alt-down: lower probe
+            probe_offset = 10;
+            old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+            
+            move_probe_vector = diff(old_probe_vector,[],2)./ ...
+                norm(diff(old_probe_vector,[],2))*probe_offset;
+            
+            new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
+            
+            set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
+            
+            update_probe_coordinates(probe_atlas_gui);
+            
+        end
         
     case 'rightarrow'
-        
-        ml_offset = 10;
-        
-        set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
-        set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
-        update_slice(probe_atlas_gui);
-        update_probe_coordinates(probe_atlas_gui);
+        if isempty(eventdata.Modifier)
+            % Right: move probe right
+            ml_offset = 10;
+            set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
+            set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
+            update_slice(probe_atlas_gui);
+            update_probe_coordinates(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'control'))
+            % Ctrl-right: increase vertical angle
+            angle_change = [1;0];
+            new_angle = gui_data.probe_angle + angle_change;
+            gui_data.probe_angle = new_angle;
+            update_probe_angle(probe_atlas_gui);
+        end
         
     case 'leftarrow'
-        
-        ml_offset = -10;
-        
-        set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
-        set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
-        update_slice(probe_atlas_gui);
-        update_probe_coordinates(probe_atlas_gui);
-        
-    case 'numpad2'
-        
-        probe_offset = -10;
-        old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
-        
-        move_probe_vector = diff(old_probe_vector,[],2)./ ...
-            norm(diff(old_probe_vector,[],2))*probe_offset;
-        
-        new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
-        
-        set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-            'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
-        
-        update_probe_coordinates(probe_atlas_gui);
-        
-    case 'numpad8'
-        
-        probe_offset = 10;
-        old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
-               
-        move_probe_vector = diff(old_probe_vector,[],2)./ ...
-            norm(diff(old_probe_vector,[],2))*probe_offset;
-        
-        new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
-        
-        set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-            'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
-        
-        update_probe_coordinates(probe_atlas_gui);        
+        if isempty(eventdata.Modifier)
+            % Left: move probe left
+            ml_offset = -10;
+            set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
+            set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
+            update_slice(probe_atlas_gui);
+            update_probe_coordinates(probe_atlas_gui);
+        elseif any(strcmp(eventdata.Modifier,'control'))
+            % Ctrl-right: increase vertical angle
+            angle_change = [-1;0];
+            new_angle = gui_data.probe_angle + angle_change;
+            gui_data.probe_angle = new_angle;
+            update_probe_angle(probe_atlas_gui);
+        end
         
     case 'b'
         % Toggle brain outline visibility
         current_visibility = gui_data.handles.cortex_outline{1}{1}{1}.Visible;
-        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;        
+        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
         % Pull out all handles (stored as nested cells)
         brain_h_direction = cellfun(@(x) [x{:}],[gui_data.handles.cortex_outline{:}],'uni',false);
         set(horzcat(brain_h_direction{:}),'Visible',new_visibility);
         
-    case 'm'
+    case 'a'
         % Toggle plotted structure visibility
         if ~isempty(gui_data.structure_plot_idx)
             current_visibility = get(gui_data.handles.structure_patch(1),'Visible');
@@ -229,33 +264,33 @@ switch eventdata.Key
         switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
         set(gui_data.handles.probe_ref_line,'Visible',new_visibility);
         set(gui_data.handles.probe_line,'Visible',new_visibility);
-                
+        
     case 'r'
         % Toggle 3D rotation
         h = rotate3d(gui_data.handles.axes_3d);
         switch h.Enable
             case 'off'
                 h.Enable = 'on';
-                % Update the slice whenever a rotation is completed  
+                % Update the slice whenever a rotation is completed
                 h.ActionPostCallback = @update_slice;
                 %(need to restore key-press functionality with rotation)
                 hManager = uigetmodemanager(probe_atlas_gui);
                 [hManager.WindowListenerHandles.Enabled] = deal(false);
-                set(probe_atlas_gui,'KeyPressFcn',@key_press);                                           
+                set(probe_atlas_gui,'KeyPressFcn',@key_press);
             case 'on'
                 h.Enable = 'off';
         end
         
-    case 'a' 
+    case 'm'
         % Set probe angle
-        set_probe_angle(probe_atlas_gui);
+        set_probe_position(probe_atlas_gui);
         % Get updated guidata
         gui_data = guidata(probe_atlas_gui);
         
-    case 'add'
+    case {'equal','add'}
         % Add structure(s) to display
         slice_spacing = 10;
-
+        
         % Prompt for which structures to show (only structures which are
         % labelled in the slice-spacing downsampled annotated volume)
         parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
@@ -272,7 +307,7 @@ switch eventdata.Key
                 disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
                 continue
             end
-                       
+            
             gui_data.structure_plot_idx(end+1) = curr_plot_structure;
             
             plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
@@ -285,7 +320,7 @@ switch eventdata.Key
                 'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
         end
         
-    case 'subtract'
+    case {'hyphen','subtract'}
         % Remove structure(s) already plotted
         if ~isempty(gui_data.structure_plot_idx)
             remove_structures = listdlg('PromptString','Select a structure to remove:', ...
@@ -360,7 +395,7 @@ switch cam_plane
         plane_y = ...
             (normal_vector(1)*plane_x+normal_vector(3)*plane_z + plane_offset)/ ...
             -normal_vector(2);
-                
+        
     case 3
         [plane_x,plane_y] = meshgrid(1:slice_px_space:size(gui_data.tv,1),1:slice_px_space:size(gui_data.tv,3));
         plane_z = ...
@@ -401,26 +436,33 @@ guidata(probe_atlas_gui, gui_data);
 
 end
 
-function set_probe_angle(probe_atlas_gui,varargin)
+
+function set_probe_position(probe_atlas_gui,varargin)
 
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
 
 % Prompt for angles
-prompt_text = {'Probe ML angle (relative to lambda -> bregma)', ....
-    'Probe DV angle (relative to horizontal)'};
-probe_angle = ...
-    (cellfun(@str2num,inputdlg(prompt_text,'Enter probe angles',1, ...
-    {num2str(gui_data.probe_angle(1)),num2str(gui_data.probe_angle(2))}))/360)*2*pi;
+prompt_text = { ...
+    'AP position (mm from bregma)', ...
+    'ML position (mm from bregma)', ...
+    'ML angle (relative to lambda -> bregma)', ....
+    'DV angle (relative to horizontal)'};
 
-% Update the probe and trajectory reference (reset to bregma)
+new_probe_position = cellfun(@str2num,inputdlg(prompt_text,'Set probe position',1));
+
+% Convert probe position: mm->CCF and degrees->radians
+probe_ccf_coordinates = round(gui_data.bregma([1,3])' - new_probe_position(1:2)*100);
+probe_angle_rad = (new_probe_position(3:4)/360)*2*pi;
+
+% Update the probe and trajectory reference
 [ap_max,dv_max,ml_max] = size(gui_data.tv);
 
 max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
 
-[x,y,z] = sph2cart(pi-probe_angle(1),probe_angle(2),max_ref_length);
+[x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
 
-probe_ref_top = [gui_data.bregma(1),gui_data.bregma(3),0];
+probe_ref_top = [probe_ccf_coordinates(1),probe_ccf_coordinates(2),0];
 probe_ref_bottom = probe_ref_top + [x,y,z];
 probe_ref_vector = [probe_ref_top;probe_ref_bottom]';
 
@@ -434,7 +476,7 @@ set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
     'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
 
 % Upload gui_data
-gui_data.probe_angle = (probe_angle/(2*pi))*360;
+gui_data.probe_angle = (probe_angle_rad/(2*pi))*360;
 guidata(probe_atlas_gui, gui_data);
 
 % Update the slice and probe coordinates
@@ -442,6 +484,47 @@ update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
 end
+
+
+function update_probe_angle(probe_atlas_gui,varargin)
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Get the positions of the probe and trajectory reference
+probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
+probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+
+% Update the probe and trajectory reference (relative to trajectory top)
+[ap_max,dv_max,ml_max] = size(gui_data.tv);
+
+max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
+
+probe_angle_rad = (gui_data.probe_angle./360)*2*pi;
+[x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
+
+probe_ref_top = [probe_ref_vector(1,1),probe_ref_vector(2,1),0];
+probe_ref_bottom = probe_ref_top + [x,y,z];
+probe_ref_vector = [probe_ref_top;probe_ref_bottom]';
+
+set(gui_data.handles.probe_ref_line,'XData',probe_ref_vector(1,:), ...
+    'YData',probe_ref_vector(2,:), ...
+    'ZData',probe_ref_vector(3,:));
+
+probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
+    norm(diff(probe_ref_vector,[],2))*gui_data.probe_length + probe_ref_vector(:,1)];
+set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
+    'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
+
+% Upload gui_data
+guidata(probe_atlas_gui, gui_data);
+
+% Update the slice and probe coordinates
+update_slice(probe_atlas_gui);
+update_probe_coordinates(probe_atlas_gui);
+
+end
+
 
 function update_probe_coordinates(probe_atlas_gui,varargin)
 
@@ -457,7 +540,7 @@ n_coords = max(abs(diff(probe_ref_vector,[],2)));
     linspace(probe_ref_vector(1,1),probe_ref_vector(1,2),n_coords), ...
     linspace(probe_ref_vector(2,1),probe_ref_vector(2,2),n_coords), ...
     linspace(probe_ref_vector(3,1),probe_ref_vector(3,2),n_coords));
-    
+
 % Get brain labels across the probe trajectory and intersection with brain
 pixel_space = 5;
 probe_profile = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
