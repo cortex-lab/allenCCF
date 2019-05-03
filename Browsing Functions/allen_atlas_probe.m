@@ -67,7 +67,7 @@ probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vect
 probe_length = 384.0; % IMEC phase 3 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
-probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','g','linestyle','-');
+probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','b','linestyle','-');
 
 % Set up the text to display coordinates
 probe_coordinates_text = uicontrol('Style','text','String','', ...
@@ -265,7 +265,7 @@ switch eventdata.Key
         
         plot_structures = parsed_structures(plot_structures_parsed);
         
-        for curr_plot_structure = reshape(plot_structures,[],2)
+        for curr_plot_structure = reshape(plot_structures,[],1)
             % If this label isn't used, don't plot
             if ~any(reshape(gui_data.av( ...
                     1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
