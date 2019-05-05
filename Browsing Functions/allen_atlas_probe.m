@@ -76,7 +76,8 @@ axes(axes_atlas);
 %     'FaceColor','none','EdgeColor',target_structure_color);
 
 % (with Nick's method)
-brain_outline = gridIn3D(double(av > 1),0.5,100,bregma);
+% brain_outline = gridIn3D(double(av > 1),0.5,100,bregma);
+[~, brain_outline] = plotBrainGrid([],axes_atlas);
 
 % Set up the probe reference/actual
 probe_ref_top = [bregma(1),bregma(3),0];
