@@ -144,7 +144,7 @@ msgbox( ...
     '\bf Probe: \rm' ...
     'Arrow keys : translate probe' ...
     'Alt + up/down : raise/lower probe' ...
-    'Ctrl + Arrow keys : rotate probe' ...   
+    'Shift + Arrow keys : rotate probe' ...   
     'm : set probe location manually', ...
     '\bf Brain areas: \rm' ...
     '+/- : add/remove brain areas' ...
@@ -176,7 +176,7 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
             update_slice(probe_atlas_gui);
             update_probe_coordinates(probe_atlas_gui);
-        elseif any(strcmp(eventdata.Modifier,'control'))
+        elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-up: increase DV angle
             angle_change = [0;1];
             new_angle = gui_data.probe_angle + angle_change;
@@ -206,7 +206,7 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
             update_slice(probe_atlas_gui);
             update_probe_coordinates(probe_atlas_gui);
-        elseif any(strcmp(eventdata.Modifier,'control'))
+        elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-down: decrease DV angle
             angle_change = [0;-1];
             new_angle = gui_data.probe_angle + angle_change;
@@ -236,7 +236,7 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
             update_slice(probe_atlas_gui);
             update_probe_coordinates(probe_atlas_gui);
-        elseif any(strcmp(eventdata.Modifier,'control'))
+        elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
             angle_change = [1;0];
             new_angle = gui_data.probe_angle + angle_change;
@@ -252,7 +252,7 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
             update_slice(probe_atlas_gui);
             update_probe_coordinates(probe_atlas_gui);
-        elseif any(strcmp(eventdata.Modifier,'control'))
+        elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
             angle_change = [-1;0];
             new_angle = gui_data.probe_angle + angle_change;
