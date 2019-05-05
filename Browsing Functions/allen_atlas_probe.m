@@ -148,6 +148,7 @@ msgbox( ...
     'm : set probe location manually', ...
     '\bf Brain areas: \rm' ...
     '+/- : add/remove brain areas' ...
+    'h: add area with hierarchical selector' ...
     '\bf Visibility: \rm' ...
     'b : brain outline' ...
     'a : brain areas' ...
@@ -353,6 +354,33 @@ switch eventdata.Key
             gui_data.structure_plot_idx(remove_structures) = [];
             gui_data.handles.structure_patch(remove_structures) = [];
         end
+    
+    case 'h'
+        % Add structure(s) to display
+        slice_spacing = 5;
+        
+        % Prompt for which structures to show 
+        
+        plot_structures = hierarchicalSelect(gui_data.st);
+        
+        if ~isempty(plot_structures) % will be empty if dialog was cancelled
+            % get all children of this one
+            thisID = gui_data.st.id(plot_structures);
+            idStr = sprintf('/%d/', thisID);
+            theseCh = find(cellfun(@(x)contains(x,idStr), gui_data.st.structure_id_path));
+
+            % plot the structure        
+            plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structures},3,[]))./255;
+            structure_3d = isosurface(permute(ismember(gui_data.av(1:slice_spacing:end, ...
+                1:slice_spacing:end,1:slice_spacing:end),theseCh),[3,1,2]),0);
+
+            structure_alpha = 0.2;
+            gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
+                'Faces',structure_3d.faces, ...
+                'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+        
+        end
+        
         
     case 'x'
         % Export the probe coordinates in Allen CCF to the workspace
