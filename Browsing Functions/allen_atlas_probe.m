@@ -35,7 +35,8 @@ probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
 colormap(gray);
 
 % Set up the atlas axes
-axes_atlas = subplot(1,4,1:3,'ZDir','reverse','YDir','reverse');
+axes_atlas = subplot(1,4,1:3);
+[~, brain_outline] = plotBrainGrid([],axes_atlas);
 hold(axes_atlas,'on');
 axis vis3d equal off manual
 view([-30,25]);
@@ -60,23 +61,6 @@ set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
 
 % Set the current axes to the atlas (dirty, but some gca requirements)
 axes(axes_atlas);
-
-% Plot outline of the brain
-
-% (with downsampled polygons - faster but grosser)
-% slice_spacing = 10;
-% target_volume = permute(av(1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end) > 1,[3,1,2]);
-% structure_patch = isosurface(target_volume,0);
-% structure_wire = reducepatch(structure_patch.faces,structure_patch.vertices,0.01);
-% target_structure_color = [0.7,0.7,0.7];
-% brain_outline = patch('Vertices',structure_wire.vertices*slice_spacing, ...
-%     'Faces',structure_wire.faces, ...
-%     'FaceColor','none','EdgeColor',target_structure_color);
-
-% (with Nick's method)
-% brain_outline = gridIn3D(double(av > 1),0.5,100,bregma);
-[~, brain_outline] = plotBrainGrid([],axes_atlas);
-axis manual
 
 % Set up the probe reference/actual
 probe_ref_top = [bregma(1),bregma(3),0];
