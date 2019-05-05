@@ -21,16 +21,22 @@ if nargin < 3
     end
     tv = readNPY([allen_atlas_path filesep 'template_volume_10um.npy']); % grey-scale "background signal intensity"
     av = readNPY([allen_atlas_path filesep 'annotation_volume_10um_by_index.npy']); % the number at each pixel labels the area, see note below
-    st = loadStructureTree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean
+    st = loadStructureTree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean    
 end
 
-% Set up the gui and axes
+% Load the colormap (located in the repository, find by associated fcn)
+allenCCF_path = fileparts(which('allenCCFbregma'));
+cmap_filename = [allenCCF_path filesep 'allen_ccf_colormap_2017.mat'];
+load(cmap_filename);
+
+% Set up the gui
 probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
     'Name','Atlas-probe viewer');
 colormap(gray);
 
-axes_3d = axes('ZDir','reverse','YDir','reverse');
-hold(axes_3d,'on');
+% Set up the atlas axes
+axes_atlas = subplot(1,4,1:3,'ZDir','reverse','YDir','reverse');
+hold(axes_atlas,'on');
 warning off
 axis vis3d equal off manual
 warning on
@@ -40,6 +46,22 @@ caxis([0 300]);
 xlim([-10,ap_max+10])
 ylim([-10,ml_max+10])
 zlim([-10,dv_max+10])
+
+% Set up the probe area axes
+axes_probe_areas = subplot(1,16,13);
+axes_probe_areas.ActivePositionProperty = 'position';
+set(axes_probe_areas,'FontSize',12);
+yyaxis(axes_probe_areas,'left');
+probe_areas_plot = image(0);
+set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+ylabel(axes_probe_areas,'Depth (\mum)');
+colormap(axes_probe_areas,cmap);
+caxis([1,size(cmap,1)])
+yyaxis(axes_probe_areas,'right');
+set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+
+% Set the current axes to the atlas (dirty, but some gca requirements)
+axes(axes_atlas);
 
 % Plot outline of the brain
 
@@ -77,6 +99,7 @@ probe_coordinates_text = uicontrol('Style','text','String','', ...
 gui_data.tv = tv; % Intensity atlas
 gui_data.av = av; % Annotated atlas
 gui_data.st = st; % Labels table
+gui_data.cmap = cmap; % Atlas colormap
 gui_data.bregma = bregma; % Bregma for external referencing
 gui_data.probe_length = probe_length; % Length of probe
 gui_data.structure_plot_idx = []; % Plotted structures
@@ -85,17 +108,19 @@ gui_data.probe_angle = [0;90]; % Probe angles in ML/DV
 %Store handles
 gui_data.handles.cortex_outline = brain_outline;
 gui_data.handles.structure_patch = []; % Plotted structures
-gui_data.handles.axes_3d = axes_3d; % Axes with 3D atlas
+gui_data.handles.axes_atlas = axes_atlas; % Axes with 3D atlas
+gui_data.handles.axes_probe_areas = axes_probe_areas; % Axes with probe areas
 gui_data.handles.slice_plot = surface('EdgeColor','none'); % Slice on 3D atlas
 gui_data.handles.probe_ref_line = probe_ref_line; % Probe reference line on 3D atlas
 gui_data.handles.probe_line = probe_line; % Probe reference line on 3D atlas
+gui_data.handles.probe_areas_plot = probe_areas_plot; % Color-coded probe regions
 gui_data.probe_coordinates_text = probe_coordinates_text; % Probe coordinates text
 
 % Set functions for key presses
 set(probe_atlas_gui,'KeyPressFcn',@key_press);
 
 % Make 3D rotation the default state (toggle on/off with 'r')
-h = rotate3d(axes_3d);
+h = rotate3d(axes_atlas);
 h.Enable = 'on';
 % Update the slice whenever a rotation is completed
 h.ActionPostCallback = @update_slice;
@@ -200,8 +225,7 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
                 'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
             
-            update_probe_coordinates(probe_atlas_gui);
-            
+            update_probe_coordinates(probe_atlas_gui);           
         end
         
     case 'rightarrow'
@@ -267,7 +291,7 @@ switch eventdata.Key
         
     case 'r'
         % Toggle 3D rotation
-        h = rotate3d(gui_data.handles.axes_3d);
+        h = rotate3d(gui_data.handles.axes_atlas);
         switch h.Enable
             case 'off'
                 h.Enable = 'on';
@@ -535,25 +559,39 @@ gui_data = guidata(probe_atlas_gui);
 probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
 probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
 
-n_coords = max(abs(diff(probe_ref_vector,[],2)));
-[xcoords,ycoords,zcoords] = deal( ...
-    linspace(probe_ref_vector(1,1),probe_ref_vector(1,2),n_coords), ...
-    linspace(probe_ref_vector(2,1),probe_ref_vector(2,2),n_coords), ...
-    linspace(probe_ref_vector(3,1),probe_ref_vector(3,2),n_coords));
+trajectory_n_coords = max(abs(diff(probe_ref_vector,[],2)));
+[trajectory_xcoords,trajectory_ycoords,trajectory_zcoords] = deal( ...
+    linspace(probe_ref_vector(1,1),probe_ref_vector(1,2),trajectory_n_coords), ...
+    linspace(probe_ref_vector(2,1),probe_ref_vector(2,2),trajectory_n_coords), ...
+    linspace(probe_ref_vector(3,1),probe_ref_vector(3,2),trajectory_n_coords));
 
-% Get brain labels across the probe trajectory and intersection with brain
+probe_n_coords = sqrt(sum(diff(probe_vector,[],2).^2));
+[probe_xcoords,probe_ycoords,probe_zcoords] = deal( ...
+    linspace(probe_vector(1,1),probe_vector(1,2),probe_n_coords), ...
+    linspace(probe_vector(2,1),probe_vector(2,2),probe_n_coords), ...
+    linspace(probe_vector(3,1),probe_vector(3,2),probe_n_coords));
+
+% Get brain labels across the probe and trajectory, and intersection with brain
 pixel_space = 5;
-probe_profile = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
-    round(zcoords/pixel_space),round(xcoords/pixel_space),round(ycoords/pixel_space));
-probe_brain_idx = find(probe_profile > 1,1);
-probe_brain_intersect =[xcoords(probe_brain_idx),ycoords(probe_brain_idx),zcoords(probe_brain_idx)]';
+trajectory_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
+    round(trajectory_zcoords/pixel_space),round(trajectory_xcoords/pixel_space),round(trajectory_ycoords/pixel_space));
+trajectory_brain_idx = find(trajectory_areas > 1,1);
+trajectory_brain_intersect = ...
+    [trajectory_xcoords(trajectory_brain_idx),trajectory_ycoords(trajectory_brain_idx),trajectory_zcoords(trajectory_brain_idx)]';
+
+probe_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
+    round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space))';
+probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
+    find(diff(probe_areas) ~= 0);find(~isnan(probe_areas),1,'last')]),find(~isnan(probe_areas)));
+probe_area_centers = probe_area_boundaries(1:end-1) + diff(probe_area_boundaries)/2;
+probe_area_labels = gui_data.st.safe_name(probe_areas(round(probe_area_centers)));
 
 % Get position of brain intersect relative to bregma
-probe_bregma_coordinate = round((gui_data.bregma([1,3])' - probe_brain_intersect(1:2))*10);
+probe_bregma_coordinate = round((gui_data.bregma([1,3])' - trajectory_brain_intersect(1:2))*10);
 
 % Get the depth of the bottom of the probe (sign: hack by z offset)
-probe_depth = round(sqrt(sum((probe_brain_intersect - probe_vector(:,2)).^2))*10)* ...
-    sign(probe_vector(3,2)-probe_brain_intersect(3));
+probe_depth = round(sqrt(sum((trajectory_brain_intersect - probe_vector(:,2)).^2))*10)* ...
+    sign(probe_vector(3,2)-trajectory_brain_intersect(3));
 
 % Update the text
 probe_text = ['Probe: ' ....
@@ -563,6 +601,14 @@ probe_text = ['Probe: ' ....
     num2str(gui_data.probe_angle(1)) char(176) ' from midline, ' ...
     num2str(gui_data.probe_angle(2)) char(176) ' from horizontal'];
 set(gui_data.probe_coordinates_text,'String',probe_text);
+
+% Update the probe areas
+yyaxis(gui_data.handles.axes_probe_areas,'right');
+set(gui_data.handles.probe_areas_plot,'YData',[1:length(probe_areas)]*10,'CData',probe_areas); 
+set(gui_data.handles.axes_probe_areas,'YTick',probe_area_centers*10,'YTickLabels',probe_area_labels);
+
+% Upload gui_data
+guidata(probe_atlas_gui, gui_data);
 
 end
 
