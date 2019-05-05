@@ -37,9 +37,7 @@ colormap(gray);
 % Set up the atlas axes
 axes_atlas = subplot(1,4,1:3,'ZDir','reverse','YDir','reverse');
 hold(axes_atlas,'on');
-warning off
 axis vis3d equal off manual
-warning on
 view([-30,25]);
 caxis([0 300]);
 [ap_max,dv_max,ml_max] = size(tv);
@@ -78,6 +76,7 @@ axes(axes_atlas);
 % (with Nick's method)
 % brain_outline = gridIn3D(double(av > 1),0.5,100,bregma);
 [~, brain_outline] = plotBrainGrid([],axes_atlas);
+axis manual
 
 % Set up the probe reference/actual
 probe_ref_top = [bregma(1),bregma(3),0];
@@ -144,12 +143,13 @@ msgbox( ...
     {'\fontsize{12}' ...
     '\bf Probe: \rm' ...
     'Arrow keys : translate probe' ...
-    'Alt + up/down : raise/lower probe' ...
-    'Shift + Arrow keys : rotate probe' ...   
+    'Alt up/down : raise/lower probe' ...
+    'Shift arrow keys : rotate probe' ...   
     'm : set probe location manually', ...
     '\bf Brain areas: \rm' ...
-    '+/- : add/remove brain areas' ...
-    'h: add area with hierarchical selector' ...
+    ' + : add brain areas (list selector)' ...
+    ' Shift + : add brain areas (hierarchy selector)' ...
+    ' - : remove brain areas', ...
     '\bf Visibility: \rm' ...
     'b : brain outline' ...
     'a : brain areas' ...
@@ -264,11 +264,9 @@ switch eventdata.Key
         
     case 'b'
         % Toggle brain outline visibility
-        current_visibility = gui_data.handles.cortex_outline{1}{1}{1}.Visible;
+        current_visibility = gui_data.handles.cortex_outline.Visible;
         switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
-        % Pull out all handles (stored as nested cells)
-        brain_h_direction = cellfun(@(x) [x{:}],[gui_data.handles.cortex_outline{:}],'uni',false);
-        set(horzcat(brain_h_direction{:}),'Visible',new_visibility);
+        set(gui_data.handles.cortex_outline,'Visible',new_visibility);
         
     case 'a'
         % Toggle plotted structure visibility
@@ -319,31 +317,39 @@ switch eventdata.Key
         
         % Prompt for which structures to show (only structures which are
         % labelled in the slice-spacing downsampled annotated volume)
-        parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
-            1:slice_spacing:end,1:slice_spacing:end),[],1));
-        plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-            'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
         
-        plot_structures = parsed_structures(plot_structures_parsed);
+        if ~any(strcmp(eventdata.Modifier,'shift'))
+            % (no shift: list in native CCF order)
+            parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
+                1:slice_spacing:end,1:slice_spacing:end),[],1));
+            plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+                'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
+            plot_structures = parsed_structures(plot_structures_parsed);
+        elseif any(strcmp(eventdata.Modifier,'shift'))
+            % (shift: use hierarchy search)
+            plot_structures = hierarchicalSelect(gui_data.st);
+        end
         
-        for curr_plot_structure = reshape(plot_structures,[],1)
-            % If this label isn't used, don't plot
-            if ~any(reshape(gui_data.av( ...
-                    1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-                disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-                continue
+        if ~isempty(plot_structures)
+            for curr_plot_structure = reshape(plot_structures,[],1)
+                % If this label isn't used, don't plot
+                if ~any(reshape(gui_data.av( ...
+                        1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
+                    disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
+                    continue
+                end
+                
+                gui_data.structure_plot_idx(end+1) = curr_plot_structure;
+                
+                plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
+                structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
+                    1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
+                
+                structure_alpha = 0.2;
+                gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
+                    'Faces',structure_3d.faces, ...
+                    'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
             end
-            
-            gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-            
-            plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
-            structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-                1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
-            
-            structure_alpha = 0.2;
-            gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
-                'Faces',structure_3d.faces, ...
-                'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
         end
         
     case {'hyphen','subtract'}
@@ -355,34 +361,7 @@ switch eventdata.Key
             gui_data.structure_plot_idx(remove_structures) = [];
             gui_data.handles.structure_patch(remove_structures) = [];
         end
-    
-    case 'h'
-        % Add structure(s) to display
-        slice_spacing = 5;
-        
-        % Prompt for which structures to show 
-        
-        plot_structures = hierarchicalSelect(gui_data.st);
-        
-        if ~isempty(plot_structures) % will be empty if dialog was cancelled
-            % get all children of this one
-            thisID = gui_data.st.id(plot_structures);
-            idStr = sprintf('/%d/', thisID);
-            theseCh = find(cellfun(@(x)contains(x,idStr), gui_data.st.structure_id_path));
 
-            % plot the structure        
-            plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structures},3,[]))./255;
-            structure_3d = isosurface(permute(ismember(gui_data.av(1:slice_spacing:end, ...
-                1:slice_spacing:end,1:slice_spacing:end),theseCh),[3,1,2]),0);
-
-            structure_alpha = 0.2;
-            gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
-                'Faces',structure_3d.faces, ...
-                'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-        
-        end
-        
-        
     case 'x'
         % Export the probe coordinates in Allen CCF to the workspace
         probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
