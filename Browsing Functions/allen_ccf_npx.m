@@ -1,23 +1,26 @@
-function allen_atlas_probe(tv,av,st)
-% allen_browser_test_gui(tv,av,st)
+function allen_ccf_npx(tv,av,st)
+% allen_ccf_npx(tv,av,st)
 %
-% This gui is for looking at trajectories in the brain with the Allen CCF,
-% keypress function is displayed on startup
+% GUI for planning Neuropixels trajectories with the Allen CCF
+% Part of repository: https://github.com/cortex-lab/allenCCF
+% - directions for installing atlas in repository readme
+% - some dependent functions from that repository
+%
+% (optional inputs - if CCF path written in Line 23, loaded automatically)
+% tv, av, st = CCF template volume, annotated volume, structure tree
 
 % Initialize gui_data structure
 gui_data = struct;
 
-% Allen CCF-bregma transform (this is total estimate)
-% [AP,DV,ML,angle]
-% bregma = [540,0,570,0];
-% Get this from Nick's function
-bregma = allenCCFbregma;
+% Allen CCF-bregma transform (estimated from eyeballing Paxinos->CCF)
+% [AP,DV,ML]
+bregma = [540,0,570];
 
 % If not already loaded in, load in atlas
 if nargin < 3
     allen_atlas_path = 'C:\Users\Andrew\OneDrive for Business\Documents\Atlases\AllenCCF';
     if isempty(allen_atlas_path)
-        error('Enter path where Allen CCF is stored');
+        error('Enter path where Allen CCF is stored at Line 23');
     end
     tv = readNPY([allen_atlas_path filesep 'template_volume_10um.npy']); % grey-scale "background signal intensity"
     av = readNPY([allen_atlas_path filesep 'annotation_volume_10um_by_index.npy']); % the number at each pixel labels the area, see note below
@@ -31,11 +34,11 @@ load(cmap_filename);
 
 % Set up the gui
 probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
-    'Name','Atlas-probe viewer');
+    'Name','Atlas-probe viewer','Units','normalized','Position',[0.2,0.2,0.7,0.7]);
 colormap(gray);
 
 % Set up the atlas axes
-axes_atlas = subplot(1,4,1:3);
+axes_atlas = subplot(1,2,1);
 [~, brain_outline] = plotBrainGrid([],axes_atlas);
 hold(axes_atlas,'on');
 axis vis3d equal off manual
@@ -47,9 +50,9 @@ ylim([-10,ml_max+10])
 zlim([-10,dv_max+10])
 
 % Set up the probe area axes
-axes_probe_areas = subplot(1,16,13);
+axes_probe_areas = subplot(1,2,2);
 axes_probe_areas.ActivePositionProperty = 'position';
-set(axes_probe_areas,'FontSize',12);
+set(axes_probe_areas,'FontSize',11);
 yyaxis(axes_probe_areas,'left');
 probe_areas_plot = image(0);
 set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
@@ -58,6 +61,10 @@ colormap(axes_probe_areas,cmap);
 caxis([1,size(cmap,1)])
 yyaxis(axes_probe_areas,'right');
 set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+
+% Position the axes
+set(axes_atlas,'Position',[-0.15,-0.1,1,1.2]);
+set(axes_probe_areas,'Position',[0.7,0.1,0.03,0.8]);
 
 % Set the current axes to the atlas (dirty, but some gca requirements)
 axes(axes_atlas);
@@ -100,18 +107,17 @@ gui_data.handles.probe_line = probe_line; % Probe reference line on 3D atlas
 gui_data.handles.probe_areas_plot = probe_areas_plot; % Color-coded probe regions
 gui_data.probe_coordinates_text = probe_coordinates_text; % Probe coordinates text
 
-% Set functions for key presses
-set(probe_atlas_gui,'KeyPressFcn',@key_press);
-
 % Make 3D rotation the default state (toggle on/off with 'r')
 h = rotate3d(axes_atlas);
 h.Enable = 'on';
 % Update the slice whenever a rotation is completed
 h.ActionPostCallback = @update_slice;
-%(need to restore key-press functionality with rotation)
+
+% Set functions for key presses
 hManager = uigetmodemanager(probe_atlas_gui);
 [hManager.WindowListenerHandles.Enabled] = deal(false);
 set(probe_atlas_gui,'KeyPressFcn',@key_press);
+set(probe_atlas_gui,'KeyReleaseFcn',@key_release);
 
 % Upload gui_data
 guidata(probe_atlas_gui, gui_data);
@@ -160,8 +166,6 @@ switch eventdata.Key
             ap_offset = -10;
             set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
-            update_slice(probe_atlas_gui);
-            update_probe_coordinates(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-up: increase DV angle
             angle_change = [0;-1];
@@ -179,9 +183,7 @@ switch eventdata.Key
             new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
             
             set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
-            
-            update_probe_coordinates(probe_atlas_gui);
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));            
         end
         
     case 'downarrow'
@@ -190,8 +192,6 @@ switch eventdata.Key
             ap_offset = 10;
             set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
-            update_slice(probe_atlas_gui);
-            update_probe_coordinates(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-down: decrease DV angle
             angle_change = [0;1];
@@ -209,9 +209,7 @@ switch eventdata.Key
             new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
             
             set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));
-            
-            update_probe_coordinates(probe_atlas_gui);           
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));           
         end
         
     case 'rightarrow'
@@ -220,8 +218,6 @@ switch eventdata.Key
             ml_offset = 10;
             set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
-            update_slice(probe_atlas_gui);
-            update_probe_coordinates(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
             angle_change = [1;0];
@@ -236,8 +232,6 @@ switch eventdata.Key
             ml_offset = -10;
             set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
-            update_slice(probe_atlas_gui);
-            update_probe_coordinates(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
             angle_change = [-1;0];
@@ -387,6 +381,24 @@ end
 guidata(probe_atlas_gui, gui_data);
 
 end
+
+function key_release(probe_atlas_gui,eventdata)
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+switch eventdata.Key
+    case {'rightarrow','leftarrow','uparrow','downarrow'}
+        % Update the probe info/slice on arrow release 
+        update_probe_coordinates(probe_atlas_gui);
+        update_slice(probe_atlas_gui);
+end
+
+% Upload gui_data
+guidata(probe_atlas_gui, gui_data);
+
+end
+
 
 function update_slice(probe_atlas_gui,varargin)
 
@@ -565,10 +577,6 @@ set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
 % Upload gui_data
 guidata(probe_atlas_gui, gui_data);
 
-% Update the slice and probe coordinates
-update_slice(probe_atlas_gui);
-update_probe_coordinates(probe_atlas_gui);
-
 end
 
 
@@ -616,10 +624,10 @@ probe_depth = round(sqrt(sum((trajectory_brain_intersect - probe_vector(:,2)).^2
     sign(probe_vector(3,2)-trajectory_brain_intersect(3));
 
 % Update the text
-probe_text = ['Probe: ' ....
+probe_text = ['Probe insertion: ' ....
     num2str(probe_bregma_coordinate(1)) ' AP, ', ...
-    num2str(probe_bregma_coordinate(2)) ' ML, ', ...
-    num2str(probe_depth) ' Depth, ' ...
+    num2str(-probe_bregma_coordinate(2)) ' ML, ', ...
+    num2str(probe_depth) ' Probe-axis, ' ...
     num2str(gui_data.probe_angle(1)) char(176) ' from midline, ' ...
     num2str(gui_data.probe_angle(2)) char(176) ' from horizontal'];
 set(gui_data.probe_coordinates_text,'String',probe_text);
