@@ -310,31 +310,55 @@ switch eventdata.Key
             plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
                 'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
             plot_structures = parsed_structures(plot_structures_parsed);
+            
+            
+            if ~isempty(plot_structures)
+                for curr_plot_structure = reshape(plot_structures,[],1)
+                    % If this label isn't used, don't plot
+                    if ~any(reshape(gui_data.av( ...
+                            1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
+                        disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
+                        continue
+                    end
+                    
+                    gui_data.structure_plot_idx(end+1) = curr_plot_structure;
+                    
+                    plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
+                    structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
+                        1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
+                    
+                    structure_alpha = 0.2;
+                    gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
+                        'Faces',structure_3d.faces, ...
+                        'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+                end
+            end
+            
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % (shift: use hierarchy search)
             plot_structures = hierarchicalSelect(gui_data.st);
-        end
-        
-        if ~isempty(plot_structures)
-            for curr_plot_structure = reshape(plot_structures,[],1)
-                % If this label isn't used, don't plot
-                if ~any(reshape(gui_data.av( ...
-                        1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-                    disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-                    continue
-                end
+            
+            if ~isempty(plot_structures) % will be empty if dialog was cancelled
+                % get all children of this one
+                thisID = gui_data.st.id(plot_structures);
+                idStr = sprintf('/%d/', thisID);
+                theseCh = find(cellfun(@(x)contains(x,idStr), gui_data.st.structure_id_path));
                 
-                gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-                
-                plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
-                structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-                    1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
+                % plot the structure
+                slice_spacing = 5;
+                plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structures},3,[]))./255;
+                structure_3d = isosurface(permute(ismember(gui_data.av(1:slice_spacing:end, ...
+                    1:slice_spacing:end,1:slice_spacing:end),theseCh),[3,1,2]),0);
                 
                 structure_alpha = 0.2;
+                gui_data.structure_plot_idx(end+1) = plot_structures;
                 gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
                     'Faces',structure_3d.faces, ...
                     'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+                
             end
+            
+            
         end
         
     case {'hyphen','subtract'}
