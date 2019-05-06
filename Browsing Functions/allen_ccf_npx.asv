@@ -572,7 +572,7 @@ gui_data = guidata(probe_atlas_gui);
 probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
 probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
 
-% Update the probe trajectory reference (rotate about trajectory top)
+% Update the probe and trajectory reference (rotate about trajectory top)
 [ap_max,dv_max,ml_max] = size(gui_data.tv);
 
 max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
@@ -588,16 +588,23 @@ set(gui_data.handles.probe_ref_line,'XData',new_probe_ref_vector(1,:), ...
     'YData',new_probe_ref_vector(2,:), ...
     'ZData',new_probe_ref_vector(3,:));
 
-% Update probe (retain depth)
+
+probe_offset = 10;
+old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+
+move_probe_vector = diff(old_probe_vector,[],2)./ ...
+    norm(diff(old_probe_vector,[],2))*probe_offset;
+
+new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
+
+
+probe_depth = 
+
+
 new_probe_vector = [new_probe_ref_vector(:,1),diff(new_probe_ref_vector,[],2)./ ...
     norm(diff(new_probe_ref_vector,[],2))*gui_data.probe_length + new_probe_ref_vector(:,1)];
-
-probe_depth = sqrt(sum((probe_ref_vector(:,1) - probe_vector(:,1)).^2));
-new_probe_vector_depth = (diff(new_probe_vector,[],2)./ ...
-    norm(diff(new_probe_vector,[],2))*probe_depth) + new_probe_vector;
-
-set(gui_data.handles.probe_line,'XData',new_probe_vector_depth(1,:), ...
-    'YData',new_probe_vector_depth(2,:),'ZData',new_probe_vector_depth(3,:));
+set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
+    'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
 
 % Upload gui_data
 guidata(probe_atlas_gui, gui_data);
