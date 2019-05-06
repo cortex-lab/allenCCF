@@ -317,7 +317,7 @@ switch eventdata.Key
             
             
             if ~isempty(plot_structures)
-                for curr_plot_structure = reshape(plot_structures,[],1)
+                for curr_plot_structure = reshape(plot_structures,1,[])
                     % If this label isn't used, don't plot
                     if ~any(reshape(gui_data.av( ...
                             1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
