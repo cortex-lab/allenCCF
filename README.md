@@ -12,6 +12,9 @@ See this repository's wiki for instructions.
 
 If you use this tool, please cite [our bioRxiv paper](https://www.biorxiv.org/content/early/2018/10/19/447995).
 
+## Neuropixels trajectory GUI (allen_ccf_npx)
+
+Plan neuropixels trajectories with an Allen CCF-based GUI
 
 ## Basic functionality
 
@@ -47,11 +50,6 @@ axis equal
 axis off
 view([-30    25]);
 ```
-
-### Probe trajectory with atlas GUI
-allen_atlas_probe: used for determining probe trajectories, gives a 3D view of the brain with overlayed atlases/meshes and a guide for probe angles. 
-
-Can either load in atlas first and call 'allen_atlas_probe(tv,av,st)', or define CCF path and load automatically with 'allen_atlas_probe'
 
 ### Note about annotation volume
 
