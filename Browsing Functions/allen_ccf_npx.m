@@ -60,6 +60,7 @@ colormap(axes_probe_areas,cmap);
 caxis([1,size(cmap,1)])
 yyaxis(axes_probe_areas,'right');
 set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+title(axes_probe_areas,'Probe areas');
 
 % Position the axes
 set(axes_atlas,'Position',[-0.15,-0.1,1,1.2]);
