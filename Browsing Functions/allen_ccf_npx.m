@@ -35,7 +35,6 @@ load(cmap_filename);
 % Set up the gui
 probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
     'Name','Atlas-probe viewer','Units','normalized','Position',[0.2,0.2,0.7,0.7]);
-colormap(gray);
 
 % Set up the atlas axes
 axes_atlas = subplot(1,2,1);
@@ -102,6 +101,7 @@ gui_data.handles.structure_patch = []; % Plotted structures
 gui_data.handles.axes_atlas = axes_atlas; % Axes with 3D atlas
 gui_data.handles.axes_probe_areas = axes_probe_areas; % Axes with probe areas
 gui_data.handles.slice_plot = surface('EdgeColor','none'); % Slice on 3D atlas
+gui_data.handles.slice_volume = 'tv'; % The volume shown in the slice
 gui_data.handles.probe_ref_line = probe_ref_line; % Probe reference line on 3D atlas
 gui_data.handles.probe_line = probe_line; % Probe reference line on 3D atlas
 gui_data.handles.probe_areas_plot = probe_areas_plot; % Color-coded probe regions
@@ -136,15 +136,15 @@ msgbox( ...
     'Alt up/down : raise/lower probe' ...
     'Shift arrow keys : rotate probe' ...   
     'm : set probe location manually', ...
-    '\bf Brain areas: \rm' ...
-    ' + : add brain areas (list selector)' ...
-    ' Shift + : add brain areas (hierarchy selector)' ...
-    ' - : remove brain areas', ...
+    '\bf 3D brain areas: \rm' ...
+    ' + : add (list selector)' ...
+    ' Shift + : add (hierarchy selector)' ...
+    ' - : remove', ...
     '\bf Visibility: \rm' ...
+    's : atlas slice (toggle tv/av/off)' ...
     'b : brain outline' ...
-    'a : brain areas' ...
-    's : atlas slice' ...
     'p : probe' ...
+    'a : 3D brain areas' ...   
     '\bf Other: \rm' ...
     'r : toggle clickable rotation' ...
     'x : export probe coordinates to workspace' ...
@@ -255,10 +255,20 @@ switch eventdata.Key
         end
         
     case 's'
-        % Toggle slice visibility
-        current_visibility = gui_data.handles.slice_plot(1).Visible;
-        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
-        set(gui_data.handles.slice_plot,'Visible',new_visibility);
+        % Toggle slice volume/visibility
+        slice_volumes = {'tv','av','none'};        
+        new_slice_volume = slice_volumes{circshift( ...
+            strcmp(gui_data.handles.slice_volume,slice_volumes),[0,1])};
+        
+        if strcmp(new_slice_volume,'none')
+            set(gui_data.handles.slice_plot,'Visible','off');
+        else
+            set(gui_data.handles.slice_plot,'Visible','on');
+        end
+        
+        gui_data.handles.slice_volume = new_slice_volume;
+        guidata(probe_atlas_gui, gui_data);
+        
         update_slice(probe_atlas_gui);
         
     case 'p'
@@ -480,9 +490,18 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
     % Index coordinates in bounds + with brain
     grab_pix_idx = sub2ind(size(gui_data.tv),x_idx(curr_slice_isbrain),z_idx(curr_slice_isbrain),y_idx(curr_slice_isbrain));
     
-    % Grab pixels from volume
+    % Grab pixels from (selected) volume
     curr_slice = nan(size(use_idx));
-    curr_slice(curr_slice_isbrain) = gui_data.tv(grab_pix_idx);
+    switch gui_data.handles.slice_volume
+        case 'tv'
+            curr_slice(curr_slice_isbrain) = gui_data.tv(grab_pix_idx);
+            colormap(gui_data.handles.axes_atlas,'gray');
+            caxis([0,255]);
+        case 'av'
+            curr_slice(curr_slice_isbrain) = gui_data.av(grab_pix_idx);
+            colormap(gui_data.handles.axes_atlas,gui_data.cmap);
+            caxis([1,size(gui_data.cmap,1)]);
+    end
     
     % Update the slice display
     set(gui_data.handles.slice_plot,'XData',plane_x,'YData',plane_y,'ZData',plane_z,'CData',curr_slice);
