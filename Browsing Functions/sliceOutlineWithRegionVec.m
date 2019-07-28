@@ -1,6 +1,6 @@
 
 
-function [coords, coordsReg] = sliceOutlineWithRegionVec(avSlice, regInd, regColor, ax)
+function [coords, coordsReg, h] = sliceOutlineWithRegionVec(avSlice, regInd, regColor, ax)
 
 if nargin<2
     regInd = [];
@@ -12,7 +12,7 @@ end
 
 if ~isempty(regInd) % specified a region to highlight
     % do this first so it's in the background of the outlines
-    c = contourc(double(avSlice==regInd), [0.5 0.5]);
+    c = contourc(double(ismember(avSlice,regInd)), [0.5 0.5]);
     coordsReg = makeSmoothCoords(c);    
     
     if ~isempty(ax)
@@ -33,8 +33,9 @@ c = contourc(double(im(:,:,1)), [128 128]);
 coords = makeSmoothCoords(c);
 
 if ~isempty(ax)
+    clear h
     for cidx = 1:numel(coords)
-        plot(ax, coords(cidx).x,coords(cidx).y, 'k','LineWidth', 2.0); hold on;    
+        h(cidx) = plot(ax, coords(cidx).x,coords(cidx).y, 'k','LineWidth', 2.0); hold on;    
         
         % using a fill looks nicer but doesn't save to pdf very well
         %fill(x,y, cmap(uAnn(u),:), 'FaceAlpha', 0.2, 'EdgeAlpha', 0);

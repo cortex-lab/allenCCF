@@ -1,6 +1,6 @@
 
 
-function im = sliceOutlineWithRegion(avSlice, regInd, regColor, ax)
+function [im, h] = sliceOutlineWithRegion(avSlice, regInd, regColor, ax)
 
 if nargin<2
     regInd = [];
@@ -32,7 +32,7 @@ else
 end
 
 if ~isempty(ax)
-    image(ax, im);
+    h = image(ax, im);
     axis image
     axis off
 end
