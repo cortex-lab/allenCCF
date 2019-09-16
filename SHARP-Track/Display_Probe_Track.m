@@ -154,23 +154,23 @@ if use_tip_to_get_reference_probe_length
     disp(['probe scaling of ' num2str(shrinkage_factor)]); disp(' ');
     
     % plot line the length of the probe in reference space
-    probe_length = round(reference_probe_length_tip);
+    probe_length_histo = round(reference_probe_length_tip);
     
 % if scaling_factor is user-defined as some numer, use it to plot the length of the probe
 else 
-    probe_length = round(reference_probe_length * 100); 
+    probe_length_histo = round(reference_probe_length * 100); 
 end
 
 % find the percent of the probe occupied by electrodes
 percent_of_tract_with_active_sites = min([active_probe_length / probe_length, 1.0]);
-active_site_start = probe_length*(1-percent_of_tract_with_active_sites);
-active_probe_position = round([active_site_start  probe_length]);
+active_site_start = probe_length_histo*(1-percent_of_tract_with_active_sites);
+active_probe_position = round([active_site_start  probe_length_histo]);
 
 % plot line the length of the active probe sites in reference space
 plot3(m(1)+p(1)*[active_probe_position(1) active_probe_position(2)], m(3)+p(3)*[active_probe_position(1) active_probe_position(2)], m(2)+p(2)*[active_probe_position(1) active_probe_position(2)], ...
     'Color', ProbeColors(selected_probe,:), 'LineWidth', 1);
 % plot line the length of the entire probe in reference space
-plot3(m(1)+p(1)*[1 probe_length], m(3)+p(3)*[1 probe_length], m(2)+p(2)*[1 probe_length], ...
+plot3(m(1)+p(1)*[1 probe_length_histo], m(3)+p(3)*[1 probe_length_histo], m(2)+p(2)*[1 probe_length_histo], ...
     'Color', ProbeColors(selected_probe,:), 'LineWidth', 1, 'LineStyle',':');
 
 
@@ -182,7 +182,7 @@ plot3(m(1)+p(1)*[1 probe_length], m(3)+p(3)*[1 probe_length], m(2)+p(2)*[1 probe
 error_length = round(probe_radius / 10);
 
 % find and regions the probe goes through, confidence in those regions, and plot them
-borders_table = plotDistToNearestToTip(m, p, av, st, probe_length, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
+borders_table = plotDistToNearestToTip(m, p, av, st, probe_length_histo, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
 title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 
 pause(.05)
