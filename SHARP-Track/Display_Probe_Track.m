@@ -162,7 +162,7 @@ else
 end
 
 % find the percent of the probe occupied by electrodes
-percent_of_tract_with_active_sites = min([active_probe_length / probe_length, 1.0]);
+percent_of_tract_with_active_sites = min([active_probe_length / (probe_length/100), 1.0]);
 active_site_start = probe_length*(1-percent_of_tract_with_active_sites);
 active_probe_position = round([active_site_start  probe_length]);
 
