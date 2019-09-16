@@ -138,7 +138,7 @@ fwireframe.InvertHardcopy = 'off';
 hp = plot3(curr_probePoints(:,1), curr_probePoints(:,3), curr_probePoints(:,2), '.','linewidth',2, 'color',[ProbeColors(selected_probe,:) .2],'markers',10);
 
 % plot brain entry point
-plot3(m(1), m(3), m(2), 'k*','linewidth',1)
+plot3(m(1), m(3), m(2), 'r*','linewidth',3)
 
 % use the deepest clicked point as the tip of the probe, if no scaling provided (scaling_factor = false)
 if use_tip_to_get_reference_probe_length
