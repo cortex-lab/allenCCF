@@ -82,6 +82,11 @@ end
 
 %% PLOT EACH PROBE -- FIRST FIND ITS TRAJECTORY IN REFERENCE SPACE
 
+% create a new figure with wireframe
+fwireframe = plotBrainGrid([], [], fwireframe, black_brain);
+hold on; 
+fwireframe.InvertHardcopy = 'off';
+
 for selected_probe = probes
     
 % get the probe points for the currently analyzed probe    
@@ -130,9 +135,8 @@ while ~(ann==1 && gotToCtx)
     end
 end
 
-% plot brain grid
-fwireframe = plotBrainGrid([], [], fwireframe, black_brain); hold on; 
-fwireframe.InvertHardcopy = 'off';
+% focus on wireframe plot
+figure(fwireframe);
 
 % plot probe points
 hp = plot3(curr_probePoints(:,1), curr_probePoints(:,3), curr_probePoints(:,2), '.','linewidth',2, 'color',[ProbeColors(selected_probe,:) .2],'markers',10);
