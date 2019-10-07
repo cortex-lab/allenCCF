@@ -5,15 +5,16 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of probe points
-processed_images_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
+processed_images_folder = 'C:\Drive\Histology\brainX\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved probe points
-probe_save_name_suffix = 'electrode_track_1';
+% probe_save_name_suffix = 'electrode_track_1';
 probe_save_name_suffix = '';
+
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';  % [1 2]
 
@@ -43,6 +44,9 @@ scaling_factor = false;
 % ---------------------
 % additional parameters
 % ---------------------
+% plane used to view when points were clicked ('coronal' -- most common, 'sagittal', 'transverse')
+plane = 'coronal';
+
 % probe insertion direction 'down' (i.e. from the dorsal surface, downward -- most common!) 
 % or 'up' (from a ventral surface, upward)
 probe_insertion_direction = 'down';
@@ -97,8 +101,16 @@ fwireframe.InvertHardcopy = 'off';
 
 for selected_probe = probes
     
-% get the probe points for the currently analyzed probe    
-curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [3 2 1]);
+% get the probe points for the currently analyzed probe 
+if strcmp(plane,'coronal')
+    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [3 2 1]);
+elseif strcmp(plane,'sagittal')
+    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [1 2 3]);
+elseif strcmp(plane,'transverse')
+    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [1 3 2]);
+end
+
+
 
 % get user-defined probe length from experiment
 if length(probe_lengths) > 1
