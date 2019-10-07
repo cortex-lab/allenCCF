@@ -17,9 +17,9 @@ probe_save_name_suffix = '';
 % either set to 'all' or a list of indices from the clicked probes in this file, e.g. [2,3]
 probes_to_analyze = 'all';  % [1 2]
 
-% -----------
-% parameters
-% -----------
+% --------------
+% key parameters
+% --------------
 % how far into the brain did you go from the surface, either for each probe or just one number for all -- in mm
 probe_lengths = 4; 
 
@@ -37,7 +37,15 @@ distance_past_tip_to_plot = .5;
 
 % set scaling e.g. based on lining up the ephys with the atlas
 % set to *false* to get scaling automatically from the clicked points
-scaling_factor = false; 
+scaling_factor = false;
+
+
+% ---------------------
+% additional parameters
+% ---------------------
+% probe insertion direction 'down' (i.e. from the dorsal surface, downward -- most common!) 
+% or 'up' (from a ventral surface, upward)
+probe_insertion_direction = 'down';
 
 % show a table of regions that the probe goes through, in the console
 show_region_table = true;
@@ -124,14 +132,17 @@ end
 
 % determine "origin" at top of brain -- step upwards along tract direction until tip of brain / past cortex
 ann = 10;
-isoCtxId = num2str(st.id(strcmp(st.acronym, 'root')));
-gotToCtx = false;
-while ~(ann==1 && gotToCtx)
+out_of_brain = false;
+while ~(ann==1 && out_of_brain) % && distance_stepped > .5*active_probe_length)
     m = m-p; % step 10um, backwards up the track
     ann = av(round(m(1)),round(m(2)),round(m(3))); %until hitting the top
-    if ~isempty(strfind(st.structure_id_path{ann}, isoCtxId))
-        % if the track didn't get to cortex yet, keep looking...
-        gotToCtx = true;
+    if strcmp(st.safe_name(ann), 'root')
+        % make sure this isn't just a 'root' area within the brain
+        m_further_up = m - p*20; % is there more brain 200 microns up along the track?
+        ann_further_up = av(round(max(1,m_further_up(1))),round(max(1,m_further_up(2))),round(max(1,m_further_up(3))));
+        if strcmp(st.safe_name(ann_further_up), 'root')
+            out_of_brain = true;
+        end
     end
 end
 
@@ -147,7 +158,11 @@ plot3(m(1), m(3), m(2), 'r*','linewidth',1)
 % use the deepest clicked point as the tip of the probe, if no scaling provided (scaling_factor = false)
 if use_tip_to_get_reference_probe_length
     % find length of probe in reference atlas space
-    [depth, tip_index] = max(curr_probePoints(:,2));
+    if strcmp(probe_insertion_direction, 'down')
+        [depth, tip_index] = max(curr_probePoints(:,2));
+    elseif strcmp(probe_insertion_direction, 'up')
+        [depth, tip_index] = min(curr_probePoints(:,2));    
+    end
     reference_probe_length_tip = sqrt(sum((curr_probePoints(tip_index,:) - m).^2)); 
     
     % and the corresponding scaling factor
