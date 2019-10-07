@@ -30,7 +30,7 @@ active_probe_length = 3.84;
 probe_radius = 100; 
 
 % overlay the distance between parent regions in gray (this takes a while)
-show_parent_category = true; 
+show_parent_category = false; 
 
 % plot this far or to the bottom of the brain, whichever is shorter -- in mm
 distance_past_tip_to_plot = .5;
@@ -142,7 +142,7 @@ figure(fwireframe);
 hp = plot3(curr_probePoints(:,1), curr_probePoints(:,3), curr_probePoints(:,2), '.','linewidth',2, 'color',[ProbeColors(selected_probe,:) .2],'markers',10);
 
 % plot brain entry point
-plot3(m(1), m(3), m(2), 'r*','linewidth',3)
+plot3(m(1), m(3), m(2), 'r*','linewidth',1)
 
 % use the deepest clicked point as the tip of the probe, if no scaling provided (scaling_factor = false)
 if use_tip_to_get_reference_probe_length
@@ -160,13 +160,13 @@ if use_tip_to_get_reference_probe_length
     % plot line the length of the probe in reference space
     probe_length_histo = round(reference_probe_length_tip);
     
-% if scaling_factor is user-defined as some numer, use it to plot the length of the probe
+% if scaling_factor is user-defined as some number, use it to plot the length of the probe
 else 
     probe_length_histo = round(reference_probe_length * 100); 
 end
 
 % find the percent of the probe occupied by electrodes
-percent_of_tract_with_active_sites = min([active_probe_length / probe_length, 1.0]);
+percent_of_tract_with_active_sites = min([active_probe_length / (probe_length*100), 1.0]);
 active_site_start = probe_length_histo*(1-percent_of_tract_with_active_sites);
 active_probe_position = round([active_site_start  probe_length_histo]);
 
