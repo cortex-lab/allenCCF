@@ -124,7 +124,7 @@ end
 
 % determine "origin" at top of brain -- step upwards along tract direction until tip of brain / past cortex
 ann = 10;
-isoCtxId = num2str(st.id(strcmp(st.acronym, 'Isocortex')));
+isoCtxId = num2str(st.id(strcmp(st.acronym, 'root')));
 gotToCtx = false;
 while ~(ann==1 && gotToCtx)
     m = m-p; % step 10um, backwards up the track
