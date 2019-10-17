@@ -49,7 +49,7 @@ f = figure('Name','Atlas Viewer');
 % show histology in Slice Viewer
 try; figure(slice_figure_browser); title('');
 catch; slice_figure_browser = figure('Name','Slice Viewer'); end
-reference_size = size(tv);
+reference_size = size(tv_plot);
 sliceBrowser(slice_figure_browser, processed_images_folder, f, reference_size);
 
 
