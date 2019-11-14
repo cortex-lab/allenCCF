@@ -83,8 +83,8 @@ function display_controls
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'Navigation: \n');
-fprintf(1, 'up: scroll through A/P angles \n');
-fprintf(1, 'right: scroll through M/L angles \n');
+fprintf(1, 'up: scroll through A/P angles (for coronal sections)\n');
+fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
 fprintf(1, 'down: scroll through slices \n');
 fprintf(1, 'scroll: move between slices \n');
 
