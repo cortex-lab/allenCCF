@@ -16,7 +16,7 @@ fprintf(1, '--------- \n');
 fprintf(1, 'scroll: move between slices \n');
 fprintf(1, 'g: add/remove gridlines \n');
 fprintf(1, 'o: add/remove overlay of current region extent \n');
-fprintf(1, 'a: toggle viewing boundarifes \n');
+fprintf(1, 'a: toggle viewing boundaries \n');
 fprintf(1, 'v: toggle color atlas mode \n');
 fprintf(1, 'p: enable/disable mode where clicks are logged for probe or switch probes \n');
 fprintf(1, 'n: trace a new probe \n');
