@@ -1,4 +1,4 @@
-function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix)
+function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
 % ------------------------------------------------
 % Browser for the allen atlas ccf data in matlab.
 % ------------------------------------------------
@@ -13,13 +13,14 @@ display_controls
 % create figure and adjust to user's screen size
 % f = figure('Name','Atlas Viewer'); 
 figure(f);
-try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
+try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end 
 set(f,'Position', [1050*screen_size(1) 660*screen_size(2) 880*screen_size(1) 650*screen_size(2)])
 movegui(f,'onscreen')
 
 % initialize user data variables held by the figure
+ud.plane = plane;
 ud.bregma = allenCCFbregma; 
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
@@ -164,7 +165,7 @@ switch key_letter
                     catch
 
                         ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
-                        try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                        try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
                         catch; screen_size = [1900 1080]./[2560 1440];
                         end
 
@@ -378,13 +379,32 @@ switch key_letter
 
     case 'uparrow' % scroll angles along M/L axis
         ud.scrollMode = 1;
-        disp('switch scroll mode -- tilt D/V')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- tilt D/V')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- tilt D/V')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- tilt M/L')
+        end
     case 'rightarrow' % scroll angles along A/P axis
         ud.scrollMode = 2;
-        disp('switch scroll mode -- tilt M/L')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- tilt M/L')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- tilt A/P')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- tilt A/P')
+        end
+        
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
-        disp('switch scroll mode -- scroll along A/P axis')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- scroll along A/P axis')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- scroll along M/L axis')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- scroll along D/V axis')
+        end
     case 'leftarrow' % scroll along A/P axis
         ud.scrollMode = 3;
         if ~ud.slice_at_shift_start
@@ -656,6 +676,7 @@ function updateSlice(f, evt, allData, slice_figure, save_location)
 
 ud = get(f, 'UserData');
 
+
 % scroll through slices
 if ud.scrollMode==0
     ud.currentSlice = ud.currentSlice+evt.VerticalScrollCount*3;
@@ -751,7 +772,7 @@ end
 
 % update coordinates at the top
 pixel = getPixel(ud.atlasAx);
-updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size);
+updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size, ud.plane);
     
 % ----------------------------------------
 % if no angle, just change reference slice
@@ -1029,7 +1050,7 @@ else; offset = 0;
 end
 
 % show bregma coords
-updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size);
+updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2), ud.ref_size, ud.plane);
 
 % get annotation for this pixel
 [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice+offset);
@@ -1054,13 +1075,25 @@ end
 % ---------------------------------------------
 % update the coordinates shown in the top left
 % ---------------------------------------------
-function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle, ref_size)
+function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle, ref_size, plane)
 atlasRes = 0.010; % mm
-ap = -(currentSlice-bregma(1))*atlasRes;
-dv = (pixel(1)-bregma(2))*atlasRes;
-ml = (pixel(2)-bregma(3))*atlasRes;
+if strcmp(plane,'coronal')
+    ap = -(currentSlice-bregma(1))*atlasRes;
+    dv = (pixel(1)-bregma(2))*atlasRes;
+    ml = (pixel(2)-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+elseif strcmp(plane,'sagittal')
+    ap = -(pixel(2)-bregma(1))*atlasRes;
+    dv = (pixel(1)-bregma(2))*atlasRes;
+    ml = -(currentSlice-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, AP angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+elseif strcmp(plane,'transverse')
+    ap = -(pixel(2)-bregma(1))*atlasRes;
+    dv = (currentSlice-bregma(2))*atlasRes;
+    ml = -(pixel(1)-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', ML angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, AP angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+end
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
-set(angleText, 'String', ['Slice ' num2str((bregma(1) - slice_num)/100) ' AP, DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/570),1)) '^{\circ}']);
 
 % ---------------------------------
 % update the current mouse location

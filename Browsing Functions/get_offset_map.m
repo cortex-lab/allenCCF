@@ -2,9 +2,9 @@
 % Generate offset map (for third dimension of a tilted slice)
 % ------------------------------------------------------------
 
-function offset_map = get_offset_map(slice_angle)
+function offset_map = get_offset_map(slice_angle, ref_size)
 
-  offset_map = zeros(800,1140);
+  offset_map = zeros(ref_size);
 
   % get range of offsets along 1st angle dimension to query for offset in the third dimension
   if slice_angle(1)==0; offset_AP = 0;

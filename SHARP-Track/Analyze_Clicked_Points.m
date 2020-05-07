@@ -6,17 +6,20 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of object points
-save_folder = 'C:\Drive\Histology\for tutorial - sample data\Richards_done\processed';
+save_folder = 'C:\Drive\Histology\brainX\processed';
 
 % directory of reference atlas files
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
 % name of the saved object points
-object_save_name_suffix = 'object_points';
+object_save_name_suffix = '';
 
 % either set to 'all' or a list of indices from the clicked objects in this file, e.g. [2,3]
 objects_to_analyze = 'all';
+
+% plane used to view when points were clicked ('coronal' -- most common, 'sagittal', 'transverse')
+plane = 'coronal';
 
 % brain figure black or white
 black_brain = true;
@@ -30,6 +33,7 @@ if ~exist('av','var') || ~exist('st','var')
     av = readNPY(annotation_volume_location);
     st = loadStructureTree(structure_tree_location);
 end
+
 
 % load object points
 objectPoints = load(fullfile(save_folder, ['probe_points' object_save_name_suffix]));
@@ -67,8 +71,14 @@ for object_num = objects
     selected_object = objects(object_num);
         
     % get the object points for the currently analyzed object    
-    curr_objectPoints = objectPoints.pointList.pointList{selected_object,1}(:, [3 2 1]);
-    
+    if strcmp(plane,'coronal')
+        curr_objectPoints = objectPoints.pointList.pointList{selected_object,1}(:, [3 2 1]);
+    elseif strcmp(plane,'sagittal')
+        curr_objectPoints = objectPoints.pointList.pointList{selected_object,1}(:, [1 2 3]);
+    elseif strcmp(plane,'transverse')
+        curr_objectPoints = objectPoints.pointList.pointList{selected_object,1}(:, [1 3 2]);
+    end
+
     % plot points on the wire frame brain
     figure(fwireframe); hold on
     hp = plot3(curr_objectPoints(:,1), curr_objectPoints(:,3), curr_objectPoints(:,2), '.','linewidth',2, 'color',[ProbeColors(object_num,:) .2],'markers',10);   

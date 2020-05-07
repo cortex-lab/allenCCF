@@ -72,6 +72,15 @@ if ~exist('av','var') || ~exist('st','var')
     st = loadStructureTree(structure_tree_location);
 end
 
+% select the plane for the viewer
+if strcmp(plane,'coronal')
+    av_plot = av;
+elseif strcmp(plane,'sagittal')
+    av_plot = permute(av,[3 2 1]);
+elseif strcmp(plane,'transverse')
+    av_plot = permute(av,[2 3 1]);
+end
+
 % load probe points
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
 ProbeColors = .75*[1.3 1.3 1.3; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 .9; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
@@ -147,11 +156,11 @@ ann = 10;
 out_of_brain = false;
 while ~(ann==1 && out_of_brain) % && distance_stepped > .5*active_probe_length)
     m = m-p; % step 10um, backwards up the track
-    ann = av(round(m(1)),round(m(2)),round(m(3))); %until hitting the top
+    ann = av_plot(round(m(1)),round(m(2)),round(m(3))); %until hitting the top
     if strcmp(st.safe_name(ann), 'root')
         % make sure this isn't just a 'root' area within the brain
         m_further_up = m - p*20; % is there more brain 200 microns up along the track?
-        ann_further_up = av(round(max(1,m_further_up(1))),round(max(1,m_further_up(2))),round(max(1,m_further_up(3))));
+        ann_further_up = av_plot(round(max(1,m_further_up(1))),round(max(1,m_further_up(2))),round(max(1,m_further_up(3))));
         if strcmp(st.safe_name(ann_further_up), 'root')
             out_of_brain = true;
         end
@@ -213,7 +222,7 @@ plot3(m(1)+p(1)*[1 probe_length_histo], m(3)+p(3)*[1 probe_length_histo], m(2)+p
 error_length = round(probe_radius / 10);
 
 % find and regions the probe goes through, confidence in those regions, and plot them
-borders_table = plotDistToNearestToTip(m, p, av, st, probe_length_histo, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table); % plots confidence score based on distance to nearest region along probe
+borders_table = plotDistToNearestToTip(m, p, av_plot, st, probe_length_histo, error_length, active_site_start, distance_past_tip_to_plot, show_parent_category, show_region_table, plane); % plots confidence score based on distance to nearest region along probe
 title(['Probe ' num2str(selected_probe)],'color',ProbeColors(selected_probe,:))
 
 pause(.05)

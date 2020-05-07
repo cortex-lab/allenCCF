@@ -46,9 +46,17 @@ save_file_name = 'SS096_';
 % increase gain if for some reason the images are not bright enough
 gain = 1; 
 
-% size in pixels of reference atlas brain coronal slice, typically 800 x 1140
-atlas_reference_size = [800 1140]; 
+% plane to view ('coronal', 'sagittal', 'transverse')
+plane = 'coronal';
 
+% size in pixels of reference atlas brain. For coronal slice, this is 800 x 1140
+if strcmp(plane,'coronal')
+    atlas_reference_size = [800 1140]; 
+elseif strcmp(plane,'sagittal')
+    atlas_reference_size = [800 1320]; 
+elseif strcmp(plane,'transverse')
+    atlas_reference_size = [1140 1320];
+end
 
 
 
