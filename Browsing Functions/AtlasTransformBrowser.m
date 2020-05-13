@@ -97,7 +97,7 @@ fprintf(1, 'n: add a new probe \n');
 fprintf(1, 'x: save transform and current atlas location \n');
 fprintf(1, 'l: load transform for current slice; press again to load probe points \n');
 fprintf(1, 's: save current probe \n');
-fprintf(1, 'd: delete most recent probe point or all transform points \n');
+fprintf(1, 'd: delete most recent probe point or transform point \n');
 fprintf(1, 'w: enable/disable probe viewer mode for current probe  \n');
 
 fprintf(1, '\n Viewing modes: \n');
@@ -603,9 +603,23 @@ switch key_letter
 % d -- delete current transform or most recent probe point            
     case 'd' 
         if ud.getPoint_for_transform
-            ud.current_pointList_for_transform = zeros(0,2); set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
-            ud.pointHands_for_transform = []; ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
-            disp('current transform erased');
+%             ud.current_pointList_for_transform = zeros(0,2); set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+%             ud.pointHands_for_transform = []; ud_slice.pointList = []; set(slice_figure, 'UserData', ud_slice);
+%             disp('current transform erased');
+            
+            % Try to delete only the most recent point
+            ud.current_pointList_for_transform = ud.current_pointList_for_transform(1:end-1,:);
+            set(ud.pointHands_for_transform(end), 'Visible', 'off');
+            ud.pointHands_for_transform = ud.pointHands_for_transform(1:end-1); 
+            ud_slice.pointList = ud_slice.pointList(1:end-1,:); 
+            set(slice_figure, 'UserData', ud_slice);
+            
+            % recolor points
+            set(ud.pointHands_for_transform(end), 'color', [0 .9 0]);
+%             ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'LineWidth',2,'markers',4);    
+    
+            disp('transform point deleted');
+            
         elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
             ud.pointList{ud.currentProbe,2} = ud.pointList{ud.currentProbe,2}(1:end-1,:);
