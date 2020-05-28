@@ -128,7 +128,8 @@ function ud = updateSliceImage(ud)
                             [processed_image_name(1:end-4) '_transform_data.mat']);
 
     set(ud.pointHands(:), 'Visible', 'off'); 
-
+    ud.pointList = [];
+    
     if exist(file_transformations,'file')
         % load transform data
         transform_data = load(file_transformations);
@@ -136,8 +137,6 @@ function ud = updateSliceImage(ud)
         if ~isempty(transform_data.transform_points{2})
             ud.pointList = transform_data.transform_points{2};
             title_ending = ' (transform points loaded)';
-        end
-    else
-        ud.pointList = [];
+        end       
     end
     title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    
