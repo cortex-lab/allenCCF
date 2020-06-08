@@ -609,21 +609,24 @@ switch key_letter
             
             % Try to delete only the most recent point
             ud.current_pointList_for_transform = ud.current_pointList_for_transform(1:end-1,:);
-            set(ud.pointHands_for_transform(end), 'Visible', 'off');
-            ud.pointHands_for_transform = ud.pointHands_for_transform(1:end-1); 
             ud_slice.pointList = ud_slice.pointList(1:end-1,:); 
             set(slice_figure, 'UserData', ud_slice);
+            if ud.pointHands_for_transform
+                % remove circle for most revent point
+                set(ud.pointHands_for_transform(end), 'Visible', 'off');
+                ud.pointHands_for_transform = ud.pointHands_for_transform(1:end-1); 
+                if ud.pointHands_for_transform
+                    % recolor points
+                    set(ud.pointHands_for_transform(end), 'color', [0 .9 0]);
+                end
+            end
             
-            % recolor points
-            set(ud.pointHands_for_transform(end), 'color', [0 .9 0]);
-%             ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'LineWidth',2,'markers',4);    
-    
             disp('transform point deleted');
             
         elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
             ud.pointList{ud.currentProbe,2} = ud.pointList{ud.currentProbe,2}(1:end-1,:);
-            ud.pointList{ud.currentProbe,3} = ud.pointList{ud.currentProbe,3}(1:end-1,:);
+            ud.pointList{ud.currentProbe,3} = ud.pointList{ud.currentProbe,3}(:,1:end-1);
             set(ud.pointHands{ud.currentProbe, 1}(end), 'Visible', 'off'); 
             ud.pointHands{ud.currentProbe, 1} = ud.pointHands{ud.currentProbe, 1}(1:end-1);
             ud.pointHands{ud.currentProbe, 2} = ud.pointHands{ud.currentProbe, 2}(1:end-1);
