@@ -31,9 +31,7 @@ or to determine the parameters needed to target particular brain regions with an
 
 See this repository's wiki for instructions.
 
-**now with scripts for going from Allen CCF coordinates to Franklin-Paxinos brain region labels, either through the SHARP-Track pipeline 
-(Convert_Clicked_Points_to_FP_coords.m) or with Allen CCF coordinates in general (Convert_CCF_Coords_to_FP_Regions.m). This uses data from
-Chon et al. Enhanced and unified anatomical labeling for a common mouse brain atlas (2020).
+*now with scripts to convert  from Allen CCF coordinates to Franklin-Paxinos brain region labels, either through the SHARP-Track pipeline (Convert_Clicked_Points_to_FP_coords.m) or with Allen CCF coordinates in general (Convert_CCF_Coords_to_FP_Regions.m). This uses data from Chon et al. Enhanced and unified anatomical labeling for a common mouse brain atlas (2020).
 
 If you use this tool, please cite [our bioRxiv paper](https://www.biorxiv.org/content/early/2018/10/19/447995).
 
