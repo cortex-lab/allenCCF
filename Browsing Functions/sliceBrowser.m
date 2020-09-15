@@ -29,7 +29,7 @@ set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(sli
 set(slice_figure, 'UserData', ud_slice)
 
 % adjust figure to user's screen size
-try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
+try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
 set(slice_figure,'Position', [150*screen_size(1) 660*screen_size(2) 880*screen_size(1) 650*screen_size(2)])
@@ -83,9 +83,15 @@ elseif strcmp(keydata.Key,'rightarrow')
     end
 % d -- delete current transform points
 elseif strcmp(keydata.Key,'d') 
-    disp('current transform points deleted')
-    set(ud.pointHands(:), 'Visible', 'off'); 
-    ud.pointList = [];    
+%     disp('current transform points deleted')
+%     set(ud.pointHands(:), 'Visible', 'off'); 
+%     ud.pointList = [];    
+    
+    % Try to delete only most recent point
+    set(ud.pointHands(end), 'Visible', 'off'); 
+    ud.pointHands = ud.pointHands(1:end-1); 
+    ud.pointList = ud.pointList(1:end-1,:); 
+    disp('transform point deleted')
 % t -- transform point mode
 elseif strcmp(keydata.Key,'t')
     ud.getPoint = ~ud.getPoint;
@@ -107,6 +113,10 @@ function ud = updateSliceImage(ud)
     
     processed_image_name = ud.processed_image_names{ud.slice_num};
     current_slice_image = flip(imread(fullfile(ud.processed_images_folder, processed_image_name)),1);
+    % reduce to 3 channels at most
+    color_channels = min( 3, size(current_slice_image,3));
+    current_slice_image = current_slice_image(:,:,1:color_channels);
+    % reduce to reference atlas size
     if size(current_slice_image,1) > ud.ref_size(1)+2 || size(current_slice_image,2) > ud.ref_size(2)+2
         disp(['shrinking image to reference size ' num2str(ud.ref_size(1)) ' x ' num2str(ud.ref_size(2)) ' pxl'])
         current_slice_image = imresize(current_slice_image, ud.ref_size);
@@ -118,7 +128,8 @@ function ud = updateSliceImage(ud)
                             [processed_image_name(1:end-4) '_transform_data.mat']);
 
     set(ud.pointHands(:), 'Visible', 'off'); 
-
+    ud.pointList = [];
+    
     if exist(file_transformations,'file')
         % load transform data
         transform_data = load(file_transformations);
@@ -126,8 +137,6 @@ function ud = updateSliceImage(ud)
         if ~isempty(transform_data.transform_points{2})
             ud.pointList = transform_data.transform_points{2};
             title_ending = ' (transform points loaded)';
-        end
-    else
-        ud.pointList = [];
+        end       
     end
     title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    

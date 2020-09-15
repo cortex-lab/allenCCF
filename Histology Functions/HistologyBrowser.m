@@ -21,7 +21,7 @@ disp(['loading image ' num2str(ud.file_num) '...'])
 
 % load first image
 image = imread(fullfile(ud.image_folder,image_file_names{ud.file_num}));
-ud.channel = size(image,3);
+
 
 if ~use_already_downsampled_image
     % resize (downsample) image to reference atlas size
@@ -30,7 +30,9 @@ if ~use_already_downsampled_image
     image = imresize(image, [round(original_image_size(1)*microns_per_pixel/microns_per_pixel_after_downsampling)  NaN]);
 end
 ud.file_name_suffix = '_processed';
-original_image = image*gain;
+ud.channel = min( 3, size(image,3));
+original_image = image(:,:,1:ud.channel)*gain;
+
 imshow(original_image);
 title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
                     'color',[1==ud.channel 2==ud.channel 3==ud.channel])

@@ -1,5 +1,5 @@
 
-function f = allenAtlasBrowser(templateVolume, annotationVolume, structureTree, save_location, save_suffix)
+function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, save_location, save_suffix, plane)
 % Browser for the allen atlas ccf data in matlab.
 %
 % Inputs templateVolume, annotationVolume, and structureTree are the data describing the atlas.
@@ -29,10 +29,9 @@ fprintf(1, 'up: scroll through A/P angles \n');
 fprintf(1, 'right: scroll through M/L angles \n');
 fprintf(1, 'down: scroll through slices \n');
 
-try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
-f = figure;
 set(f,'Name','Atlas Viewer','Position', [1000*screen_size(1) 250*screen_size(2) 1100*screen_size(1) 850*screen_size(2)])
 movegui(f,'onscreen')
 
@@ -40,7 +39,7 @@ movegui(f,'onscreen')
 
 ud.bregma = allenCCFbregma; 
 
-
+ud.plane = plane;
 ud.currentSlice = ud.bregma(1); 
 ud.currentAngle = zeros(2,1);
 ud.scrollMode = 0;
@@ -270,13 +269,34 @@ switch lower(keydata.Key)
         
     case 'uparrow' % scroll angles along M/L axis
         ud.scrollMode = 1;
-        disp('switch scroll mode -- tilt D/V')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- tilt D/V')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- tilt D/V')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- tilt M/L')
+        end
+        
     case 'rightarrow' % scroll angles along A/P axis
         ud.scrollMode = 2;
-        disp('switch scroll mode -- tilt M/L')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- tilt M/L')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- tilt A/P')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- tilt A/P')
+        end
+        
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
-        disp('switch scroll mode -- scroll along A/P axis')
+        if strcmp(ud.plane,'coronal')
+            disp('switch scroll mode -- scroll along A/P axis')
+        elseif strcmp(ud.plane,'sagittal')
+            disp('switch scroll mode -- scroll along M/L axis')
+        elseif strcmp(ud.plane,'transverse')
+            disp('switch scroll mode -- scroll along D/V axis')
+        end
+        
  
     case 'n' % new probe
         new_num_probes = size(ud.pointList,1) + 1; 
@@ -336,7 +356,7 @@ end
 
 % update title/overlay with brain region
 pixel = getPixel(ud.atlasAx);
-updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2),ud.ref_size);
+updateStereotaxCoords(ud.currentSlice, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2),ud.ref_size, ud.plane);
 
 % ---------------------------------
 % if no angle, just do normal thing
@@ -540,7 +560,7 @@ else; offset = 0;
 end
 
 % show bregma coords
-updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2),ud.ref_size);
+updateStereotaxCoords(ud.currentSlice + offset, pixel, ud.bregma, ud.bregmaText, ud.angleText, ud.currentSlice, ud.currentAngle(1), ud.currentAngle(2),ud.ref_size, ud.plane);
 
 % get annotation for this pixel
 [name, acr, ann] = getPixelAnnotation(allData, pixel, ud.currentSlice+offset);
@@ -563,13 +583,26 @@ if ~isempty(name)
 end
 
 
-function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle, ref_size)
+function updateStereotaxCoords(currentSlice, pixel, bregma, bregmaText, angleText, slice_num, ap_angle, ml_angle, ref_size, plane)
 atlasRes = 0.010; % mm
-ap = -(currentSlice-bregma(1))*atlasRes;
-dv = (pixel(1)-bregma(2))*atlasRes;
-ml = (pixel(2)-bregma(3))*atlasRes;
+if strcmp(plane,'coronal')
+    ap = -(currentSlice-bregma(1))*atlasRes;
+    dv = (pixel(1)-bregma(2))*atlasRes;
+    ml = (pixel(2)-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+elseif strcmp(plane,'sagittal')
+    ap = -(pixel(2)-bregma(1))*atlasRes;
+    dv = (pixel(1)-bregma(2))*atlasRes;
+    ml = -(currentSlice-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, AP angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+elseif strcmp(plane,'transverse')
+    ap = -(pixel(2)-bregma(1))*atlasRes;
+    dv = (currentSlice-bregma(2))*atlasRes;
+    ml = -(pixel(1)-bregma(3))*atlasRes;
+    set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', ML angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, AP angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+end
 set(bregmaText, 'String', sprintf('%.2f AP, %.2f DV, %.2f ML', ap, dv, ml));
-set(angleText, 'String', ['Slice ' num2str(bregma(1) - slice_num) ', DV angle ' num2str(round(atand(ap_angle/(ref_size(1)/2)),1)) '^{\circ}, ML angle ' num2str(round(atand(ml_angle/(ref_size(2)/2)),1)) '^{\circ}']);
+
 
 
 

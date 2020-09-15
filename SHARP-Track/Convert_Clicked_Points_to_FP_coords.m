@@ -6,11 +6,14 @@
 %% ENTER PARAMETERS AND FILE LOCATION
 
 % file location of object points
-save_folder = 'C:\Drive\Histology\brainX\processed';
+save_folder = 'C:\Drive\Histology\for tutorial\Richards\processed';
 
 % directory of reference atlas files
-annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
-structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
+annotation_volume_location = 'C:\Drive\Histology\annotation_volume_10um_by_index.npy'; % from the allen inst (see readme)
+structure_tree_location = 'C:\Drive\Histology\structure_tree_safe_2017.csv'; % located in github repo
+CCF_to_FP_location =  'C:\Drive\Histology\CCF_to_FP.csv'; % located in github repo
+FP_table_location = 'C:\Drive\Histology\FP_table_Chon_2020.csv'; % located in github repo
+chon_images_loc = 'C:\Drive\Histology\Suppl_File1_Labels'; % from chon et al (supplementary data 4, https://www.nature.com/articles/s41467-019-13057-w)
 
 % name of the saved object points
 object_save_name_suffix = '';
@@ -33,7 +36,10 @@ if ~exist('av','var') || ~exist('st','var')
     av = readNPY(annotation_volume_location);
     st = loadStructureTree(structure_tree_location);
 end
-
+if ~exist('CCFtoFPtable','var') || ~exist('FPtable','var')
+    CCFtoFPtable = loadCCFtoFP(CCF_to_FP_location);
+    FPtable = loadFPtable(FP_table_location);
+end
 
 % load object points
 objectPoints = load(fullfile(save_folder, ['probe_points' object_save_name_suffix]));
@@ -92,6 +98,7 @@ for object_num = objects
     
     % initialize array of region annotations
     roi_annotation_curr = cell(size(curr_objectPoints,1),3);    
+    roi_annotation_curr_FP = cell(size(curr_objectPoints,1),3);    
     
     % loop through every point to get ROI locations and region annotations
     for point = 1:size(curr_objectPoints,1)
@@ -104,6 +111,13 @@ for object_num = objects
         roi_annotation_curr{point,1} = ann;
         roi_annotation_curr{point,2} = name;
         roi_annotation_curr{point,3} = acr;
+        
+        % find the annotation, name, and acronym of the current ROI pixel
+        [ann_FP, name_FP, acr_FP] = CCF_to_FP(curr_objectPoints(point,1), curr_objectPoints(point,2), curr_objectPoints(point,3), CCFtoFPtable, FPtable, chon_images_loc);
+
+        roi_annotation_curr_FP{point,1} = ann_FP;
+        roi_annotation_curr_FP{point,2} = name_FP;
+        roi_annotation_curr_FP{point,3} = acr_FP;
 
     end
     
@@ -118,9 +132,9 @@ for object_num = objects
  
     % display results in a table
     disp(['Clicked points for object ' num2str(selected_object)])
-    roi_table = table(roi_annotation_curr(:,2),roi_annotation_curr(:,3), ...
-                        roi_location_curr(:,1),roi_location_curr(:,2),roi_location_curr(:,3), roi_annotation_curr(:,1), ...
-         'VariableNames', {'name', 'acronym', 'AP_location', 'DV_location', 'ML_location', 'avIndex'});
+    roi_table = table(roi_annotation_curr(:,2),roi_annotation_curr(:,3), roi_annotation_curr_FP(:,2),roi_annotation_curr_FP(:,3),...
+                        roi_location_curr(:,1),roi_location_curr(:,2),roi_location_curr(:,3), roi_annotation_curr(:,1), roi_annotation_curr_FP(:,1),...
+         'VariableNames', {'CCF_name', 'CCF_acronym', 'FP_name', 'FP_acronym', 'AP_location', 'DV_location', 'ML_location', 'avIndex', 'fpIndex'});
      disp(roi_table)
     
 end

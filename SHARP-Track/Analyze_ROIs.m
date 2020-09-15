@@ -18,6 +18,8 @@ roi_location = 'C:\Drive\Histology\for tutorial - sample data\SS096_1_1_ROIs.tif
 annotation_volume_location = 'C:\Drive\Histology\for tutorial\annotation_volume_10um_by_index.npy';
 structure_tree_location = 'C:\Drive\Histology\for tutorial\structure_tree_safe_2017.csv';
 
+% plane used to view ROI ('coronal' -- most common, 'sagittal', 'transverse')
+plane = 'coronal';
 
 % Synthetic ROIs for testing
 % rois = zeros(800,1140,'uint8');
@@ -67,6 +69,14 @@ if ~exist('av','var') || ~exist('st','var')
     st = loadStructureTree(structure_tree_location);
 end
 
+% select the plane for the viewer
+if strcmp(plane,'coronal')
+    av_plot = av;
+elseif strcmp(plane,'sagittal')
+    av_plot = permute(av,[3 2 1]);
+elseif strcmp(plane,'transverse')
+    av_plot = permute(av,[2 3 1]);
+end
 
 %% GET REFERENCE-SPACE LOCATIONS AND REGION ANNOTATIONS FOR EACH ROI
 
@@ -93,8 +103,10 @@ roi_annotation = cell(sum(rois(:)>0),3);
 
 % generate other necessary values
 bregma = allenCCFbregma(); % bregma position in reference data space
+
 atlas_resolution = 0.010; % mm
-offset_map = get_offset_map(slice_angle);
+ref_size = size(squeeze(av_plot(1,:,:)));
+offset_map = get_offset_map(slice_angle, ref_size);
 
 % loop through every pixel to get ROI locations and region annotations
 for pixel = 1:length(pixels_row)
@@ -104,14 +116,26 @@ for pixel = 1:length(pixels_row)
     offset = offset_map(pixels_row(pixel),pixels_column(pixel));
     
     % use this and the slice number to get the AP, DV, and ML coordinates
-    ap = -(slice_num-bregma(1)+offset)*atlas_resolution;
-    dv = (pixels_row(pixel)-bregma(2))*atlas_resolution;
-    ml = (pixels_column(pixel)-bregma(3))*atlas_resolution;
+    if strcmp(plane,'coronal')
+        ap = -(slice_num-bregma(1)+offset)*atlas_resolution;
+        dv = (pixels_row(pixel)-bregma(2))*atlas_resolution;
+        ml = (pixels_column(pixel)-bregma(3))*atlas_resolution;
+    elseif strcmp(plane,'sagittal')
+        ml = -(slice_num-bregma(3)+offset)*atlas_resolution;
+        dv = (pixels_row(pixel)-bregma(2))*atlas_resolution;
+        ap = -(pixels_column(pixel)-bregma(1))*atlas_resolution;
+    elseif strcmp(plane,'transverse')
+        dv = -(slice_num-bregma(2)+offset)*atlas_resolution;
+        ml = (pixels_row(pixel)-bregma(3))*atlas_resolution;
+        ap = -(pixels_column(pixel)-bregma(1))*atlas_resolution;
+    end
+    
+
 
     roi_location(pixel,:) = [ap dv ml];
     
     % finally, find the annotation, name, and acronym of the current ROI pixel
-    ann = av(slice_num+offset,pixels_row(pixel),pixels_column(pixel));
+    ann = av_plot(slice_num+offset,pixels_row(pixel),pixels_column(pixel));
     name = st.safe_name{ann};
     acr = st.acronym{ann};
     

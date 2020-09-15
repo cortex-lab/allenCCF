@@ -1,12 +1,26 @@
-function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table)
+function borders = plotDistToNearestToTip(m, p, av, st, rpl, error_length, active_site_start, probage_past_tip_to_plot, show_parent_category, show_region_table, plane)
 
 
 % these are the query points along the probe tract
 yc = 10*[0:(rpl + probage_past_tip_to_plot*100 )] - 0;
 t = yc/10; % dividing by 10 accounts for the 10um resolution of the atlas
+% select the plane for the viewer
+if strcmp(plane,'coronal')
+    m = m;
+    p = p;
+elseif strcmp(plane,'sagittal')
+    m = m([3 2 1]);
+    p = p([3 2 1]);
+elseif strcmp(plane,'transverse')
+    m = m([2 3 1]);
+    p = p([2 3 1]);
+end
+% get the x y and z coordinates of the track
 x = m(1)+p(1)*t;
 y = m(2)+p(2)*t;
 z = m(3)+p(3)*t;
+
+
 ortho_plane = null(p);
 
 projection_matrix = ortho_plane * ortho_plane'; % projection matrix onto plane orthogonal to probe tract
@@ -14,7 +28,7 @@ scaling_factor = sin(atan2(norm(cross(p,[1 0 1])), dot(p,[1 0 1]))); % sin of an
 
 % plot labelled probe tract
 fD = figure('Name','Probe Tract');
-try; screen_size = get(0, 'ScreenSize'); screen_size = screen_size(1,3:4)./[2560 1440];
+try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
 catch; screen_size = [1900 1080]./[2560 1440];
 end
     
