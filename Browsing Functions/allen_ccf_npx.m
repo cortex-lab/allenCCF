@@ -1,12 +1,13 @@
 function allen_ccf_npx(tv,av,st)
 % allen_ccf_npx(tv,av,st)
+% Andy Peters (peters.andrew.j@gmail.com)
 %
 % GUI for planning Neuropixels trajectories with the Allen CCF
 % Part of repository: https://github.com/cortex-lab/allenCCF
 % - directions for installing atlas in repository readme
 % - some dependent functions from that repository
 %
-% (optional inputs - if CCF path written in Line 23, loaded automatically)
+% (optional inputs - if CCF path written in Line 22, loaded automatically)
 % tv, av, st = CCF template volume, annotated volume, structure tree
 
 % Initialize gui_data structure
@@ -127,30 +128,8 @@ guidata(probe_atlas_gui, gui_data);
 update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
-% Print controls
-CreateStruct.Interpreter = 'tex';
-CreateStruct.WindowStyle = 'non-modal';
-msgbox( ...
-    {'\fontsize{12}' ...
-    '\bf Probe: \rm' ...
-    'Arrow keys : translate probe' ...
-    'Alt up/down : raise/lower probe' ...
-    'Shift arrow keys : rotate probe' ...   
-    'm : set probe location manually', ...
-    '\bf 3D brain areas: \rm' ...
-    ' + : add (list selector)' ...
-    ' Shift + : add (hierarchy selector)' ...
-    ' - : remove', ...
-    '\bf Visibility: \rm' ...
-    's : atlas slice (toggle tv/av/off)' ...
-    'b : brain outline' ...
-    'p : probe' ...
-    'a : 3D brain areas' ...   
-    '\bf Other: \rm' ...
-    'r : toggle clickable rotation' ...
-    'x : export probe coordinates to workspace' ...
-    'h : load and plot SHARP-Track histology'}, ...
-    'Controls',CreateStruct);
+% Display controls
+display_controls;
 
 end
 
@@ -241,6 +220,10 @@ switch eventdata.Key
             update_probe_angle(probe_atlas_gui);
         end
         
+    case 'c'
+        % Bring up controls again
+        display_controls;
+        
     case 'b'
         % Toggle brain outline visibility
         current_visibility = gui_data.handles.cortex_outline.Visible;
@@ -328,7 +311,7 @@ switch eventdata.Key
                     
                     gui_data.structure_plot_idx(end+1) = curr_plot_structure;
                     
-                    plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},3,[]))./255;
+                    plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
                     structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
                         1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
                     
@@ -385,7 +368,7 @@ switch eventdata.Key
         
     case 'h'
         % Load probe histology points, plot line of best fit
-        probe_histology
+        probe_histology(probe_atlas_gui);
 end
 
 % Upload gui_data
@@ -630,13 +613,13 @@ probe_n_coords = sqrt(sum(diff(probe_vector,[],2).^2));
 % Get brain labels across the probe and trajectory, and intersection with brain
 pixel_space = 5;
 trajectory_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
-    round(trajectory_zcoords/pixel_space),round(trajectory_xcoords/pixel_space),round(trajectory_ycoords/pixel_space));
+    round(trajectory_zcoords/pixel_space),round(trajectory_xcoords/pixel_space),round(trajectory_ycoords/pixel_space),'nearest');
 trajectory_brain_idx = find(trajectory_areas > 1,1);
 trajectory_brain_intersect = ...
     [trajectory_xcoords(trajectory_brain_idx),trajectory_ycoords(trajectory_brain_idx),trajectory_zcoords(trajectory_brain_idx)]';
 
 probe_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
-    round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space))';
+    round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space),'nearest')';
 probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
     find(diff(probe_areas) ~= 0);find(~isnan(probe_areas),1,'last')]),find(~isnan(probe_areas)));
 probe_area_centers = probe_area_boundaries(1:end-1) + diff(probe_area_boundaries)/2;
@@ -669,28 +652,96 @@ guidata(probe_atlas_gui, gui_data);
 end
 
 
-function probe_histology
-% Load histology points from P Shamash's program and draw best-fit line
+function probe_histology(probe_atlas_gui)
+% Load histology points
+% UNDER CONSTRUCTION
+% (used to use SHARP-Track, now using mine)
 
-% (AP_cortexlab_filename option: 'probe_histology')
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
 [probe_file,probe_path] = uigetfile('*.mat','Choose probe coordinate file');
 load([probe_path,probe_file]);
 
-histology_points = pointList.pointList{1};
+if exist('pointList','var')
+    histology_points = pointList.pointList{1};
+elseif exist('probe_ccf','var')
+    histology_points = probe_ccf(1).points; % only use first probe
+end
 
 r0 = mean(histology_points,1);
 xyz = bsxfun(@minus,histology_points,r0);
 [~,~,V] = svd(xyz,0);
 histology_probe_direction = V(:,1);
 
-t = [-1000,1000];
-P = bsxfun(@plus,bsxfun(@times,t',histology_probe_direction'),r0);
-plot3(histology_points(:,3),histology_points(:,1),histology_points(:,2),'.b','MarkerSize',20);
-line(P(:,3),P(:,1),P(:,2),'color','k','linewidth',2)
+probe_eval_points = [-1000,1000];
+probe_line_endpoints = bsxfun(@plus,bsxfun(@times,probe_eval_points',histology_probe_direction'),r0);
+
+% Philip's GUI: not saved in native CCF order?
+% plot3(histology_points(:,3),histology_points(:,1),histology_points(:,2),'.b','MarkerSize',20);
+% line(P(:,3),P(:,1),P(:,2),'color','k','linewidth',2)
+
+% % Mine: saved in native CCF order [AP,DV,ML]
+plot3(histology_points(:,1),histology_points(:,3),histology_points(:,2),'.b','MarkerSize',20);
+line(probe_line_endpoints(:,1),probe_line_endpoints(:,3),probe_line_endpoints(:,2),'color','k','linewidth',2)
+
+% Place the probe on the histology best-fit axis
+[ap_max,dv_max,ml_max] = size(gui_data.tv);
+
+probe_ref_top = probe_line_endpoints(1,[1,3,2]);
+probe_ref_bottom = probe_line_endpoints(2,[1,3,2]);
+probe_ref_vector = [probe_ref_top;probe_ref_bottom]';
+
+set(gui_data.handles.probe_ref_line,'XData',probe_ref_vector(1,:), ...
+    'YData',probe_ref_vector(2,:), ...
+    'ZData',probe_ref_vector(3,:));
+
+probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
+    norm(diff(probe_ref_vector,[],2))*gui_data.probe_length + probe_ref_vector(:,1)];
+set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
+    'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
+
+% Upload gui_data
+[theta,phi] = cart2sph(diff(probe_ref_vector(1,:)),diff(probe_ref_vector(2,:)),diff(probe_ref_vector(3,:)));
+gui_data.probe_angle = ([theta,phi]/(2*pi))*360;
+guidata(probe_atlas_gui, gui_data);
+
+% Update the slice and probe coordinates
+update_slice(probe_atlas_gui);
+update_probe_coordinates(probe_atlas_gui);
+
 
 end
 
+function display_controls
 
+% Print controls
+CreateStruct.Interpreter = 'tex';
+CreateStruct.WindowStyle = 'non-modal';
+msgbox( ...
+    {'\fontsize{12}' ...
+    '\bf Probe: \rm' ...
+    'Arrow keys : translate probe' ...
+    'Alt/Option up/down : raise/lower probe' ...
+    'Shift arrow keys : rotate probe (around top)' ...
+    'm : set probe location manually', ...
+    '\bf 3D brain areas: \rm' ...
+    ' =/+ : add (list selector)' ...
+    ' Shift =/+ : add (hierarchy selector)' ...
+    ' - : remove', ...
+    '\bf Visibility: \rm' ...
+    's : atlas slice (toggle tv/av/off)' ...
+    'b : brain outline' ...
+    'p : probe' ...
+    'a : 3D brain areas' ...
+    '\bf Other: \rm' ...
+    'r : toggle clickable rotation' ...
+    'x : export probe coordinates to workspace' ...
+    'h : load and plot histology-defined trajectory', ...
+    'c : bring up controls box'}, ...
+    'Controls',CreateStruct);
+
+end
 
 
 
