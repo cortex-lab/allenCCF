@@ -297,13 +297,29 @@ switch eventdata.Key
         
         if ~any(strcmp(eventdata.Modifier,'shift'))
             % (no shift: list in native CCF order)
+                      
             parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
-                1:slice_spacing:end,1:slice_spacing:end),[],1));
-            plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-                'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
-            plot_structures = parsed_structures(plot_structures_parsed);
+                    1:slice_spacing:end,1:slice_spacing:end),[],1));
             
-            
+            if ~any(strcmp(eventdata.Modifier,'alt'))
+                % (no alt: list all)            
+                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+                    'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
+                plot_structures = parsed_structures(plot_structures_parsed);
+            else
+                % (alt: search list)
+                structure_search = lower(inputdlg('Search structures'));
+                structure_match = find(contains(lower(gui_data.st.safe_name),structure_search));
+                list_structures = intersect(parsed_structures,structure_match);
+                if isempty(list_structures)
+                    error('No structure search results')
+                end
+                
+                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+                    'ListString',gui_data.st.safe_name(list_structures),'ListSize',[520,500]);
+                plot_structures = list_structures(plot_structures_parsed);
+            end
+                        
             if ~isempty(plot_structures)
                 for curr_plot_structure = reshape(plot_structures,1,[])
                     % If this label isn't used, don't plot
@@ -731,6 +747,7 @@ msgbox( ...
     'm : set probe location manually', ...
     '\bf 3D brain areas: \rm' ...
     ' =/+ : add (list selector)' ...
+    ' Alt/Option =/+ : add (search)' ...
     ' Shift =/+ : add (hierarchy selector)' ...
     ' - : remove', ...
     '\bf Visibility: \rm' ...
