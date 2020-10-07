@@ -151,6 +151,7 @@ switch eventdata.Key
             angle_change = [0;-1];
             new_angle = gui_data.probe_angle + angle_change;
             gui_data.probe_angle = new_angle;
+            guidata(probe_atlas_gui, gui_data);
             update_probe_angle(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-up: raise probe
@@ -177,6 +178,7 @@ switch eventdata.Key
             angle_change = [0;1];
             new_angle = gui_data.probe_angle + angle_change;
             gui_data.probe_angle = new_angle;
+            guidata(probe_atlas_gui, gui_data);
             update_probe_angle(probe_atlas_gui);
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-down: lower probe
@@ -203,6 +205,7 @@ switch eventdata.Key
             angle_change = [1;0];
             new_angle = gui_data.probe_angle + angle_change;
             gui_data.probe_angle = new_angle;
+            guidata(probe_atlas_gui, gui_data);
             update_probe_angle(probe_atlas_gui);
         end
         
@@ -217,6 +220,7 @@ switch eventdata.Key
             angle_change = [-1;0];
             new_angle = gui_data.probe_angle + angle_change;
             gui_data.probe_angle = new_angle;
+            guidata(probe_atlas_gui, gui_data);
             update_probe_angle(probe_atlas_gui);
         end
         
