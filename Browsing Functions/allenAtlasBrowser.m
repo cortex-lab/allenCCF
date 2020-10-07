@@ -1,10 +1,22 @@
 
-function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, save_location, save_suffix, plane)
+function f = allenAtlasBrowser(f, tv, av, structureTree, save_location, save_suffix, plane)
 % Browser for the allen atlas ccf data in matlab.
 %
 % Inputs templateVolume, annotationVolume, and structureTree are the data describing the atlas.
 % The annotation volume should be the "by_index" version
 %
+
+% select the plane for the viewer
+if strcmp(plane,'coronal')
+    av = av;
+    tv = tv;
+elseif strcmp(plane,'sagittal')
+    av = permute(av,[3 2 1]);
+    tv = permute(tv,[3 2 1]);
+elseif strcmp(plane,'transverse')
+    av = permute(av,[2 3 1]);
+    tv = permute(tv,[2 3 1]);
+end
 
 if nargin<4
     save_location = '';
@@ -35,7 +47,6 @@ end
 set(f,'Name','Atlas Viewer','Position', [1000*screen_size(1) 250*screen_size(2) 1100*screen_size(1) 850*screen_size(2)])
 movegui(f,'onscreen')
 
- 
 
 ud.bregma = allenCCFbregma; 
 
@@ -59,13 +70,13 @@ ud.atlasAx = axes('Position', [0.05 0.05 0.9 0.9]);
 ud.angleText = annotation('textbox', [.7 0.95 0.4 0.05], ...
     'EdgeColor', 'none', 'Color', 'k');
 
-reference_image = squeeze(templateVolume(ud.currentSlice,:,:));
+reference_image = squeeze(tv(ud.currentSlice,:,:));
 ud.ref_size = size(reference_image);
 ud.im = plotTVslice(reference_image);
-ud.ref = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
-ud.curr_im = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
-ud.curr_slice_trans = uint8(squeeze(templateVolume(ud.currentSlice,:,:)));
-ud.im_annotation = squeeze(annotationVolume(ud.currentSlice,:,:));
+ud.ref = uint8(squeeze(tv(ud.currentSlice,:,:)));
+ud.curr_im = uint8(squeeze(tv(ud.currentSlice,:,:)));
+ud.curr_slice_trans = uint8(squeeze(tv(ud.currentSlice,:,:)));
+ud.im_annotation = squeeze(av(ud.currentSlice,:,:));
 ud.atlas_boundaries = zeros(ud.ref_size,'uint16');
 ud.offset_map = zeros(ud.ref_size);
 ud.loaded = 10;
@@ -76,8 +87,8 @@ set(ud.im, 'ButtonDownFcn', @(f,k)atlasClickCallback(f, k));
 ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
     'String', '[coords]', 'EdgeColor', 'none', 'Color', 'k');
 
-allData.tv = templateVolume;
-allData.av = annotationVolume;
+allData.tv = tv;
+allData.av = av;
 allData.st = structureTree;
 
 hold(ud.atlasAx, 'on');
