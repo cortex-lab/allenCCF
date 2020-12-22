@@ -14,8 +14,10 @@ display_controls
 % create figure and adjust to user's screen size
 % f = figure('Name','Atlas Viewer'); 
 figure(f);
-try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
-catch; screen_size = [1900 1080]./[2560 1440];
+try
+    screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
+catch
+    screen_size = [1900 1080]./[2560 1440];
 end 
 set(f,'Position', [1050*screen_size(1) 660*screen_size(2) 880*screen_size(1) 650*screen_size(2)])
 movegui(f,'onscreen')
@@ -161,13 +163,17 @@ switch key_letter
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end
                 slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift+add}(1:end-4);
                 folder_transformations = fullfile(save_location, ['transformations' filesep]);
-                try; load([folder_transformations slice_name '_transform_data.mat']);
-                    try; figure(ud.transformed_slice_figure); 
+                try
+                    load([folder_transformations slice_name '_transform_data.mat']);
+                    try
+                        figure(ud.transformed_slice_figure); 
                     catch
 
                         ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
-                        try; screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
-                        catch; screen_size = [1900 1080]./[2560 1440];
+                        try
+                            screen_size = get(0,'ScreenSize'); screen_size = [max(screen_size(3:4)) min(screen_size(3:4))]./[2560 1440];
+                        catch
+                            screen_size = [1900 1080]./[2560 1440];
                         end
 
                         set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 12*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
@@ -303,11 +309,14 @@ switch key_letter
 
                 
                 % show Transformed Slice & Probage Viewer, if not already showing
-                try; figure(ud.transformed_slice_figure); 
+                try
+                    figure(ud.transformed_slice_figure); 
                 catch
                     ud.transformed_slice_figure = figure('Name','Transformed Slice & Probe Point Viewer');
-                    try; screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
-                    catch; screen_size = [1900 1080]./[2560 1440];
+                    try
+                        screen_size = get(0,'ScreenSize'); screen_size = screen_size(3:4)./[2560 1440];
+                    catch
+                        screen_size = [1900 1080]./[2560 1440];
                     end
 
                     set(ud.transformed_slice_figure,'Position', [256*screen_size(1) 37*screen_size(2) 560*screen_size(1) 420*screen_size(2)]);
@@ -523,84 +532,85 @@ switch key_letter
         folder_transformations = fullfile(save_location, ['transformations' filesep]);
         ud.clicked = false;
         try
-        if ud.loaded_slice+ud.slice_shift ~= ud_slice.slice_num
-            
-            ud.curr_slice_num = ud_slice.slice_num;
-            
-            % remove overlay
-            ud.showOverlay = 0;
-            delete(ud.overlayAx); ud.overlayAx = [];
-            
-            % load transform data
-            transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));  
-            transform_data = transform_data.save_transform;
-
-            % load new transform
-            ud.transform = transform_data.transform;
-           
-            if ~isempty(transform_data.transform_points{1}) && ~isempty(transform_data.transform_points{2})
-                ud.current_pointList_for_transform = transform_data.transform_points{1};
-                ud_slice.pointList = transform_data.transform_points{2};
-                set(slice_figure, 'UserData', ud_slice);
-            end            
-            
-            % load allen ref location
-            ud.currentSlice = transform_data.allen_location{1}; ud.currentAngle = transform_data.allen_location{2};
-
-            % create transformed histology image
-            current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
-            ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
-
-            % update figure
-            update.VerticalScrollCount = 0; temp_scroll_mode = ud.scrollMode; ud.scrollMode = 4; set(f, 'UserData', ud);
-            updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');
-            ud.scrollMode = temp_scroll_mode;
-            ud.loaded = true;
-
-            ud.slice_at_shift_start = ud_slice.slice_num; ud.slice_shift = 0;
-            ud.loaded_slice = ud_slice.slice_num;
-            
-            if ~isempty(ud.text)
-                set(ud.text,'Visible','off');
-                fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');            
+            if ud.loaded_slice+ud.slice_shift ~= ud_slice.slice_num
+                
+                ud.curr_slice_num = ud_slice.slice_num;
+                
+                % remove overlay
+                ud.showOverlay = 0;
+                delete(ud.overlayAx); ud.overlayAx = [];
+                
+                % load transform data
+                transform_data = load(fullfile(folder_transformations, [slice_name '_transform_data.mat']));
+                transform_data = transform_data.save_transform;
+                
+                % load new transform
+                ud.transform = transform_data.transform;
+                
+                if ~isempty(transform_data.transform_points{1}) && ~isempty(transform_data.transform_points{2})
+                    ud.current_pointList_for_transform = transform_data.transform_points{1};
+                    ud_slice.pointList = transform_data.transform_points{2};
+                    set(slice_figure, 'UserData', ud_slice);
+                end
+                
+                % load allen ref location
+                ud.currentSlice = transform_data.allen_location{1}; ud.currentAngle = transform_data.allen_location{2};
+                
+                % create transformed histology image
+                current_slice_image = flip(get(ud_slice.im, 'CData'),1); R = imref2d(size(ud.ref));
+                ud.curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+                
+                % update figure
+                update.VerticalScrollCount = 0; temp_scroll_mode = ud.scrollMode; ud.scrollMode = 4; set(f, 'UserData', ud);
+                updateSlice(f, update, allData, slice_figure, save_location); ud = get(f, 'UserData');
+                ud.scrollMode = temp_scroll_mode;
+                ud.loaded = true;
+                
+                ud.slice_at_shift_start = ud_slice.slice_num; ud.slice_shift = 0;
+                ud.loaded_slice = ud_slice.slice_num;
+                
+                if ~isempty(ud.text)
+                    set(ud.text,'Visible','off');
+                    fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
+                end
+                
+                disp('transform loaded -- press ''l'' again now to load probe points');
+            else % load probe points
+                if ~size(ud.pointList{1,1},1)
+                    probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('probe points loaded')
+                    ud.pointList = probe_points.pointList.pointList;
+                    ud.pointHands = probe_points.pointList.pointHands;
+                else
+                    disp('probe points not loaded -- there are already some current probe points')
+                end
             end
             
-            disp('transform loaded -- press ''l'' again now to load probe points');
-        else % load probe points
-            if ~size(ud.pointList{1,1},1)
-                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('probe points loaded')
-                ud.pointList = probe_points.pointList.pointList;
-                ud.pointHands = probe_points.pointList.pointHands;
-            else
-                disp('probe points not loaded -- there are already some current probe points')
+            for probe = 1:size(ud.pointList,1)
+                % create point plot handles anew
+                try; set(ud.pointHands{probe, 1}(:),'Visible','off'); end
+                for probe_point = 1:size(ud.pointList{probe, 1},1)
+                    ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
+                        ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
+                        'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
+                        'LineWidth',2);
+                    
+                    % set the point plot from the current slice visible
+                    slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
+                    if slice_point_belongs_to == ud_slice.slice_num
+                        set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'on');
+                    else
+                        set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off');
+                    end
+                    
+                end
+                % turn off best fit line if applicable
+                set(ud.pointHands{probe, 3}(:),'Visible','off'); ud.pointHands{probe, 3} = [];
             end
+            
+            ud.slice_shift = 0;
+        catch
+            disp(['loading failed']); 
         end
-
-        for probe = 1:size(ud.pointList,1)
-            % create point plot handles anew
-            try; set(ud.pointHands{probe, 1}(:),'Visible','off'); end
-            for probe_point = 1:size(ud.pointList{probe, 1},1)
-                ud.pointHands{probe, 1}(probe_point) = scatter(ud.atlasAx, ...
-                    ud.pointList{probe,1}(probe_point,1), ud.pointList{probe,1}(probe_point,2), 20, 'ro', ...
-                'MarkerFaceColor', [.1 .1 .1],'MarkerEdgeColor', ud.ProbeColors(probe, :), ...
-                'LineWidth',2);
-            
-            % set the point plot from the current slice visible
-            slice_point_belongs_to = ud.pointHands{probe, 2}(probe_point);
-            if slice_point_belongs_to == ud_slice.slice_num
-                set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'on');
-            else
-                set(ud.pointHands{probe, 1}(probe_point), 'Visible', 'off'); 
-            end  
-            
-            end
-            % turn off best fit line if applicable
-            set(ud.pointHands{probe, 3}(:),'Visible','off'); ud.pointHands{probe, 3} = [];
-        end
-        
-        ud.slice_shift = 0;
-        catch; 
-            disp(['loading failed']); end
 % d -- delete current transform or most recent probe point            
     case 'd' 
         if ud.getPoint_for_transform
@@ -639,47 +649,47 @@ if strcmp(key_letter,'x')
         
         % find or create folder location for transformations
         try
-        folder_transformations = fullfile(save_location, ['transformations' filesep]);
-        if ~exist(folder_transformations)
-            mkdir(folder_transformations)
-        end
-    
-        % find name of slice
-        if ud.slice_shift || ud.slice_at_shift_start ~= ud_slice.slice_num
-            slice_name = ud_slice.processed_image_names{(ud.slice_at_shift_start+ud.slice_shift)}(1:end-4);
-        else
-            slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
-        end
-        
-
-        if isempty(ud.current_pointList_for_transform)
-            ud.transform = [];
-        end
-        % store transform, if applicable
-        save_transform.transform = ud.transform;
-        
-        % store transform points
-        transform_points = cell(2,1); transform_points{1} = ud.current_pointList_for_transform;
-        if ~isempty(ud_slice.pointList)
-            transform_points{2} = ud_slice.pointList;
-        end
-        
-        save_transform.transform_points = transform_points;
-        % store reference location
-        allen_location = cell(2,1); allen_location{1} = ud.currentSlice; allen_location{2} = ud.currentAngle; 
-        save_transform.allen_location = allen_location;
-        % save all this
-        save(fullfile(folder_transformations, [slice_name '_transform_data.mat']), 'save_transform');
-        disp('atlas location saved')
-        
-        % save transformed histology image
-        current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
-%         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
-        R = imref2d(size(ud.ref));
-        curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
-        imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
-        
-        disp('transform saved')
+            folder_transformations = fullfile(save_location, ['transformations' filesep]);
+            if ~exist(folder_transformations)
+                mkdir(folder_transformations)
+            end
+            
+            % find name of slice
+            if ud.slice_shift || ud.slice_at_shift_start ~= ud_slice.slice_num
+                slice_name = ud_slice.processed_image_names{(ud.slice_at_shift_start+ud.slice_shift)}(1:end-4);
+            else
+                slice_name = ud_slice.processed_image_names{ud_slice.slice_num}(1:end-4);
+            end
+            
+            
+            if isempty(ud.current_pointList_for_transform)
+                ud.transform = [];
+            end
+            % store transform, if applicable
+            save_transform.transform = ud.transform;
+            
+            % store transform points
+            transform_points = cell(2,1); transform_points{1} = ud.current_pointList_for_transform;
+            if ~isempty(ud_slice.pointList)
+                transform_points{2} = ud_slice.pointList;
+            end
+            
+            save_transform.transform_points = transform_points;
+            % store reference location
+            allen_location = cell(2,1); allen_location{1} = ud.currentSlice; allen_location{2} = ud.currentAngle;
+            save_transform.allen_location = allen_location;
+            % save all this
+            save(fullfile(folder_transformations, [slice_name '_transform_data.mat']), 'save_transform');
+            disp('atlas location saved')
+            
+            % save transformed histology image
+            current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
+            %         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+            R = imref2d(size(ud.ref));
+            curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
+            imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
+            
+            disp('transform saved')
         catch
             disp('transform not saved')
         end
@@ -718,11 +728,11 @@ elseif ud.scrollMode == 3
   ud_slice = get(slice_figure, 'UserData');
   
   try
-    ud.slice_shift = ud.slice_shift-evt.VerticalScrollCount;
-    slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
+      ud.slice_shift = ud.slice_shift-evt.VerticalScrollCount;
+      slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
   catch
-    ud.slice_shift = ud.slice_shift+evt.VerticalScrollCount;    
-    slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
+      ud.slice_shift = ud.slice_shift+evt.VerticalScrollCount;
+      slice_name = ud_slice.processed_image_names{ud.slice_at_shift_start+ud.slice_shift}(1:end-4);
   end
   folder_transformations = fullfile(save_location, ['transformations' filesep]);
     
@@ -741,7 +751,8 @@ elseif ud.scrollMode == 3
     end  
   
     ud.current_pointList_for_transform = zeros(0,2);
-    try; load([folder_transformations slice_name '_transform_data.mat']);
+    try
+        load([folder_transformations slice_name '_transform_data.mat']);
        
         ud.clicked = false;
         
@@ -776,7 +787,7 @@ elseif ud.scrollMode == 3
         
         set(ud.text,'Visible','off');
         fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
-    catch;
+    catch
         % if no transform, just show reference
         ud.histology_overlay = 0;
         ud.current_pointList_for_transform = zeros(0,2);
@@ -784,7 +795,7 @@ elseif ud.scrollMode == 3
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
         fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
-    end  
+    end
         
 end  
 
@@ -860,8 +871,8 @@ else
           
       % update current slice
       try
-     angle_slice(start_index_DV:end_index_DV, start_index_ML:end_index_ML) = ...
-         squeeze(allData.tv(ud.currentSlice + cur_offset_DV + cur_offset_ML,start_index_DV:end_index_DV,start_index_ML:end_index_ML));
+          angle_slice(start_index_DV:end_index_DV, start_index_ML:end_index_ML) = ...
+              squeeze(allData.tv(ud.currentSlice + cur_offset_DV + cur_offset_ML,start_index_DV:end_index_DV,start_index_ML:end_index_ML));
       catch
           disp('')
       end
