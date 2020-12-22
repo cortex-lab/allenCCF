@@ -1,4 +1,5 @@
-function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
+function f = AtlasTransformBrowser(f, templateVolume, annotationVolume, ...
+    structureTree, slice_figure, save_location, save_suffix, plane)
 % ------------------------------------------------
 % Browser for the allen atlas ccf data in matlab.
 % ------------------------------------------------
