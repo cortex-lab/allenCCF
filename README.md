@@ -22,6 +22,10 @@ Plan neuropixels trajectories with an Allen CCF-based GUI
 
 >> allen_ccf_npx(tv,av,st);
 ```
+for 4-shank: 
+```
+>> allen_ccf_npx_4shank(tv,av,st);
+```
 
 ## Slice Histology Alignment, Registration, and Probe Track analysis (SHARP-Track)
 
