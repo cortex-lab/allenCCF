@@ -148,11 +148,8 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-up: increase DV angle
-            angle_change = [0;-1];
-            new_angle = gui_data.probe_angle + angle_change;
-            gui_data.probe_angle = new_angle;
-            guidata(probe_atlas_gui, gui_data);
-            update_probe_angle(probe_atlas_gui);
+            angle_change = [-10;0];
+            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-up: raise probe
             probe_offset = -10;
@@ -175,11 +172,8 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-down: decrease DV angle
-            angle_change = [0;1];
-            new_angle = gui_data.probe_angle + angle_change;
-            gui_data.probe_angle = new_angle;
-            guidata(probe_atlas_gui, gui_data);
-            update_probe_angle(probe_atlas_gui);
+            angle_change = [10;0];
+            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-down: lower probe
             probe_offset = 10;
@@ -202,11 +196,8 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
-            angle_change = [1;0];
-            new_angle = gui_data.probe_angle + angle_change;
-            gui_data.probe_angle = new_angle;
-            guidata(probe_atlas_gui, gui_data);
-            update_probe_angle(probe_atlas_gui);
+            angle_change = [0;10];
+            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
         end
         
     case 'leftarrow'
@@ -217,11 +208,8 @@ switch eventdata.Key
             set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
-            angle_change = [-1;0];
-            new_angle = gui_data.probe_angle + angle_change;
-            gui_data.probe_angle = new_angle;
-            guidata(probe_atlas_gui, gui_data);
-            update_probe_angle(probe_atlas_gui);
+            angle_change = [0;-10];
+            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
         end
         
     case 'c'
@@ -543,7 +531,16 @@ max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
 
 [x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
 
-probe_ref_top = [probe_ccf_coordinates(1),probe_ccf_coordinates(2),0];
+% Get top of probe reference with user brain intersection point
+% (get DV location of brain surface at point)
+probe_brain_dv = find(gui_data.av(probe_ccf_coordinates(1),:, ...
+    probe_ccf_coordinates(2)) > 1,1);
+% (back up to 0 DV in CCF space)
+probe_ref_top_ap = interp1(probe_brain_dv+[0,z],probe_ccf_coordinates(1)+[0,x],0,'linear','extrap');
+probe_ref_top_ml = interp1(probe_brain_dv+[0,z],probe_ccf_coordinates(2)+[0,y],0,'linear','extrap');
+
+% Set new probe position
+probe_ref_top = [probe_ref_top_ap,probe_ref_top_ml,0];
 probe_ref_bottom = probe_ref_top + [x,y,z];
 probe_ref_vector = [probe_ref_top;probe_ref_bottom]';
 
@@ -567,26 +564,42 @@ update_probe_coordinates(probe_atlas_gui);
 end
 
 
-function update_probe_angle(probe_atlas_gui,varargin)
+function gui_data = update_probe_angle(probe_atlas_gui,angle_change)
 
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
+
+% Set new angle
+new_angle = gui_data.probe_angle + angle_change;
+gui_data.probe_angle = new_angle;
 
 % Get the positions of the probe and trajectory reference
 probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
 probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
 
-% Update the probe trajectory reference (rotate about trajectory top)
-[ap_max,dv_max,ml_max] = size(gui_data.tv);
+% Update the probe trajectory reference angle
 
-max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
+% % (Old, unused: spherical/manipulator coordinates)
+% [ap_max,dv_max,ml_max] = size(gui_data.tv);
+% 
+% max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
+% 
+% probe_angle_rad = (gui_data.probe_angle./360)*2*pi;
+% [x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
+% 
+% new_probe_ref_top = [probe_ref_vector(1,1),probe_ref_vector(2,1),0];
+% new_probe_ref_bottom = new_probe_ref_top + [x,y,z];
+% new_probe_ref_vector = [new_probe_ref_top;new_probe_ref_bottom]';
 
-probe_angle_rad = (gui_data.probe_angle./360)*2*pi;
-[x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
+% (New: cartesian coordinates of the trajectory bottom)
+new_probe_ref_vector = [probe_ref_vector(:,1), ...
+    probe_ref_vector(:,2) + [angle_change;0]];
 
-new_probe_ref_top = [probe_ref_vector(1,1),probe_ref_vector(2,1),0];
-new_probe_ref_bottom = new_probe_ref_top + [x,y,z];
-new_probe_ref_vector = [new_probe_ref_top;new_probe_ref_bottom]';
+[probe_azimuth,probe_elevation] = cart2sph( ...
+    diff(fliplr(new_probe_ref_vector(1,:))), ...
+    diff(fliplr(new_probe_ref_vector(2,:))), ...
+    diff(fliplr(new_probe_ref_vector(3,:))));
+gui_data.probe_angle = [probe_azimuth,probe_elevation]*(360/(2*pi));
 
 set(gui_data.handles.probe_ref_line,'XData',new_probe_ref_vector(1,:), ...
     'YData',new_probe_ref_vector(2,:), ...
@@ -638,6 +651,11 @@ trajectory_brain_idx = find(trajectory_areas > 1,1);
 trajectory_brain_intersect = ...
     [trajectory_xcoords(trajectory_brain_idx),trajectory_ycoords(trajectory_brain_idx),trajectory_zcoords(trajectory_brain_idx)]';
 
+% (if the probe doesn't intersect the brain, don't update)
+if isempty(trajectory_brain_intersect)
+    return
+end
+
 probe_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
     round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space),'nearest')';
 probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
@@ -657,8 +675,8 @@ probe_text = ['Probe insertion: ' ....
     num2str(probe_bregma_coordinate(1)) ' AP, ', ...
     num2str(-probe_bregma_coordinate(2)) ' ML, ', ...
     num2str(probe_depth) ' Probe-axis, ' ...
-    num2str(gui_data.probe_angle(1)) char(176) ' from midline, ' ...
-    num2str(gui_data.probe_angle(2)) char(176) ' from horizontal'];
+    num2str(round(gui_data.probe_angle(1))) char(176) ' from midline, ' ...
+    num2str(round(gui_data.probe_angle(2))) char(176) ' from horizontal'];
 set(gui_data.probe_coordinates_text,'String',probe_text);
 
 % Update the probe areas
@@ -743,7 +761,7 @@ msgbox( ...
     '\bf Probe: \rm' ...
     'Arrow keys : translate probe' ...
     'Alt/Option up/down : raise/lower probe' ...
-    'Shift arrow keys : rotate probe (around top)' ...
+    'Shift arrow keys : change probe angle' ...
     'm : set probe location manually', ...
     '\bf 3D brain areas: \rm' ...
     ' =/+ : add (list selector)' ...
