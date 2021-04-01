@@ -1,7 +1,8 @@
-function allen_ccf_npx(tv,av,st)
+function allen_ccf_npx_4shank(tv,av,st)
 % allen_ccf_npx(tv,av,st)
 % Andy Peters (peters.andrew.j@gmail.com)
-%
+% bunch of 4-shank modifications: Flora 
+
 % GUI for planning Neuropixels trajectories with the Allen CCF
 % Part of repository: https://github.com/cortex-lab/allenCCF
 % - directions for installing atlas in repository readme
@@ -38,7 +39,7 @@ probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
     'Name','Atlas-probe viewer','Units','normalized','Position',[0.2,0.2,0.7,0.7]);
 
 % Set up the atlas axes
-axes_atlas = subplot(1,2,1);
+axes_atlas = subplot(1,5,1); 
 [~, brain_outline] = plotBrainGrid([],axes_atlas);
 hold(axes_atlas,'on');
 axis vis3d equal off manual
@@ -49,38 +50,66 @@ xlim([-10,ap_max+10])
 ylim([-10,ml_max+10])
 zlim([-10,dv_max+10])
 
-% Set up the probe area axes
-axes_probe_areas = subplot(1,2,2);
-axes_probe_areas.ActivePositionProperty = 'position';
-set(axes_probe_areas,'FontSize',11);
-yyaxis(axes_probe_areas,'left');
-probe_areas_plot = image(0);
-set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
-ylabel(axes_probe_areas,'Depth (\mum)');
-colormap(axes_probe_areas,cmap);
-caxis([1,size(cmap,1)])
-yyaxis(axes_probe_areas,'right');
-set(axes_probe_areas,'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
-title(axes_probe_areas,'Probe areas');
 
-% Position the axes
-set(axes_atlas,'Position',[-0.15,-0.1,1,1.2]);
-set(axes_probe_areas,'Position',[0.7,0.1,0.03,0.8]);
+% 4 shank parameters 
+shank_spacing=0:20:60; 
+shank_no=4;
+
+for i=1:shank_no
+% Set up the probe area axes                    % add 4 of these      
+    axes_probe_areas(i) = subplot(1,5,i+1);
+    axes_probe_areas(i).ActivePositionProperty = 'position';
+    set(axes_probe_areas(i),'FontSize',11);
+    yyaxis(axes_probe_areas(i),'left');
+    probe_areas_plot(i) = image(0);
+    set(axes_probe_areas(i),'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+    ylabel(axes_probe_areas(i),'');
+    
+    colormap(axes_probe_areas(i),cmap);
+    caxis([1,size(cmap,1)])
+    yyaxis(axes_probe_areas(i),'right');
+    set(axes_probe_areas(i),'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+    set(axes_probe_areas(i),'YTicklabels',[])
+    title(axes_probe_areas(i),sprintf('shank %d',i));
+end
+yyaxis(axes_probe_areas(1),'left');
+ylabel(axes_probe_areas(1),'Depth (\mum)');
+
+% Position the axes              % change positioning so that there are 4
+set(axes_atlas,'Position',[-0.15,-0.1,.8,1.2]);
+set(axes_probe_areas(1),'Position',[.55,0.05,0.01,0.8]); 
+set(axes_probe_areas(2),'Position',[.67,0.05,0.01,0.8]); 
+set(axes_probe_areas(3),'Position',[.79,0.05,0.01,0.8]); 
+set(axes_probe_areas(4),'Position',[.91,0.05,0.01,0.8]); 
+
 
 % Set the current axes to the atlas (dirty, but some gca requirements)
 axes(axes_atlas);
 
-% Set up the probe reference/actual
+
+% Set up the probe reference/actual % again set up the reference so that 4
+% shans are plotted
 probe_ref_top = [bregma(1),bregma(3),0];
 probe_ref_bottom = [bregma(1),bregma(3),size(tv,2)];
 probe_ref_vector = [probe_ref_top',probe_ref_bottom'];
-probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vector(3,:), ...
+shank_spacing_vector=repmat(shank_spacing,2,1)'; 
+allshanks_ref_vector=repmat(probe_ref_vector(2,:),shank_no,1)+shank_spacing_vector;
+
+probe_ref_line = line(probe_ref_vector(1,:),allshanks_ref_vector,probe_ref_vector(3,:), ...
     'linewidth',1.5,'color','r','linestyle','--');
+
+% probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vector(3,:), ...
+%     'linewidth',1.5,'color','r','linestyle','--');
 
 probe_length = 384.0; % IMEC phase 3 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
-probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','b','linestyle','-');
+
+allshanks_vector=repmat(probe_vector(2,:),shank_no,1)+shank_spacing_vector;
+probe_line = line(probe_vector(1,:),allshanks_vector,probe_vector(3,:),'linewidth',3,'color','b','linestyle','-');
+set(probe_line(1),'color','g'); % set shank 0 to be a different color 
+
+%probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','b','linestyle','-');
 
 % Set up the text to display coordinates
 probe_coordinates_text = uicontrol('Style','text','String','', ...
@@ -95,7 +124,10 @@ gui_data.cmap = cmap; % Atlas colormap
 gui_data.bregma = bregma; % Bregma for external referencing
 gui_data.probe_length = probe_length; % Length of probe
 gui_data.structure_plot_idx = []; % Plotted structures
-gui_data.probe_angle = [0;90]; % Probe angles in ML/DV
+gui_data.probe_angle = [0;0]; % Probe angles in ML/DV
+gui_data.shank_no=shank_no; 
+gui_data.spin=0;
+gui_data.shank_spacing=shank_spacing;
 
 %Store handles
 gui_data.handles.cortex_outline = brain_outline;
@@ -144,72 +176,124 @@ switch eventdata.Key
         if isempty(eventdata.Modifier)
             % Up: move probe anterior
             ap_offset = -10;
-            set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
-            set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
+            
+            for myshank=1:numel(gui_data.handles.probe_ref_line)
+            set(gui_data.handles.probe_ref_line(myshank,1),'XData',get(gui_data.handles.probe_ref_line(myshank,1),'XData') + ap_offset);
+            set(gui_data.handles.probe_line(myshank,1),'XData',get(gui_data.handles.probe_line(myshank,1),'XData') + ap_offset);
+            end
+            
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-up: increase DV angle
-            angle_change = [-10;0];
-            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
+            angle_change=-1;
+            update_spin(probe_atlas_gui,angle_change,'AP'); 
+            % update gui value
+            new_angle = gui_data.probe_angle(2) + angle_change;
+            gui_data.probe_angle(2) = new_angle;
+            
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-up: raise probe
             probe_offset = -10;
-            old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+            
+            for myshank=1:numel(gui_data.handles.probe_line)
+            old_probe_vector = cell2mat(get(gui_data.handles.probe_line(myshank,1),{'XData','YData','ZData'})');
             
             move_probe_vector = diff(old_probe_vector,[],2)./ ...
                 norm(diff(old_probe_vector,[],2))*probe_offset;
             
             new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
             
-            set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));            
+            set(gui_data.handles.probe_line(myshank,1),'XData',new_probe_vector(1,:), ...
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:)); 
+            end
         end
         
     case 'downarrow'
         if isempty(eventdata.Modifier)
             % Down: move probe posterior
             ap_offset = 10;
-            set(gui_data.handles.probe_ref_line,'XData',get(gui_data.handles.probe_ref_line,'XData') + ap_offset);
-            set(gui_data.handles.probe_line,'XData',get(gui_data.handles.probe_line,'XData') + ap_offset);
+            for myshank=1:numel(gui_data.handles.probe_ref_line)
+            set(gui_data.handles.probe_ref_line(myshank,1),'XData',get(gui_data.handles.probe_ref_line(myshank,1),'XData') + ap_offset);
+            set(gui_data.handles.probe_line(myshank,1),'XData',get(gui_data.handles.probe_line(myshank,1),'XData') + ap_offset);
+            end
+            
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-down: decrease DV angle
-            angle_change = [10;0];
-            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
+         
+            angle_change=1;
+            update_spin(probe_atlas_gui,angle_change,'AP');
+            new_angle = gui_data.probe_angle(2) + angle_change;
+            gui_data.probe_angle(2) = new_angle;
+            
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % Alt-down: lower probe
             probe_offset = 10;
-            old_probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+            for myshank=1:numel(gui_data.handles.probe_line)  % this could be yoked together 
+            old_probe_vector = cell2mat(get(gui_data.handles.probe_line(myshank,1),{'XData','YData','ZData'})');
             
             move_probe_vector = diff(old_probe_vector,[],2)./ ...
                 norm(diff(old_probe_vector,[],2))*probe_offset;
             
             new_probe_vector = bsxfun(@plus,old_probe_vector,move_probe_vector);
             
-            set(gui_data.handles.probe_line,'XData',new_probe_vector(1,:), ...
-                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:));           
+            set(gui_data.handles.probe_line(myshank,1),'XData',new_probe_vector(1,:), ...
+                'YData',new_probe_vector(2,:),'ZData',new_probe_vector(3,:)); 
+            end 
         end
         
     case 'rightarrow'
         if isempty(eventdata.Modifier)
             % Right: move probe right
             ml_offset = 10;
-            set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
-            set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
+            for myshank=1:numel(gui_data.handles.probe_ref_line)
+            set(gui_data.handles.probe_ref_line(myshank,1),'YData',get(gui_data.handles.probe_ref_line(myshank,1),'YData') + ml_offset);
+            set(gui_data.handles.probe_line(myshank,1),'YData',get(gui_data.handles.probe_line(myshank,1),'YData') + ml_offset);
+            end
+            
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
-            angle_change = [0;10];
-            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
+%             angle_change = [1;0];
+%             new_angle = gui_data.probe_angle + angle_change;
+%             gui_data.probe_angle = new_angle;
+%             update_probe_angle(probe_atlas_gui);
+            angle_change=-1;
+            update_spin(probe_atlas_gui,angle_change,'ML'); 
+            new_angle = gui_data.probe_angle(1) + angle_change;
+            gui_data.probe_angle(1) = new_angle;
+            
+        elseif any(strcmp(eventdata.Modifier,'alt'))
+            % alt-right : rotate clockwise 
+            angle_change=-1;
+            update_spin(probe_atlas_gui,angle_change,'spin'); 
+            new_angle=gui_data.spin+angle_change;
+            gui_data.spin=new_angle; 
         end
         
     case 'leftarrow'
         if isempty(eventdata.Modifier)
             % Left: move probe left
             ml_offset = -10;
-            set(gui_data.handles.probe_ref_line,'YData',get(gui_data.handles.probe_ref_line,'YData') + ml_offset);
-            set(gui_data.handles.probe_line,'YData',get(gui_data.handles.probe_line,'YData') + ml_offset);
+            for myshank=1:numel(gui_data.handles.probe_ref_line)
+            set(gui_data.handles.probe_ref_line(myshank,1),'YData',get(gui_data.handles.probe_ref_line(myshank,1),'YData') + ml_offset);
+            set(gui_data.handles.probe_line(myshank,1),'YData',get(gui_data.handles.probe_line(myshank,1),'YData') + ml_offset);
+            end
+            
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-right: increase vertical angle
-            angle_change = [0;-10];
-            gui_data = update_probe_angle(probe_atlas_gui,angle_change);
+%             angle_change = [-1;0];
+%             new_angle = gui_data.probe_angle + angle_change;
+%             gui_data.probe_angle = new_angle;
+%             update_probe_angle(probe_atlas_gui);
+            angle_change=1;
+            update_spin(probe_atlas_gui,angle_change,'ML');
+            new_angle = gui_data.probe_angle(1) + angle_change;
+            gui_data.probe_angle(1) = new_angle;
+            
+        elseif any(strcmp(eventdata.Modifier,'alt'))
+            % alt-left : rotate anticlockwise 
+            angle_change=1;
+            update_spin(probe_atlas_gui,angle_change,'spin');
+            new_angle=gui_data.spin+angle_change;
+            gui_data.spin=new_angle; 
         end
         
     case 'c'
@@ -285,29 +369,13 @@ switch eventdata.Key
         
         if ~any(strcmp(eventdata.Modifier,'shift'))
             % (no shift: list in native CCF order)
-                      
             parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
-                    1:slice_spacing:end,1:slice_spacing:end),[],1));
+                1:slice_spacing:end,1:slice_spacing:end),[],1));
+            plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+                'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
+            plot_structures = parsed_structures(plot_structures_parsed);
             
-            if ~any(strcmp(eventdata.Modifier,'alt'))
-                % (no alt: list all)            
-                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-                    'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
-                plot_structures = parsed_structures(plot_structures_parsed);
-            else
-                % (alt: search list)
-                structure_search = lower(inputdlg('Search structures'));
-                structure_match = find(contains(lower(gui_data.st.safe_name),structure_search));
-                list_structures = intersect(parsed_structures,structure_match);
-                if isempty(list_structures)
-                    error('No structure search results')
-                end
-                
-                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-                    'ListString',gui_data.st.safe_name(list_structures),'ListSize',[520,500]);
-                plot_structures = list_structures(plot_structures_parsed);
-            end
-                        
+            
             if ~isempty(plot_structures)
                 for curr_plot_structure = reshape(plot_structures,1,[])
                     % If this label isn't used, don't plot
@@ -414,10 +482,10 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
     curr_campos = campos;
     
     % Get probe vector
-    probe_ref_top = [gui_data.handles.probe_ref_line.XData(1), ...
-        gui_data.handles.probe_ref_line.YData(1),gui_data.handles.probe_ref_line.ZData(1)];
-    probe_ref_bottom = [gui_data.handles.probe_ref_line.XData(2), ...
-        gui_data.handles.probe_ref_line.YData(2),gui_data.handles.probe_ref_line.ZData(2)];
+    probe_ref_top = [gui_data.handles.probe_ref_line(1,1).XData(1), ...
+        gui_data.handles.probe_ref_line(1,1).YData(1),gui_data.handles.probe_ref_line(1,1).ZData(1)];
+    probe_ref_bottom = [gui_data.handles.probe_ref_line(1).XData(2), ...
+        gui_data.handles.probe_ref_line(1,1).YData(2),gui_data.handles.probe_ref_line(1,1).ZData(2)];
     probe_vector = probe_ref_top - probe_ref_bottom;
     
     % Get probe-camera vector
@@ -515,46 +583,70 @@ gui_data = guidata(probe_atlas_gui);
 prompt_text = { ...
     'AP position (mm from bregma)', ...
     'ML position (mm from bregma)', ...
-    'ML angle (relative to lambda -> bregma)', ....
-    'DV angle (relative to horizontal)'};
+    'ML angle (relative to midline)', ....
+    'DV angle (relative to coronal cut)',...
+    'probe spin'};
 
 new_probe_position = cellfun(@str2num,inputdlg(prompt_text,'Set probe position',1));
 
 % Convert probe position: mm->CCF and degrees->radians
 probe_ccf_coordinates = round(gui_data.bregma([1,3])' - new_probe_position(1:2)*100);
-probe_angle_rad = (new_probe_position(3:4)/360)*2*pi;
+%probe_angle_rad = (new_probe_position(3:4)/360)*2*pi;
 
 % Update the probe and trajectory reference
 [ap_max,dv_max,ml_max] = size(gui_data.tv);
 
 max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
 
-[x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
+%[~,y,z] = sph2cart(probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
 
-% Get top of probe reference with user brain intersection point
-% (get DV location of brain surface at point)
-probe_brain_dv = find(gui_data.av(probe_ccf_coordinates(1),:, ...
-    probe_ccf_coordinates(2)) > 1,1);
-% (back up to 0 DV in CCF space)
-probe_ref_top_ap = interp1(probe_brain_dv+[0,z],probe_ccf_coordinates(1)+[0,x],0,'linear','extrap');
-probe_ref_top_ml = interp1(probe_brain_dv+[0,z],probe_ccf_coordinates(2)+[0,y],0,'linear','extrap');
+%[~,x,~] = sph2cart(probe_angle_rad(2),probe_angle_rad(1),max_ref_length);
 
-% Set new probe position
-probe_ref_top = [probe_ref_top_ap,probe_ref_top_ml,0];
-probe_ref_bottom = probe_ref_top + [x,y,z];
+probe_ref_top = [probe_ccf_coordinates(1),probe_ccf_coordinates(2),0];
+probe_ref_bottom = [probe_ccf_coordinates(1),probe_ccf_coordinates(2),max_ref_length];
 probe_ref_vector = [probe_ref_top;probe_ref_bottom]';
-
-set(gui_data.handles.probe_ref_line,'XData',probe_ref_vector(1,:), ...
-    'YData',probe_ref_vector(2,:), ...
-    'ZData',probe_ref_vector(3,:));
-
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*gui_data.probe_length + probe_ref_vector(:,1)];
-set(gui_data.handles.probe_line,'XData',probe_vector(1,:), ...
-    'YData',probe_vector(2,:),'ZData',probe_vector(3,:));
+
+ 
+shank_spacing_vector=reshape([gui_data.shank_spacing;gui_data.shank_spacing],[],1)'; 
+
+probe_ref_vector=repmat(probe_ref_vector,1,gui_data.shank_no);
+probe_ref_vector(2,:)=probe_ref_vector(2,:)+shank_spacing_vector;
+
+probe_vector=repmat(probe_vector,1,gui_data.shank_no);
+probe_vector(2,:)=probe_vector(2,:)+shank_spacing_vector;
+
+
+gui_data.probe_angle(1) =new_probe_position(3);
+gui_data.probe_angle(2) =new_probe_position(4);
+gui_data.spin=new_probe_position(5); 
+% spin
+rotation_matrix=get_rotation_matrix(gui_data.spin,'spin');
+[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+
+% rotate ML 
+rotation_matrix=get_rotation_matrix(gui_data.probe_angle(1),'ML');
+[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+
+% rotate AP 
+rotation_matrix=get_rotation_matrix(gui_data.probe_angle(2),'AP');
+[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+
+
+
+for myshank=1:gui_data.shank_no
+    st_ix=2*myshank-1;
+    set(gui_data.handles.probe_ref_line(myshank),'XData',probe_ref_vector(1,st_ix:(st_ix+1)), ...
+            'YData',probe_ref_vector(2,st_ix:(st_ix+1)), ...
+            'ZData',probe_ref_vector(3,st_ix:(st_ix+1)));
+
+    set(gui_data.handles.probe_line(myshank),'XData',probe_vector(1,st_ix:(st_ix+1)), ...
+        'YData',probe_vector(2,st_ix:(st_ix+1)), ...
+        'ZData',probe_vector(3,st_ix:(st_ix+1)));    
+end 
 
 % Upload gui_data
-gui_data.probe_angle = (probe_angle_rad/(2*pi))*360;
 guidata(probe_atlas_gui, gui_data);
 
 % Update the slice and probe coordinates
@@ -564,58 +656,43 @@ update_probe_coordinates(probe_atlas_gui);
 end
 
 
-function gui_data = update_probe_angle(probe_atlas_gui,angle_change)
-
+function update_probe_angle(probe_atlas_gui,varargin)
+% not used right now 
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
 
-% Set new angle
-new_angle = gui_data.probe_angle + angle_change;
-gui_data.probe_angle = new_angle;
-
 % Get the positions of the probe and trajectory reference
-probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
-probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+for myshank=1:numel(gui_data.handles.probe_ref_line)
+    probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line(myshank,1),{'XData','YData','ZData'})');
+    probe_vector = cell2mat(get(gui_data.handles.probe_line(myshank,1),{'XData','YData','ZData'})');
 
-% Update the probe trajectory reference angle
+    % Update the probe trajectory reference (rotate about trajectory top)
+    [ap_max,dv_max,ml_max] = size(gui_data.tv);
 
-% % (Old, unused: spherical/manipulator coordinates)
-% [ap_max,dv_max,ml_max] = size(gui_data.tv);
-% 
-% max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
-% 
-% probe_angle_rad = (gui_data.probe_angle./360)*2*pi;
-% [x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
-% 
-% new_probe_ref_top = [probe_ref_vector(1,1),probe_ref_vector(2,1),0];
-% new_probe_ref_bottom = new_probe_ref_top + [x,y,z];
-% new_probe_ref_vector = [new_probe_ref_top;new_probe_ref_bottom]';
+    max_ref_length = sqrt(sum(([ap_max,dv_max,ml_max].^2)));
 
-% (New: cartesian coordinates of the trajectory bottom)
-new_probe_ref_vector = [probe_ref_vector(:,1), ...
-    probe_ref_vector(:,2) + [angle_change;0]];
+    probe_angle_rad = (gui_data.probe_angle./360)*2*pi;
+    [x,y,z] = sph2cart(pi-probe_angle_rad(1),probe_angle_rad(2),max_ref_length);
 
-[probe_azimuth,probe_elevation] = cart2sph( ...
-    diff(fliplr(new_probe_ref_vector(1,:))), ...
-    diff(fliplr(new_probe_ref_vector(2,:))), ...
-    diff(fliplr(new_probe_ref_vector(3,:))));
-gui_data.probe_angle = [probe_azimuth,probe_elevation]*(360/(2*pi));
+    new_probe_ref_top = [probe_ref_vector(1,1),probe_ref_vector(2,1),0];
+    new_probe_ref_bottom = new_probe_ref_top + [x,y,z];
+    new_probe_ref_vector = [new_probe_ref_top;new_probe_ref_bottom]';
 
-set(gui_data.handles.probe_ref_line,'XData',new_probe_ref_vector(1,:), ...
-    'YData',new_probe_ref_vector(2,:), ...
-    'ZData',new_probe_ref_vector(3,:));
+    set(gui_data.handles.probe_ref_line(myshank,1),'XData',new_probe_ref_vector(1,:), ...
+        'YData',new_probe_ref_vector(2,:), ...
+        'ZData',new_probe_ref_vector(3,:));
 
-% Update probe (retain depth)
-new_probe_vector = [new_probe_ref_vector(:,1),diff(new_probe_ref_vector,[],2)./ ...
-    norm(diff(new_probe_ref_vector,[],2))*gui_data.probe_length + new_probe_ref_vector(:,1)];
+    % Update probe (retain depth)
+    new_probe_vector = [new_probe_ref_vector(:,1),diff(new_probe_ref_vector,[],2)./ ...
+        norm(diff(new_probe_ref_vector,[],2))*gui_data.probe_length + new_probe_ref_vector(:,1)];
 
-probe_depth = sqrt(sum((probe_ref_vector(:,1) - probe_vector(:,1)).^2));
-new_probe_vector_depth = (diff(new_probe_vector,[],2)./ ...
-    norm(diff(new_probe_vector,[],2))*probe_depth) + new_probe_vector;
+    probe_depth = sqrt(sum((probe_ref_vector(:,1) - probe_vector(:,1)).^2));
+    new_probe_vector_depth = (diff(new_probe_vector,[],2)./ ...
+        norm(diff(new_probe_vector,[],2))*probe_depth) + new_probe_vector;
 
-set(gui_data.handles.probe_line,'XData',new_probe_vector_depth(1,:), ...
-    'YData',new_probe_vector_depth(2,:),'ZData',new_probe_vector_depth(3,:));
-
+    set(gui_data.handles.probe_line(myshank,1),'XData',new_probe_vector_depth(1,:), ...
+        'YData',new_probe_vector_depth(2,:),'ZData',new_probe_vector_depth(3,:));
+end
 % Upload gui_data
 guidata(probe_atlas_gui, gui_data);
 
@@ -627,63 +704,63 @@ function update_probe_coordinates(probe_atlas_gui,varargin)
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
 
-% Get the positions of the probe and trajectory reference
-probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
-probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+for myshank=1:numel(gui_data.handles.probe_ref_line)
+    % Get the positions of the probe and trajectory reference
+    probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line(myshank,1),{'XData','YData','ZData'})');
+    probe_vector = cell2mat(get(gui_data.handles.probe_line(myshank,1),{'XData','YData','ZData'})');
 
-trajectory_n_coords = max(abs(diff(probe_ref_vector,[],2)));
-[trajectory_xcoords,trajectory_ycoords,trajectory_zcoords] = deal( ...
-    linspace(probe_ref_vector(1,1),probe_ref_vector(1,2),trajectory_n_coords), ...
-    linspace(probe_ref_vector(2,1),probe_ref_vector(2,2),trajectory_n_coords), ...
-    linspace(probe_ref_vector(3,1),probe_ref_vector(3,2),trajectory_n_coords));
+    trajectory_n_coords = max(abs(diff(probe_ref_vector,[],2)));
+    [trajectory_xcoords,trajectory_ycoords,trajectory_zcoords] = deal( ...
+        linspace(probe_ref_vector(1,1),probe_ref_vector(1,2),trajectory_n_coords), ...
+        linspace(probe_ref_vector(2,1),probe_ref_vector(2,2),trajectory_n_coords), ...
+        linspace(probe_ref_vector(3,1),probe_ref_vector(3,2),trajectory_n_coords));
 
-probe_n_coords = sqrt(sum(diff(probe_vector,[],2).^2));
-[probe_xcoords,probe_ycoords,probe_zcoords] = deal( ...
-    linspace(probe_vector(1,1),probe_vector(1,2),probe_n_coords), ...
-    linspace(probe_vector(2,1),probe_vector(2,2),probe_n_coords), ...
-    linspace(probe_vector(3,1),probe_vector(3,2),probe_n_coords));
+    probe_n_coords = sqrt(sum(diff(probe_vector,[],2).^2));
+    [probe_xcoords,probe_ycoords,probe_zcoords] = deal( ...
+        linspace(probe_vector(1,1),probe_vector(1,2),probe_n_coords), ...
+        linspace(probe_vector(2,1),probe_vector(2,2),probe_n_coords), ...
+        linspace(probe_vector(3,1),probe_vector(3,2),probe_n_coords));
 
-% Get brain labels across the probe and trajectory, and intersection with brain
-pixel_space = 5;
-trajectory_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
-    round(trajectory_zcoords/pixel_space),round(trajectory_xcoords/pixel_space),round(trajectory_ycoords/pixel_space),'nearest');
-trajectory_brain_idx = find(trajectory_areas > 1,1);
-trajectory_brain_intersect = ...
-    [trajectory_xcoords(trajectory_brain_idx),trajectory_ycoords(trajectory_brain_idx),trajectory_zcoords(trajectory_brain_idx)]';
+    % Get brain labels across the probe and trajectory, and intersection with brain
+    pixel_space = 5;
+    trajectory_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
+        round(trajectory_zcoords/pixel_space),round(trajectory_xcoords/pixel_space),round(trajectory_ycoords/pixel_space),'nearest');
+    trajectory_brain_idx = find(trajectory_areas > 1,1);
+    trajectory_brain_intersect = ...
+        [trajectory_xcoords(trajectory_brain_idx),trajectory_ycoords(trajectory_brain_idx),trajectory_zcoords(trajectory_brain_idx)]';
 
-% (if the probe doesn't intersect the brain, don't update)
-if isempty(trajectory_brain_intersect)
-    return
+    probe_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
+        round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space),'nearest')';
+    probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
+        find(diff(probe_areas) ~= 0);find(~isnan(probe_areas),1,'last')]),find(~isnan(probe_areas)));
+    probe_area_centers = probe_area_boundaries(1:end-1) + diff(probe_area_boundaries)/2;
+    probe_area_labels = gui_data.st.safe_name(probe_areas(round(probe_area_centers)));
+
+    % Get position of brain intersect relative to bregma
+    probe_bregma_coordinate = round((gui_data.bregma([1,3])' - trajectory_brain_intersect(1:2))*10);
+
+    % Get the depth of the bottom of the probe (sign: hack by z offset)
+    probe_depth = round(sqrt(sum((trajectory_brain_intersect - probe_vector(:,2)).^2))*10)* ...
+        sign(probe_vector(3,2)-trajectory_brain_intersect(3));
+
+    % Update the text
+    if myshank==1 
+        probe_text = ['Shank 1 insertion: ' ....
+            num2str(probe_bregma_coordinate(1)) ' AP, ', ...
+            num2str(-probe_bregma_coordinate(2)) ' ML, ', ...
+            num2str(probe_depth) ' Probe-axis, ' ...
+            num2str(gui_data.probe_angle(1)) char(176) ' from midline, ' ...
+            num2str(gui_data.probe_angle(2)) char(176) ' from coronal cut,' ...
+            num2str(gui_data.spin) char(176) ' spin '];
+        set(gui_data.probe_coordinates_text,'String',probe_text);
+    end
+
+    % Update the probe areas
+    yyaxis(gui_data.handles.axes_probe_areas(myshank),'right');
+    set(gui_data.handles.probe_areas_plot(myshank),'YData',[1:length(probe_areas)]*10,'CData',probe_areas); 
+    set(gui_data.handles.axes_probe_areas(myshank),'YTick',probe_area_centers*10,'YTickLabels',probe_area_labels','YTickLabelRotation',45);
+
 end
-
-probe_areas = interp3(single(gui_data.av(1:pixel_space:end,1:pixel_space:end,1:pixel_space:end)), ...
-    round(probe_zcoords/pixel_space),round(probe_xcoords/pixel_space),round(probe_ycoords/pixel_space),'nearest')';
-probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
-    find(diff(probe_areas) ~= 0);find(~isnan(probe_areas),1,'last')]),find(~isnan(probe_areas)));
-probe_area_centers = probe_area_boundaries(1:end-1) + diff(probe_area_boundaries)/2;
-probe_area_labels = gui_data.st.safe_name(probe_areas(round(probe_area_centers)));
-
-% Get position of brain intersect relative to bregma
-probe_bregma_coordinate = round((gui_data.bregma([1,3])' - trajectory_brain_intersect(1:2))*10);
-
-% Get the depth of the bottom of the probe (sign: hack by z offset)
-probe_depth = round(sqrt(sum((trajectory_brain_intersect - probe_vector(:,2)).^2))*10)* ...
-    sign(probe_vector(3,2)-trajectory_brain_intersect(3));
-
-% Update the text
-probe_text = ['Probe insertion: ' ....
-    num2str(probe_bregma_coordinate(1)) ' AP, ', ...
-    num2str(-probe_bregma_coordinate(2)) ' ML, ', ...
-    num2str(probe_depth) ' Probe-axis, ' ...
-    num2str(round(gui_data.probe_angle(1))) char(176) ' from midline, ' ...
-    num2str(round(gui_data.probe_angle(2))) char(176) ' from horizontal'];
-set(gui_data.probe_coordinates_text,'String',probe_text);
-
-% Update the probe areas
-yyaxis(gui_data.handles.axes_probe_areas,'right');
-set(gui_data.handles.probe_areas_plot,'YData',[1:length(probe_areas)]*10,'CData',probe_areas); 
-set(gui_data.handles.axes_probe_areas,'YTick',probe_area_centers*10,'YTickLabels',probe_area_labels);
-
 % Upload gui_data
 guidata(probe_atlas_gui, gui_data);
 
@@ -761,11 +838,11 @@ msgbox( ...
     '\bf Probe: \rm' ...
     'Arrow keys : translate probe' ...
     'Alt/Option up/down : raise/lower probe' ...
-    'Shift arrow keys : change probe angle' ...
+    'Alt/Option left/right : spin probe' ...
+    'Shift arrow keys : rotate probe (around top)' ...
     'm : set probe location manually', ...
     '\bf 3D brain areas: \rm' ...
     ' =/+ : add (list selector)' ...
-    ' Alt/Option =/+ : add (search)' ...
     ' Shift =/+ : add (hierarchy selector)' ...
     ' - : remove', ...
     '\bf Visibility: \rm' ...
@@ -782,9 +859,65 @@ msgbox( ...
 
 end
 
+function update_spin(probe_atlas_gui,angle_change,mydir)
+    gui_data = guidata(probe_atlas_gui);
+    probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
+    probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+    
+    rotation_matrix=get_rotation_matrix(angle_change,mydir);
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
 
+    for myshank=1:gui_data.shank_no
+        st_ix=2*myshank-1;
+        set(gui_data.handles.probe_ref_line(myshank),'XData',rotated_ref_bregma(1,st_ix:(st_ix+1)), ...
+                'YData',rotated_ref_bregma(2,st_ix:(st_ix+1)), ...
+                'ZData',rotated_ref_bregma(3,st_ix:(st_ix+1)));
 
+        set(gui_data.handles.probe_line(myshank),'XData',rotated_probe_bregma(1,st_ix:(st_ix+1)), ...
+            'YData',rotated_probe_bregma(2,st_ix:(st_ix+1)), ...
+            'ZData',rotated_probe_bregma(3,st_ix:(st_ix+1)));    
+    end 
+end
 
+function [rotation_matrix]=get_rotation_matrix(angle,direction)
+angle_rad=deg2rad(angle); 
+    switch direction
+        case 'ML'        
+            % ML axis
+            rotation_matrix=diag(ones(4,1));
+            rotation_matrix(2,2)=cos(angle_rad);
+            rotation_matrix(3,3)=cos(angle_rad);
+            rotation_matrix(2,3)=-sin(angle_rad);
+            rotation_matrix(3,2)=sin(angle_rad);
+        case 'AP'
+            % AP axis
+            rotation_matrix=diag(ones(4,1));
+            rotation_matrix(1,1)=cos(angle_rad);
+            rotation_matrix(3,3)=cos(angle_rad);
+            rotation_matrix(1,3)=sin(angle_rad);
+            rotation_matrix(3,1)=-sin(angle_rad);        
+        case 'spin'
+            % spin 
+            rotation_matrix=diag(ones(4,1));
+            rotation_matrix(1,1)=cos(angle_rad);
+            rotation_matrix(2,2)=cos(angle_rad);
+            rotation_matrix(1,2)=-sin(angle_rad);
+            rotation_matrix(2,1)=sin(angle_rad);
+    end 
 
+end
 
+function [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix)
+    zerocentered_ref=probe_ref_vector-probe_ref_vector(:,1);
+    zerocentered_ref(4,:)=ones(8,1);
+
+    zerocentered_probe=probe_vector-probe_ref_vector(:,1);
+    zerocentered_probe(4,:)=ones(8,1);
+
+    rotated_ref=rotation_matrix*zerocentered_ref; 
+    rotated_ref_bregma=rotated_ref(1:3,:)+probe_ref_vector(:,1); 
+
+    rotated_probe=rotation_matrix*zerocentered_probe; 
+    rotated_probe_bregma=rotated_probe(1:3,:)+probe_ref_vector(:,1);
+end 
 
