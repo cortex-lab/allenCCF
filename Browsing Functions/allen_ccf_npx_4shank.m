@@ -62,13 +62,13 @@ for i=1:shank_no
     set(axes_probe_areas(i),'FontSize',11);
     yyaxis(axes_probe_areas(i),'left');
     probe_areas_plot(i) = image(0);
-    set(axes_probe_areas(i),'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+    set(axes_probe_areas(i),'XTick','','YLim',[0,2880],'YColor','k','YDir','reverse');
     ylabel(axes_probe_areas(i),'');
     
     colormap(axes_probe_areas(i),cmap);
     caxis([1,size(cmap,1)])
     yyaxis(axes_probe_areas(i),'right');
-    set(axes_probe_areas(i),'XTick','','YLim',[0,3840],'YColor','k','YDir','reverse');
+    set(axes_probe_areas(i),'XTick','','YLim',[0,2880],'YColor','k','YDir','reverse');
     set(axes_probe_areas(i),'YTicklabels',[])
     title(axes_probe_areas(i),sprintf('shank %d',i));
 end
@@ -101,7 +101,7 @@ probe_ref_line = line(probe_ref_vector(1,:),allshanks_ref_vector,probe_ref_vecto
 % probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vector(3,:), ...
 %     'linewidth',1.5,'color','r','linestyle','--');
 
-probe_length = 384.0; % IMEC phase 3 (in 10 ums)
+probe_length = 288.8; % IMEC phase 2.0 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
 
@@ -185,7 +185,7 @@ switch eventdata.Key
         elseif any(strcmp(eventdata.Modifier,'shift'))
             % Ctrl-up: increase DV angle
             angle_change=-1;
-            update_spin(probe_atlas_gui,angle_change,'AP'); 
+            update_rotation(probe_atlas_gui,angle_change,'AP'); 
             % update gui value
             new_angle = gui_data.probe_angle(2) + angle_change;
             gui_data.probe_angle(2) = new_angle;
@@ -220,7 +220,7 @@ switch eventdata.Key
             % Ctrl-down: decrease DV angle
          
             angle_change=1;
-            update_spin(probe_atlas_gui,angle_change,'AP');
+            update_rotation(probe_atlas_gui,angle_change,'AP');
             new_angle = gui_data.probe_angle(2) + angle_change;
             gui_data.probe_angle(2) = new_angle;
             
@@ -256,14 +256,14 @@ switch eventdata.Key
 %             gui_data.probe_angle = new_angle;
 %             update_probe_angle(probe_atlas_gui);
             angle_change=-1;
-            update_spin(probe_atlas_gui,angle_change,'ML'); 
+            update_rotation(probe_atlas_gui,angle_change,'ML'); 
             new_angle = gui_data.probe_angle(1) + angle_change;
             gui_data.probe_angle(1) = new_angle;
             
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % alt-right : rotate clockwise 
             angle_change=-1;
-            update_spin(probe_atlas_gui,angle_change,'spin'); 
+            update_spin(probe_atlas_gui,angle_change); 
             new_angle=gui_data.spin+angle_change;
             gui_data.spin=new_angle; 
         end
@@ -284,14 +284,14 @@ switch eventdata.Key
 %             gui_data.probe_angle = new_angle;
 %             update_probe_angle(probe_atlas_gui);
             angle_change=1;
-            update_spin(probe_atlas_gui,angle_change,'ML');
+            update_rotation(probe_atlas_gui,angle_change,'ML');
             new_angle = gui_data.probe_angle(1) + angle_change;
             gui_data.probe_angle(1) = new_angle;
             
         elseif any(strcmp(eventdata.Modifier,'alt'))
             % alt-left : rotate anticlockwise 
             angle_change=1;
-            update_spin(probe_atlas_gui,angle_change,'spin');
+            update_spin(probe_atlas_gui,angle_change');
             new_angle=gui_data.spin+angle_change;
             gui_data.spin=new_angle; 
         end
@@ -859,7 +859,9 @@ msgbox( ...
 
 end
 
-function update_spin(probe_atlas_gui,angle_change,mydir)
+function update_rotation(probe_atlas_gui,angle_change,mydir)
+% this is the function when we update the rotation of the probe either in
+% ML or AP 
     gui_data = guidata(probe_atlas_gui);
     probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
     probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
@@ -867,6 +869,46 @@ function update_spin(probe_atlas_gui,angle_change,mydir)
     rotation_matrix=get_rotation_matrix(angle_change,mydir);
     [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
 
+    for myshank=1:gui_data.shank_no
+        st_ix=2*myshank-1;
+        set(gui_data.handles.probe_ref_line(myshank),'XData',rotated_ref_bregma(1,st_ix:(st_ix+1)), ...
+                'YData',rotated_ref_bregma(2,st_ix:(st_ix+1)), ...
+                'ZData',rotated_ref_bregma(3,st_ix:(st_ix+1)));
+
+        set(gui_data.handles.probe_line(myshank),'XData',rotated_probe_bregma(1,st_ix:(st_ix+1)), ...
+            'YData',rotated_probe_bregma(2,st_ix:(st_ix+1)), ...
+            'ZData',rotated_probe_bregma(3,st_ix:(st_ix+1)));    
+    end 
+end
+
+function update_spin(probe_atlas_gui,angle_change)
+% this is the function when we update the spin. The probe ought to spin
+% around itself so we need ot recenter it to 0 0 position in AP and ML 
+    gui_data = guidata(probe_atlas_gui);
+    probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
+    probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+    
+    % center around [0 0]
+    % get the current ML angle 
+    ML_angle=gui_data.probe_angle(1); 
+    AP_angle=gui_data.probe_angle(2); 
+    
+    rotation_matrix=get_rotation_matrix(-ML_angle,'ML');
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+    rotation_matrix=get_rotation_matrix(-AP_angle,'AP');
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(rotated_ref_bregma,rotated_probe_bregma,rotation_matrix);
+    
+    % spin
+    rotation_matrix=get_rotation_matrix(angle_change,'spin');
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(rotated_ref_bregma,rotated_probe_bregma,rotation_matrix);
+    
+    % rotate back in ML and AP
+
+    rotation_matrix=get_rotation_matrix(AP_angle,'AP');
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(rotated_ref_bregma,rotated_probe_bregma,rotation_matrix);
+    rotation_matrix=get_rotation_matrix(ML_angle,'ML');
+    [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(rotated_ref_bregma,rotated_probe_bregma,rotation_matrix);
+  
     for myshank=1:gui_data.shank_no
         st_ix=2*myshank-1;
         set(gui_data.handles.probe_ref_line(myshank),'XData',rotated_ref_bregma(1,st_ix:(st_ix+1)), ...
@@ -908,16 +950,18 @@ angle_rad=deg2rad(angle);
 end
 
 function [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix)
-    zerocentered_ref=probe_ref_vector-probe_ref_vector(:,1);
+    
+    zeropoint=probe_vector(:,1);
+    zerocentered_ref=probe_ref_vector-zeropoint;
     zerocentered_ref(4,:)=ones(8,1);
 
-    zerocentered_probe=probe_vector-probe_ref_vector(:,1);
+    zerocentered_probe=probe_vector-zeropoint;
     zerocentered_probe(4,:)=ones(8,1);
 
     rotated_ref=rotation_matrix*zerocentered_ref; 
-    rotated_ref_bregma=rotated_ref(1:3,:)+probe_ref_vector(:,1); 
+    rotated_ref_bregma=rotated_ref(1:3,:)+zeropoint; 
 
     rotated_probe=rotation_matrix*zerocentered_probe; 
-    rotated_probe_bregma=rotated_probe(1:3,:)+probe_ref_vector(:,1);
+    rotated_probe_bregma=rotated_probe(1:3,:)+zeropoint;
 end 
 

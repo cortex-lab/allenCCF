@@ -571,7 +571,7 @@ gui_data = guidata(probe_atlas_gui);
 
 % Set new angle
 new_angle = gui_data.probe_angle + angle_change;
-gui_data.probe_angle = new_angle;
+gui_data.lprobe_angle = new_angle;
 
 % Get the positions of the probe and trajectory reference
 probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
