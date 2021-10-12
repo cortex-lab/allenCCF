@@ -276,7 +276,7 @@ switch eventdata.Key
         % Get updated guidata
         gui_data = guidata(probe_atlas_gui);
         
-    case {'equal','add'}
+    case {'equal','add','rightbracket'}
         % Add structure(s) to display
         slice_spacing = 10;
         
