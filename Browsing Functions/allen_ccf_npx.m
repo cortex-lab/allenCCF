@@ -607,12 +607,12 @@ slice_spacing = 10;
 parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
     1:slice_spacing:end,1:slice_spacing:end),[],1));
 
-plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+plot_structure_parsed = listdlg('PromptString','Select a structure to plot:', ...
     'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
-plot_structures = parsed_structures(plot_structures_parsed);
+plot_structure = parsed_structures(plot_structure_parsed);
 
 % Draw areas
-draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+draw_areas(probe_atlas_gui,slice_spacing,plot_structure);
 
 end
 
@@ -631,16 +631,13 @@ parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
 structure_search = lower(inputdlg('Search structures'));
 structure_match = find(contains(lower(gui_data.st.safe_name),structure_search));
 list_structures = intersect(parsed_structures,structure_match);
-if isempty(list_structures)
-    error('No structure search results')
-end
 
-plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+plot_structure_parsed = listdlg('PromptString','Select a structure to plot:', ...
     'ListString',gui_data.st.safe_name(list_structures),'ListSize',[520,500]);
-plot_structures = list_structures(plot_structures_parsed);
+plot_structure = list_structures(plot_structure_parsed);
 
 % Draw areas
-draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+draw_areas(probe_atlas_gui,slice_spacing,plot_structure);
 
 end
 
@@ -651,40 +648,59 @@ function add_area_hierarchy(h,eventdata,probe_atlas_gui)
 gui_data = guidata(probe_atlas_gui);
 
 % Bring up hierarchical selector
-plot_structures = hierarchicalSelect(gui_data.st);
+plot_structure = hierarchicalSelect(gui_data.st);
 
 % Draw areas
 slice_spacing = 10;
-draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+draw_areas(probe_atlas_gui,slice_spacing,plot_structure);
 
 end
 
-function draw_areas(probe_atlas_gui,slice_spacing,plot_structures)
+function draw_areas(probe_atlas_gui,slice_spacing,plot_structure)
 
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
 
-if ~isempty(plot_structures)
-    for curr_plot_structure = reshape(plot_structures,1,[])
-        % If this label isn't used, don't plot
-        if ~any(reshape(gui_data.av( ...
-                1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-            disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-            continue
-        end
-        
-        gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-        
-        plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
-        structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-            1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
-        
-        structure_alpha = 0.2;
-        gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
-            'Vertices',structure_3d.vertices*slice_spacing, ...
-            'Faces',structure_3d.faces, ...
-            'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-    end
+if ~isempty(plot_structure)
+    
+    % Get all areas within and below the selected hierarchy level
+    plot_structure_id = gui_data.st.structure_id_path{plot_structure};
+    plot_ccf_idx = find(cellfun(@(x) contains(x,plot_structure_id), ...
+        gui_data.st.structure_id_path));
+    
+    % plot the structure
+    slice_spacing = 5;
+    plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structure},2,[])')./255;
+    structure_3d = isosurface(permute(ismember(gui_data.av(1:slice_spacing:end, ...
+        1:slice_spacing:end,1:slice_spacing:end),plot_ccf_idx),[3,1,2]),0);
+    
+    structure_alpha = 0.2;
+    gui_data.structure_plot_idx(end+1) = plot_structure;
+    gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
+        'Vertices',structure_3d.vertices*slice_spacing, ...
+        'Faces',structure_3d.faces, ...
+        'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+    
+    
+    %         % If this label isn't used, don't plot
+    %         if ~any(reshape(gui_data.av( ...
+    %                 1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
+    %             disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
+    %             continue
+    %         end
+    %
+    %         gui_data.structure_plot_idx(end+1) = curr_plot_structure;
+    %
+    %         plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
+    %         structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
+    %             1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
+    %
+    %         structure_alpha = 0.2;
+    %         gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
+    %             'Vertices',structure_3d.vertices*slice_spacing, ...
+    %             'Faces',structure_3d.faces, ...
+    %             'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+    
 end
 
 % Upload gui_data
