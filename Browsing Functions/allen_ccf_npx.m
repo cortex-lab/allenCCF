@@ -1,3 +1,5 @@
+%% GUI setup
+
 function allen_ccf_npx(tv,av,st)
 % allen_ccf_npx(tv,av,st)
 % Andy Peters (peters.andrew.j@gmail.com)
@@ -35,7 +37,7 @@ load(cmap_filename);
 
 % Set up the gui
 probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
-    'Name','Atlas-probe viewer','Units','normalized','Position',[0.2,0.2,0.7,0.7]);
+    'Name','Neuropixels Trajectory Explorer','Units','normalized','Position',[0.21,0.2,0.7,0.7]);
 
 % Set up the atlas axes
 axes_atlas = subplot(1,2,1);
@@ -128,10 +130,77 @@ guidata(probe_atlas_gui, gui_data);
 update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
-% Display controls
-display_controls;
+% Set up control panel
+control_panel = figure('Toolbar','none','Menubar','none','color','w', ...
+    'Name','Controls','Units','normalized','Position',[0.1,0.2,0.1,0.7]);
+controls_fontsize = 12;
+button_position = [0.05,0.05,0.9,0.05];
+header_text_position = [0.05,0.05,0.9,0.03];
+clear controls_h
 
+% (probe controls)
+controls_h(1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Probe controls:', ...
+    'BackgroundColor','w','FontWeight','bold');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Move: arrow keys', ...
+    'BackgroundColor','w');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Rotate: Shift+arrow keys', ...
+    'BackgroundColor','w');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Depth: Alt+arrow keys', ...
+    'BackgroundColor','w');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Enter coordinates','Callback',{@set_probe_position,probe_atlas_gui});
+% (area selector)
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','3D areas:', ...
+    'BackgroundColor','w','FontWeight','bold');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','List areas','Callback',{@add_area_list,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Search areas','Callback',{@add_area_search,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Hierarchy areas','Callback',{@add_area_hierarchy,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Remove areas','Callback',{@remove_area,probe_atlas_gui});
+% (visibility toggle)
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Toggle visibility:', ...
+    'BackgroundColor','w','FontWeight','bold');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Slice','Callback',{@visibility_slice,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Brain outline','Callback',{@visibility_brain_outline,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Probe','Callback',{@visibility_probe,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','3D areas','Callback',{@visibility_3d_areas,probe_atlas_gui});
+% (other)
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',header_text_position,'String','Other:', ...
+    'BackgroundColor','w','FontWeight','bold');
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Export coordinates','Callback',{@export_coordinates,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Load/plot histology','Callback',{@probe_histology,probe_atlas_gui});
+
+set(controls_h(1),'Position',header_text_position+[0,0.9,0,0]);
+align(fliplr(controls_h),'center','distribute');
+
+% Set close functions for windows
+set(probe_atlas_gui,'CloseRequestFcn',{@gui_close,probe_atlas_gui,control_panel});
+set(control_panel,'CloseRequestFcn',{@gui_close,probe_atlas_gui,control_panel});
 end
+
+function gui_close(h,eventdata,probe_atlas_gui,control_panel)
+% When closing either GUI or control panel, close both windows
+delete(control_panel);
+delete(probe_atlas_gui);
+end
+
+%% Probe controls and slice updating
 
 function key_press(probe_atlas_gui,eventdata)
 
@@ -212,171 +281,6 @@ switch eventdata.Key
             gui_data = update_probe_angle(probe_atlas_gui,angle_change);
         end
         
-    case 'c'
-        % Bring up controls again
-        display_controls;
-        
-    case 'b'
-        % Toggle brain outline visibility
-        current_visibility = gui_data.handles.cortex_outline.Visible;
-        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
-        set(gui_data.handles.cortex_outline,'Visible',new_visibility);
-        
-    case 'a'
-        % Toggle plotted structure visibility
-        if ~isempty(gui_data.structure_plot_idx)
-            current_visibility = get(gui_data.handles.structure_patch(1),'Visible');
-            switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
-            set(gui_data.handles.structure_patch,'Visible',new_visibility);
-        end
-        
-    case 's'
-        % Toggle slice volume/visibility
-        slice_volumes = {'tv','av','none'};        
-        new_slice_volume = slice_volumes{circshift( ...
-            strcmp(gui_data.handles.slice_volume,slice_volumes),[0,1])};
-        
-        if strcmp(new_slice_volume,'none')
-            set(gui_data.handles.slice_plot,'Visible','off');
-        else
-            set(gui_data.handles.slice_plot,'Visible','on');
-        end
-        
-        gui_data.handles.slice_volume = new_slice_volume;
-        guidata(probe_atlas_gui, gui_data);
-        
-        update_slice(probe_atlas_gui);
-        
-    case 'p'
-        % Toggle probe visibility
-        current_visibility = gui_data.handles.probe_ref_line.Visible;
-        switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
-        set(gui_data.handles.probe_ref_line,'Visible',new_visibility);
-        set(gui_data.handles.probe_line,'Visible',new_visibility);
-        
-    case 'r'
-        % Toggle 3D rotation
-        h = rotate3d(gui_data.handles.axes_atlas);
-        switch h.Enable
-            case 'off'
-                h.Enable = 'on';
-                % Update the slice whenever a rotation is completed
-                h.ActionPostCallback = @update_slice;
-                %(need to restore key-press functionality with rotation)
-                hManager = uigetmodemanager(probe_atlas_gui);
-                [hManager.WindowListenerHandles.Enabled] = deal(false);
-                set(probe_atlas_gui,'KeyPressFcn',@key_press);
-            case 'on'
-                h.Enable = 'off';
-        end
-        
-    case 'm'
-        % Set probe angle
-        set_probe_position(probe_atlas_gui);
-        % Get updated guidata
-        gui_data = guidata(probe_atlas_gui);
-        
-    case {'equal','add','rightbracket'}
-        % Add structure(s) to display
-        slice_spacing = 10;
-        
-        % Prompt for which structures to show (only structures which are
-        % labelled in the slice-spacing downsampled annotated volume)
-        
-        if ~any(strcmp(eventdata.Modifier,'shift'))
-            % (no shift: list in native CCF order)
-                      
-            parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
-                    1:slice_spacing:end,1:slice_spacing:end),[],1));
-            
-            if ~any(strcmp(eventdata.Modifier,'alt'))
-                % (no alt: list all)            
-                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-                    'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
-                plot_structures = parsed_structures(plot_structures_parsed);
-            else
-                % (alt: search list)
-                structure_search = lower(inputdlg('Search structures'));
-                structure_match = find(contains(lower(gui_data.st.safe_name),structure_search));
-                list_structures = intersect(parsed_structures,structure_match);
-                if isempty(list_structures)
-                    error('No structure search results')
-                end
-                
-                plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
-                    'ListString',gui_data.st.safe_name(list_structures),'ListSize',[520,500]);
-                plot_structures = list_structures(plot_structures_parsed);
-            end
-                        
-            if ~isempty(plot_structures)
-                for curr_plot_structure = reshape(plot_structures,1,[])
-                    % If this label isn't used, don't plot
-                    if ~any(reshape(gui_data.av( ...
-                            1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-                        disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-                        continue
-                    end
-                    
-                    gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-                    
-                    plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
-                    structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-                        1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
-                    
-                    structure_alpha = 0.2;
-                    gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
-                        'Faces',structure_3d.faces, ...
-                        'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-                end
-            end
-            
-        elseif any(strcmp(eventdata.Modifier,'shift'))
-            % (shift: use hierarchy search)
-            plot_structures = hierarchicalSelect(gui_data.st);
-            
-            if ~isempty(plot_structures) % will be empty if dialog was cancelled
-                % get all children of this one
-                thisID = gui_data.st.id(plot_structures);
-                idStr = sprintf('/%d/', thisID);
-                theseCh = find(cellfun(@(x)contains(x,idStr), gui_data.st.structure_id_path));
-                
-                % plot the structure
-                slice_spacing = 5;
-                plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{plot_structures},3,[]))./255;
-                structure_3d = isosurface(permute(ismember(gui_data.av(1:slice_spacing:end, ...
-                    1:slice_spacing:end,1:slice_spacing:end),theseCh),[3,1,2]),0);
-                
-                structure_alpha = 0.2;
-                gui_data.structure_plot_idx(end+1) = plot_structures;
-                gui_data.handles.structure_patch(end+1) = patch('Vertices',structure_3d.vertices*slice_spacing, ...
-                    'Faces',structure_3d.faces, ...
-                    'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-                
-            end
-            
-            
-        end
-        
-    case {'hyphen','subtract'}
-        % Remove structure(s) already plotted
-        if ~isempty(gui_data.structure_plot_idx)
-            remove_structures = listdlg('PromptString','Select a structure to remove:', ...
-                'ListString',gui_data.st.safe_name(gui_data.structure_plot_idx));
-            delete(gui_data.handles.structure_patch(remove_structures))
-            gui_data.structure_plot_idx(remove_structures) = [];
-            gui_data.handles.structure_patch(remove_structures) = [];
-        end
-
-    case 'x'
-        % Export the probe coordinates in Allen CCF to the workspace
-        probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
-        probe_vector_ccf = round(probe_vector([1,3,2],:))';
-        assignin('base','probe_vector_ccf',probe_vector_ccf)
-        disp('Copied probe vector coordinates to workspace');
-        
-    case 'h'
-        % Load probe histology points, plot line of best fit
-        probe_histology(probe_atlas_gui);
 end
 
 % Upload gui_data
@@ -411,7 +315,7 @@ gui_data = guidata(probe_atlas_gui);
 if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
     
     % Get current position of camera
-    curr_campos = campos;
+    curr_campos = campos(gui_data.handles.axes_atlas);
     
     % Get probe vector
     probe_ref_top = [gui_data.handles.probe_ref_line.XData(1), ...
@@ -488,11 +392,11 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
         case 'tv'
             curr_slice(curr_slice_isbrain) = gui_data.tv(grab_pix_idx);
             colormap(gui_data.handles.axes_atlas,'gray');
-            caxis([0,255]);
+            caxis(gui_data.handles.axes_atlas,[0,255]);
         case 'av'
             curr_slice(curr_slice_isbrain) = gui_data.av(grab_pix_idx);
             colormap(gui_data.handles.axes_atlas,gui_data.cmap);
-            caxis([1,size(gui_data.cmap,1)]);
+            caxis(gui_data.handles.axes_atlas,[1,size(gui_data.cmap,1)]);
     end
     
     % Update the slice display
@@ -506,7 +410,7 @@ end
 end
 
 
-function set_probe_position(probe_atlas_gui,varargin)
+function set_probe_position(h,eventdata,probe_atlas_gui)
 
 % Get guidata
 gui_data = guidata(probe_atlas_gui);
@@ -689,8 +593,201 @@ guidata(probe_atlas_gui, gui_data);
 
 end
 
+%% Control panel functions
 
-function probe_histology(probe_atlas_gui)
+function add_area_list(h,eventdata,probe_atlas_gui)
+% List all CCF areas, draw selected
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Prompt for which structures to show (only structures which are
+% labelled in the slice-spacing downsampled annotated volume)
+slice_spacing = 10;
+parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
+    1:slice_spacing:end,1:slice_spacing:end),[],1));
+
+plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+    'ListString',gui_data.st.safe_name(parsed_structures),'ListSize',[520,500]);
+plot_structures = parsed_structures(plot_structures_parsed);
+
+% Draw areas
+draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+
+end
+
+function add_area_search(h,eventdata,probe_atlas_gui)
+% Search all CCF areas, draw selected
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Prompt for which structures to show (only structures which are
+% labelled in the slice-spacing downsampled annotated volume)
+slice_spacing = 10;
+parsed_structures = unique(reshape(gui_data.av(1:slice_spacing:end, ...
+    1:slice_spacing:end,1:slice_spacing:end),[],1));
+
+structure_search = lower(inputdlg('Search structures'));
+structure_match = find(contains(lower(gui_data.st.safe_name),structure_search));
+list_structures = intersect(parsed_structures,structure_match);
+if isempty(list_structures)
+    error('No structure search results')
+end
+
+plot_structures_parsed = listdlg('PromptString','Select a structure to plot:', ...
+    'ListString',gui_data.st.safe_name(list_structures),'ListSize',[520,500]);
+plot_structures = list_structures(plot_structures_parsed);
+
+% Draw areas
+draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+
+end
+
+function add_area_hierarchy(h,eventdata,probe_atlas_gui)
+% Explore CCF hierarchy, draw selected
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Bring up hierarchical selector
+plot_structures = hierarchicalSelect(gui_data.st);
+
+% Draw areas
+slice_spacing = 10;
+draw_areas(probe_atlas_gui,slice_spacing,plot_structures);
+
+end
+
+function draw_areas(probe_atlas_gui,slice_spacing,plot_structures)
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+if ~isempty(plot_structures)
+    for curr_plot_structure = reshape(plot_structures,1,[])
+        % If this label isn't used, don't plot
+        if ~any(reshape(gui_data.av( ...
+                1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
+            disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
+            continue
+        end
+        
+        gui_data.structure_plot_idx(end+1) = curr_plot_structure;
+        
+        plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
+        structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
+            1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
+        
+        structure_alpha = 0.2;
+        gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
+            'Vertices',structure_3d.vertices*slice_spacing, ...
+            'Faces',structure_3d.faces, ...
+            'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
+    end
+end
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+
+end
+
+function remove_area(h,eventdata,probe_atlas_gui)
+% Remove previously drawn areas
+
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+if ~isempty(gui_data.structure_plot_idx)
+    remove_structures = listdlg('PromptString','Select a structure to remove:', ...
+        'ListString',gui_data.st.safe_name(gui_data.structure_plot_idx));
+    delete(gui_data.handles.structure_patch(remove_structures))
+    gui_data.structure_plot_idx(remove_structures) = [];
+    gui_data.handles.structure_patch(remove_structures) = [];
+end
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function visibility_slice(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Toggle slice volume/visibility
+slice_volumes = {'tv','av','none'};
+new_slice_volume = slice_volumes{circshift( ...
+    strcmp(gui_data.handles.slice_volume,slice_volumes),[0,1])};
+
+if strcmp(new_slice_volume,'none')
+    set(gui_data.handles.slice_plot,'Visible','off');
+else
+    set(gui_data.handles.slice_plot,'Visible','on');
+end
+
+gui_data.handles.slice_volume = new_slice_volume;
+guidata(probe_atlas_gui, gui_data);
+
+update_slice(probe_atlas_gui);
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function visibility_brain_outline(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Toggle brain outline visibility
+current_visibility = gui_data.handles.cortex_outline.Visible;
+switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
+set(gui_data.handles.cortex_outline,'Visible',new_visibility);
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function visibility_probe(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Toggle probe visibility
+current_visibility = gui_data.handles.probe_ref_line.Visible;
+switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
+set(gui_data.handles.probe_ref_line,'Visible',new_visibility);
+set(gui_data.handles.probe_line,'Visible',new_visibility);
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function visibility_3d_areas(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Toggle plotted structure visibility
+if ~isempty(gui_data.structure_plot_idx)
+    current_visibility = get(gui_data.handles.structure_patch(1),'Visible');
+    switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
+    set(gui_data.handles.structure_patch,'Visible',new_visibility);
+end
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function export_coordinates(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Export the probe coordinates in Allen CCF to the workspace
+probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
+probe_vector_ccf = round(probe_vector([1,3,2],:))';
+assignin('base','probe_vector_ccf',probe_vector_ccf)
+disp('Copied probe vector coordinates to workspace');
+end
+
+function probe_histology(h,eventdata,probe_atlas_gui)
 % Load histology points
 % UNDER CONSTRUCTION
 % (used to use SHARP-Track, now using mine)
@@ -720,8 +817,10 @@ probe_line_endpoints = bsxfun(@plus,bsxfun(@times,probe_eval_points',histology_p
 % line(P(:,3),P(:,1),P(:,2),'color','k','linewidth',2)
 
 % % Mine: saved in native CCF order [AP,DV,ML]
-plot3(histology_points(:,1),histology_points(:,3),histology_points(:,2),'.b','MarkerSize',20);
-line(probe_line_endpoints(:,1),probe_line_endpoints(:,3),probe_line_endpoints(:,2),'color','k','linewidth',2)
+plot3(gui_data.handles.axes_atlas, ...
+    histology_points(:,1),histology_points(:,3),histology_points(:,2),'.b','MarkerSize',20);
+line(gui_data.handles.axes_atlas, ...
+    probe_line_endpoints(:,1),probe_line_endpoints(:,3),probe_line_endpoints(:,2),'color','k','linewidth',2)
 
 % Place the probe on the histology best-fit axis
 [ap_max,dv_max,ml_max] = size(gui_data.tv);
@@ -748,43 +847,6 @@ guidata(probe_atlas_gui, gui_data);
 update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
-
 end
-
-function display_controls
-
-% Print controls
-CreateStruct.Interpreter = 'tex';
-CreateStruct.WindowStyle = 'non-modal';
-msgbox( ...
-    {'\fontsize{12}' ...
-    '\bf Probe: \rm' ...
-    'Arrow keys : translate probe' ...
-    'Alt/Option up/down : raise/lower probe' ...
-    'Shift arrow keys : change probe angle' ...
-    'm : set probe location manually', ...
-    '\bf 3D brain areas: \rm' ...
-    ' =/+ : add (list selector)' ...
-    ' Alt/Option =/+ : add (search)' ...
-    ' Shift =/+ : add (hierarchy selector)' ...
-    ' - : remove', ...
-    '\bf Visibility: \rm' ...
-    's : atlas slice (toggle tv/av/off)' ...
-    'b : brain outline' ...
-    'p : probe' ...
-    'a : 3D brain areas' ...
-    '\bf Other: \rm' ...
-    'r : toggle clickable rotation' ...
-    'x : export probe coordinates to workspace' ...
-    'h : load and plot histology-defined trajectory', ...
-    'c : bring up controls box'}, ...
-    'Controls',CreateStruct);
-
-end
-
-
-
-
-
 
 
