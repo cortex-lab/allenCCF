@@ -35,15 +35,17 @@ ud.hOK = uicontrol(f, 'Style', 'pushbutton', ...
 set(f, 'UserData', ud);
 drawnow;
 
-try
-    c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
-    uiwait(f);
-    delete(c);
-catch
-    if ishghandle(f)
-        delete(f)
-    end
-end
+% AP: internal matlab command didn't work for Mac users, removed
+% try
+%     c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
+%     uiwait(f);
+%     delete(c);
+% catch
+%     if ishghandle(f)
+%         delete(f)
+%     end
+% end
+uiwait(f);
 
 if ishghandle(f)
     ud = get(f, 'UserData');
