@@ -12,6 +12,12 @@ function allen_ccf_npx(tv,av,st)
 % (optional inputs - if CCF path written in Line 22, loaded automatically)
 % tv, av, st = CCF template volume, annotated volume, structure tree
 
+% Check MATLAB version
+matlab_version = version('-date');
+if str2num(matlab_version(end-3:end)) <= 2016
+    error('Old MATLAB - allen_ccf_npx requires 2016 or later');
+end
+
 % Initialize gui_data structure
 gui_data = struct;
 
@@ -680,26 +686,6 @@ if ~isempty(plot_structure)
         'Vertices',structure_3d.vertices*slice_spacing, ...
         'Faces',structure_3d.faces, ...
         'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-    
-    
-    %         % If this label isn't used, don't plot
-    %         if ~any(reshape(gui_data.av( ...
-    %                 1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-    %             disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-    %             continue
-    %         end
-    %
-    %         gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-    %
-    %         plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
-    %         structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-    %             1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
-    %
-    %         structure_alpha = 0.2;
-    %         gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
-    %             'Vertices',structure_3d.vertices*slice_spacing, ...
-    %             'Faces',structure_3d.faces, ...
-    %             'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
     
 end
 
