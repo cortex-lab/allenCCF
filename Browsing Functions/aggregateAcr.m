@@ -111,8 +111,8 @@ acrOut(~notAnAcr) = acrOut1;
 function aggList = getAggList(aggType)
 
 switch aggType
-    case 1 % 8 top-level divisions: {'Isocortex', 'HPF', 'CNU', 'TH', 'HY', 'MB', 'HB', 'CB'}
-        aggList = [315 1089  623  549 1097  313 1065  512];
+    case 1 % 10 top-level divisions: {'Isocortex', 'HPF', 'OLF', 'CTXsp', 'CNU', 'TH', 'HY', 'MB', 'HB', 'CB'}
+        aggList = [315 1089 698 703 623 549 1097 313 1065 512];
         
     case 2 % 316 manually selected regions
         aggList = [184 985 993 353 329 337 345 369 361 182305689 ...
