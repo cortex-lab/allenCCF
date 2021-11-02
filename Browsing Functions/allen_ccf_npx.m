@@ -12,6 +12,12 @@ function allen_ccf_npx(tv,av,st)
 % (optional inputs - if CCF path written in Line 22, loaded automatically)
 % tv, av, st = CCF template volume, annotated volume, structure tree
 
+% Check MATLAB version
+matlab_version = version('-date');
+if str2num(matlab_version(end-3:end)) <= 2016
+    error('Old MATLAB - allen_ccf_npx requires 2016 or later');
+end
+
 % Initialize gui_data structure
 gui_data = struct;
 
@@ -42,6 +48,7 @@ probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
 % Set up the atlas axes
 axes_atlas = subplot(1,2,1);
 [~, brain_outline] = plotBrainGrid([],axes_atlas);
+set(brain_outline,'color',[0.5,0.5,0.5])
 hold(axes_atlas,'on');
 axis vis3d equal off manual
 view([-30,25]);
@@ -82,7 +89,8 @@ probe_ref_line = line(probe_ref_vector(1,:),probe_ref_vector(2,:),probe_ref_vect
 probe_length = 384.0; % IMEC phase 3 (in 10 ums)
 probe_vector = [probe_ref_vector(:,1),diff(probe_ref_vector,[],2)./ ...
     norm(diff(probe_ref_vector,[],2))*probe_length + probe_ref_vector(:,1)];
-probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:),'linewidth',3,'color','b','linestyle','-');
+probe_line = line(probe_vector(1,:),probe_vector(2,:),probe_vector(3,:), ...
+    'linewidth',3,'color','b','linestyle','-');
 
 % Set up the text to display coordinates
 probe_coordinates_text = uicontrol('Style','text','String','', ...
@@ -130,7 +138,10 @@ guidata(probe_atlas_gui, gui_data);
 update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
-% Set up control panel
+
+%% Control panel
+% Make buttons
+
 control_panel = figure('Toolbar','none','Menubar','none','color','w', ...
     'Name','Controls','Units','normalized','Position',[0.1,0.2,0.1,0.7]);
 controls_fontsize = 12;
@@ -153,6 +164,7 @@ controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',c
     'BackgroundColor','w');
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
     'Units','normalized','Position',button_position,'String','Enter coordinates','Callback',{@set_probe_position,probe_atlas_gui});
+
 % (area selector)
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
     'Units','normalized','Position',header_text_position,'String','3D areas:', ...
@@ -165,6 +177,7 @@ controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontS
     'Units','normalized','Position',button_position,'String','Hierarchy areas','Callback',{@add_area_hierarchy,probe_atlas_gui});
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
     'Units','normalized','Position',button_position,'String','Remove areas','Callback',{@remove_area,probe_atlas_gui});
+
 % (visibility toggle)
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
     'Units','normalized','Position',header_text_position,'String','Toggle visibility:', ...
@@ -177,6 +190,9 @@ controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontS
     'Units','normalized','Position',button_position,'String','Probe','Callback',{@visibility_probe,probe_atlas_gui});
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
     'Units','normalized','Position',button_position,'String','3D areas','Callback',{@visibility_3d_areas,probe_atlas_gui});
+controls_h(end+1) = uicontrol('Parent',control_panel,'Style','pushbutton','FontSize',controls_fontsize, ...
+    'Units','normalized','Position',button_position,'String','Dark mode','Callback',{@visibility_darkmode,probe_atlas_gui});
+
 % (other)
 controls_h(end+1) = uicontrol('Parent',control_panel,'Style','text','FontSize',controls_fontsize, ...
     'Units','normalized','Position',header_text_position,'String','Other:', ...
@@ -681,26 +697,6 @@ if ~isempty(plot_structure)
         'Faces',structure_3d.faces, ...
         'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
     
-    
-    %         % If this label isn't used, don't plot
-    %         if ~any(reshape(gui_data.av( ...
-    %                 1:slice_spacing:end,1:slice_spacing:end,1:slice_spacing:end),[],1) == curr_plot_structure)
-    %             disp(['"' gui_data.st.safe_name{curr_plot_structure} '" is not parsed in the atlas'])
-    %             continue
-    %         end
-    %
-    %         gui_data.structure_plot_idx(end+1) = curr_plot_structure;
-    %
-    %         plot_structure_color = hex2dec(reshape(gui_data.st.color_hex_triplet{curr_plot_structure},2,[])')./255;
-    %         structure_3d = isosurface(permute(gui_data.av(1:slice_spacing:end, ...
-    %             1:slice_spacing:end,1:slice_spacing:end) == curr_plot_structure,[3,1,2]),0);
-    %
-    %         structure_alpha = 0.2;
-    %         gui_data.handles.structure_patch(end+1) = patch(gui_data.handles.axes_atlas, ...
-    %             'Vertices',structure_3d.vertices*slice_spacing, ...
-    %             'Faces',structure_3d.faces, ...
-    %             'FaceColor',plot_structure_color,'EdgeColor','none','FaceAlpha',structure_alpha);
-    
 end
 
 % Upload gui_data
@@ -787,6 +783,34 @@ if ~isempty(gui_data.structure_plot_idx)
     switch current_visibility; case 'on'; new_visibility = 'off'; case 'off'; new_visibility = 'on'; end;
     set(gui_data.handles.structure_patch,'Visible',new_visibility);
 end
+
+% Upload gui_data
+guidata(probe_atlas_gui,gui_data);
+end
+
+function visibility_darkmode(h,eventdata,probe_atlas_gui)
+% Get guidata
+gui_data = guidata(probe_atlas_gui);
+
+% Toggle dark mode
+curr_bg = max(get(probe_atlas_gui,'color'));
+
+switch curr_bg
+    case 1
+        new_bg_color = 'k';
+        new_font_color = 'w';
+    case 0
+        new_bg_color = 'w';
+        new_font_color = 'k';
+end
+
+% Set font colors
+set(probe_atlas_gui,'color',new_bg_color)
+yyaxis(gui_data.handles.axes_probe_areas,'left');
+set(gui_data.handles.axes_probe_areas,'ycolor',new_font_color)
+yyaxis(gui_data.handles.axes_probe_areas,'right');
+set(gui_data.handles.axes_probe_areas,'ycolor',new_font_color)
+set(gui_data.handles.axes_probe_areas.Title,'color',new_font_color)
 
 % Upload gui_data
 guidata(probe_atlas_gui,gui_data);
