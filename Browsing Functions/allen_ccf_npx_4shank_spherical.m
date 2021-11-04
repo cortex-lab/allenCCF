@@ -619,17 +619,17 @@ probe_vector(2,:)=probe_vector(2,:)+shank_spacing_vector;
 gui_data.probe_angle(1) =new_probe_position(3);
 gui_data.probe_angle(2) =new_probe_position(4);
 gui_data.spin=new_probe_position(5); 
-% spin
-rotation_matrix=get_rotation_matrix(gui_data.spin,'spin');
-[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
-
-% rotate ML 
-rotation_matrix=get_rotation_matrix(gui_data.probe_angle(1),'ML');
-[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
-
-% rotate AP 
-rotation_matrix=get_rotation_matrix(gui_data.probe_angle(2),'AP');
-[probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+% % spin
+% rotation_matrix=get_rotation_matrix(gui_data.spin,'spin');
+% [probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+% 
+% % rotate ML 
+% rotation_matrix=get_rotation_matrix(gui_data.probe_angle(1),'ML');
+% [probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
+% 
+% % rotate AP 
+% rotation_matrix=get_rotation_matrix(gui_data.probe_angle(2),'AP');
+% [probe_ref_vector,probe_vector]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
 
 
 
@@ -730,7 +730,7 @@ for myshank=1:numel(gui_data.handles.probe_ref_line)
     probe_area_boundaries = intersect(unique([find(~isnan(probe_areas),1,'first'); ...
         find(diff(probe_areas) ~= 0);find(~isnan(probe_areas),1,'last')]),find(~isnan(probe_areas)));
     probe_area_centers = probe_area_boundaries(1:end-1) + diff(probe_area_boundaries)/2;
-    probe_area_labels = gui_data.st.acronym(probe_areas(round(probe_area_centers)));
+    probe_area_labels = gui_data.st.safe_name(probe_areas(round(probe_area_centers)));
 
     % Get position of brain intersect relative to bregma
     probe_bregma_coordinate = round((gui_data.bregma([1,3])' - trajectory_brain_intersect(1:2))*10);
@@ -754,7 +754,7 @@ for myshank=1:numel(gui_data.handles.probe_ref_line)
     % Update the probe areas
     yyaxis(gui_data.handles.axes_probe_areas(myshank),'right');
     set(gui_data.handles.probe_areas_plot(myshank),'YData',[1:length(probe_areas)]*10,'CData',probe_areas); 
-    set(gui_data.handles.axes_probe_areas(myshank),'YTick',probe_area_centers*10,'YTickLabels',probe_area_labels');
+    set(gui_data.handles.axes_probe_areas(myshank),'YTick',probe_area_centers*10,'YTickLabels',probe_area_labels','YTickLabelRotation',45);
 
 end
 % Upload gui_data
@@ -852,10 +852,11 @@ msgbox( ...
 
 end
 
-function [rotation_matrix]=get_rotation_matrix(probe_vector,angle,direction)
+function [rotation_matrix]=get_rotation_matrix(probe_vector,change_angle,current_angle,direction)
 % Zhiwen modified 
 % Convert Axis-Angle Rotation to Rotation Matrix
-angle_rad=deg2rad(angle); 
+angle_rad=deg2rad(change_angle); 
+current_angle_rad = deg2rad(current_angle); 
 probeV = probe_vector(:,2)-probe_vector(:,1);
 probehV = probe_vector(:,3)-probe_vector(:,1);
     switch direction
@@ -870,8 +871,11 @@ probehV = probe_vector(:,3)-probe_vector(:,1);
             % plane of 4-shank probe is the plane to rotate on;
             % which means it rotates around vector orthogonal to this
             % plane;
-            % othorg = [1;0;0];
-            othorg = cross(probeV,probehV);           
+            axang1 = [0 0 1 current_angle_rad];
+            rotation_matrix1 = axang2rotm1(axang1);
+            rotated_azimuth = rotation_matrix1*[1; 0; 0];
+            %%
+            othorg = cross(probeV,rotated_azimuth);           
             axang = [othorg(1) othorg(2) othorg(3) angle_rad];
         case 'spin'
             % spin 
@@ -904,8 +908,9 @@ function update_rotation(probe_atlas_gui,angle_change,mydir)
     gui_data = guidata(probe_atlas_gui);
     probe_ref_vector = cell2mat(get(gui_data.handles.probe_ref_line,{'XData','YData','ZData'})');
     probe_vector = cell2mat(get(gui_data.handles.probe_line,{'XData','YData','ZData'})');
-    
-    rotation_matrix=get_rotation_matrix(probe_vector,angle_change,mydir);
+    current_angle = gui_data.probe_angle(1)+90;
+   
+    rotation_matrix=get_rotation_matrix(probe_vector,angle_change,current_angle,mydir);
     [rotated_ref_bregma,rotated_probe_bregma]=please_rotate(probe_ref_vector,probe_vector,rotation_matrix);
 
     for myshank=1:gui_data.shank_no
