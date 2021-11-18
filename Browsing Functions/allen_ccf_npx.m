@@ -1,4 +1,5 @@
 %% GUI setup
+warning('Neuropixels trajectory explorer: version unsupported updated version at: https://github.com/petersaj/neuropixels_trajectory_explorer');
 
 function allen_ccf_npx(tv,av,st)
 % allen_ccf_npx(tv,av,st)
@@ -33,7 +34,7 @@ if nargin < 3
     % Load CCF components
     tv = readNPY([allen_atlas_path filesep 'template_volume_10um.npy']); % grey-scale "background signal intensity"
     av = readNPY([allen_atlas_path filesep 'annotation_volume_10um_by_index.npy']); % the number at each pixel labels the area, see note below
-    st = loadStructureTree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean    
+    st = load_structure_tree([allen_atlas_path filesep 'structure_tree_safe_2017.csv']); % a table of what all the labels mean    
 end
 
 % Coordinates in millimeters relative to bregma
@@ -45,10 +46,14 @@ ap_coords = -((1:size(av,1))-bregma_ccf(1))/100;
 dv_coords = (((1:size(av,2))-bregma_ccf(2))/100)*0.85;
 ml_coords = -((1:size(av,3))-bregma_ccf(3))/100;
 
-% Load the colormap (located in the repository, find by associated fcn)
-allenCCF_path = fileparts(which('allenCCFbregma'));
-cmap_filename = [allenCCF_path filesep 'allen_ccf_colormap_2017.mat'];
-load(cmap_filename);
+% Create CCF colormap
+% (copied from cortex-lab/allenCCF/setup_utils
+ccf_color_hex = st.color_hex_triplet;
+ccf_color_hex(cellfun(@numel,ccf_color_hex)==5) = {'019399'}; % special case where leading zero was evidently dropped
+ccf_cmap_c1 = cellfun(@(x)hex2dec(x(1:2)), ccf_color_hex, 'uni', false);
+ccf_cmap_c2 = cellfun(@(x)hex2dec(x(3:4)), ccf_color_hex, 'uni', false);
+ccf_cmap_c3 = cellfun(@(x)hex2dec(x(5:6)), ccf_color_hex, 'uni', false);
+ccf_cmap = horzcat(vertcat(ccf_cmap_c1{:}),vertcat(ccf_cmap_c2{:}),vertcat(ccf_cmap_c3{:}))./255;
 
 % Set up the gui
 probe_atlas_gui = figure('Toolbar','none','Menubar','none','color','w', ...
@@ -109,8 +114,8 @@ yyaxis(axes_probe_areas,'left');
 probe_areas_plot = image(0);
 set(axes_probe_areas,'XTick','','YLim',[0,probe_length],'YColor','k','YDir','reverse');
 ylabel(axes_probe_areas,'Depth (\mum)');
-colormap(axes_probe_areas,cmap);
-caxis([1,size(cmap,1)])
+colormap(axes_probe_areas,ccf_cmap);
+caxis([1,size(ccf_cmap,1)])
 yyaxis(axes_probe_areas,'right');
 set(axes_probe_areas,'XTick','','YLim',[0,probe_length],'YColor','k','YDir','reverse');
 title(axes_probe_areas,'Probe areas');
@@ -119,7 +124,7 @@ title(axes_probe_areas,'Probe areas');
 gui_data.tv = tv; % Intensity atlas
 gui_data.av = av; % Annotated atlas
 gui_data.st = st; % Labels table
-gui_data.cmap = cmap; % Atlas colormap
+gui_data.cmap = ccf_cmap; % Atlas colormap
 gui_data.bregma = bregma_ccf; % Bregma for external referencing
 gui_data.ap_coords = ap_coords;
 gui_data.dv_coords = dv_coords;
@@ -674,7 +679,7 @@ function add_area_hierarchy(h,eventdata,probe_atlas_gui)
 gui_data = guidata(probe_atlas_gui);
 
 % Bring up hierarchical selector
-plot_structure = hierarchicalSelect(gui_data.st);
+plot_structure = hierarchical_select(gui_data.st);
 
 % Draw areas
 slice_spacing = 10;
@@ -905,5 +910,178 @@ update_slice(probe_atlas_gui);
 update_probe_coordinates(probe_atlas_gui);
 
 end
+
+%% Load and format structure tree
+% (copied wholesale from cortex-lab/allenCCF/Browsing Functions/loadStructureTree to remove
+% dependence)
+
+function structureTreeTable = load_structure_tree(fn)
+
+if nargin<1
+    p = mfilename('fullpath');
+    fn = fullfile(fileparts(fileparts(p)), 'structure_tree_safe_2017.csv');
+end
+
+[~, fnBase] = fileparts(fn);
+if ~isempty(strfind(fnBase, '2017'))
+    mode = '2017'; 
+else
+    mode = 'old'; 
+end
+
+fid = fopen(fn, 'r');
+
+if strcmp(mode, 'old')
+    titles = textscan(fid, '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s', 1, 'delimiter', ',');
+    titles = cellfun(@(x)x{1}, titles, 'uni', false);
+    titles{1} = 'index'; % this is blank in the file
+    
+    data = textscan(fid, '%d%s%d%s%d%s%d%d%d%d%d%s%s%d%d%s%d%s%s%d%d', 'delimiter', ',');
+    
+elseif strcmp(mode, '2017')
+    titles = textscan(fid, repmat('%s', 1, 21), 1, 'delimiter', ',');
+    titles = cellfun(@(x)x{1}, titles, 'uni', false);
+    
+    data = textscan(fid, ['%d%d%s%s'... % 'id'    'atlas_id'    'name'    'acronym'
+                          '%s%d%d%d'... % 'st_level'    'ontology_id'    'hemisphere_id'    'weight'
+                          '%d%d%d%d'... % 'parent_structure_id'    'depth'    'graph_id'     'graph_order'
+                          '%s%s%d%s'... % 'structure_id_path'    'color_hex_triplet' neuro_name_structure_id neuro_name_structure_id_path
+                          '%s%d%d%d'... % 'failed'    'sphinx_id' structure_name_facet failed_facet
+                          '%s'], 'delimiter', ','); % safe_name
+    
+    titles = ['index' titles];
+    data = [[0:numel(data{1})-1]' data];    
+
+end
+
+
+structureTreeTable = table(data{:}, 'VariableNames', titles);
+
+fclose(fid);
+
+end
+
+%% Hierarchy select dialog box
+% (copied wholesale from cortex-lab/allenCCF/Browsing Functions/hierarchicalSelect to remove dependence)
+
+function selIdx = hierarchical_select(st)
+
+selID = 567; % Cerebrum, default to start
+
+[boxList, idList] = makeBoxList(st, selID); 
+
+ud.idList = idList; ud.st = st;
+
+% make figure
+f = figure; set(f, 'KeyPressFcn', @hierarchical_select_ok);
+
+% selector box
+ud.hBox = uicontrol(f, 'Style', 'listbox', 'String', boxList, ...
+    'Callback', @hierarchical_select_update, 'Value', find(idList==selID),...
+    'Units', 'normalized', 'Position', [0.1 0.2 0.8 0.7],...
+    'KeyPressFcn', @hierarchical_select_ok); 
+
+titleStr = boxList{idList==selID}; titleStr = titleStr(find(titleStr~=' ', 1):end);
+ud.hSelTitle = uicontrol(f, 'Style', 'text', ...
+    'String', sprintf('Selected: %s', titleStr), ...
+    'Units', 'normalized', 'Position', [0.1 0.9 0.8 0.1]); 
+
+ud.hCancel = uicontrol(f, 'Style', 'pushbutton', ...
+    'String', 'Cancel', 'Callback', @hierarchical_select_cancel, ...
+    'Units', 'normalized', 'Position', [0.1 0.1 0.2 0.1]); 
+
+ud.hOK = uicontrol(f, 'Style', 'pushbutton', ...
+    'String', 'OK', 'Callback', @hierarchical_select_ok, ...
+    'Units', 'normalized', 'Position', [0.3 0.1 0.2 0.1]); 
+
+set(f, 'UserData', ud);
+drawnow;
+
+uiwait(f);
+
+if ishghandle(f)
+    ud = get(f, 'UserData');
+    idList = ud.idList;
+
+    if ud.hBox.Value>1
+        selID = idList(get(ud.hBox, 'Value'));
+
+        selIdx = find(st.id==selID);
+    else
+        selIdx = [];
+    end
+    delete(f)
+    drawnow; 
+else
+    selIdx = [];
+end
+
+end
+
+function [boxList, idList] = makeBoxList(st, selID)
+
+idList = selID;
+while idList(end)~=997 % root
+    idList(end+1) = st.parent_structure_id(st.id==idList(end));
+end
+idList = idList(end:-1:1); % this is the tree of parents down to the selected one
+
+% make the parent string representation
+for q = 1:numel(idList)
+    boxList{q} = sprintf('%s%s (%s)', repmat('  ', 1, q-1), ...
+        st.acronym{st.id==idList(q)}, ...
+        st.safe_name{st.id==idList(q)});
+end
+np = numel(idList);
+
+% now add children
+idList = [idList st.id(st.parent_structure_id==selID)'];
+
+% make the parent string representation
+for q = np+1:numel(idList)
+    boxList{q} = sprintf('%s%s (%s)', repmat('  ', 1, np), ...
+        st.acronym{st.id==idList(q)}, ...
+        st.safe_name{st.id==idList(q)});
+end
+
+end
+
+function hierarchical_select_update(src, ~)
+
+f = get(src, 'Parent'); 
+ud = get(f, 'UserData');
+st = ud.st; idList = ud.idList;
+
+selID = idList(get(src, 'Value'));
+
+[boxList, idList] = makeBoxList(st, selID); 
+
+ud.idList = idList;
+set(f, 'UserData', ud);
+set(src, 'String', boxList, 'Value', find(idList==selID));
+
+titleStr = boxList{idList==selID}; titleStr = titleStr(find(titleStr~=' ', 1):end);
+set(ud.hSelTitle, 'String', sprintf('Selected: %s', titleStr));
+
+end
+
+% OK callback
+function hierarchical_select_ok(~, ~)
+    uiresume(gcbf);
+end
+
+% Cancel callback
+function hierarchical_select_cancel(~, ~)
+ud = get(gcbf, 'UserData');
+ud.hBox.Value = 1;
+uiresume(gcbf);
+end
+
+
+
+
+
+
+
 
 
