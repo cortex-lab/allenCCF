@@ -13,6 +13,7 @@ If you have access, you could also locate the data files at //zserver/Lab/Atlas/
 
 ## Neuropixels trajectory GUI (allen_ccf_npx)
 (OLD - new/supported version is here: https://github.com/petersaj/neuropixels_trajectory_explorer)
+
 Plan neuropixels trajectories with an Allen CCF-based GUI
 
 ```
