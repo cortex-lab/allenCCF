@@ -12,7 +12,7 @@ Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10Â
 If you have access, you could also locate the data files at //zserver/Lab/Atlas/allenCCF. Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html to access the data directly via the Allen Inst python API.
 
 ## Neuropixels trajectory GUI (allen_ccf_npx)
-
+(OLD - new/supported version is here: https://github.com/petersaj/neuropixels_trajectory_explorer)
 Plan neuropixels trajectories with an Allen CCF-based GUI
 
 ```
