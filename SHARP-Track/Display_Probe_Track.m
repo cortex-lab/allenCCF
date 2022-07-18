@@ -156,17 +156,11 @@ ann = 10;
 out_of_brain = false;
 while ~(ann==1 && out_of_brain) % && distance_stepped > .5*active_probe_length)
     m = m-p; % step 10um, backwards up the track
-    if strcmp(plane,'coronal')
-        ann = av_plot(round(m(1)),round(m(2)),round(m(3))); %until hitting the top
-    elseif strcmp(plane,'sagittal')
-        ann = av_plot(round(m(3)),round(m(2)),round(m(1))); %until hitting the top
-    elseif strcmp(plane,'transverse')
-        ann = av_plot(round(m(2)),round(m(3)),round(m(1))); %until hitting the top
-    end
+    ann = av(round(m(1)),round(m(2)),round(m(3))); %until hitting the top
     if strcmp(st.safe_name(ann), 'root')
         % make sure this isn't just a 'root' area within the brain
         m_further_up = m - p*20; % is there more brain 200 microns up along the track?
-        ann_further_up = av_plot(round(max(1,m_further_up(1))),round(max(1,m_further_up(2))),round(max(1,m_further_up(3))));
+        ann_further_up = av(round(max(1,m_further_up(1))),round(max(1,m_further_up(2))),round(max(1,m_further_up(3))));
         if strcmp(st.safe_name(ann_further_up), 'root')
             out_of_brain = true;
         end
