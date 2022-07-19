@@ -84,10 +84,31 @@ function display_controls
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'Navigation: \n');
-fprintf(1, 'up: scroll through A/P angles (for coronal sections)\n');
-fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
-fprintf(1, 'down: scroll through slices \n');
-fprintf(1, 'scroll: move between slices \n');
+switch ud.plane
+    case 'coronal'
+        fprintf(1, 'up: scroll through D/V angles (for coronal sections)\n');
+        fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
+        fprintf(1, 'down: scroll through A/P atlas slices \n');
+        fprintf(1, 'left: scroll through slices \n');
+        
+        fprintf(1, 'scroll: move between slices or angles \n');
+    case 'sagittal'
+        fprintf(1, 'up: scroll through D/V angles (for sagittal sections)\n');
+        fprintf(1, 'right: scroll through A/P angles  (for sagittal sections)\n');
+        fprintf(1, 'down: scroll through M/L atlas slices \n');
+        fprintf(1, 'left: scroll through slices \n');
+
+        fprintf(1, 'scroll: move between slices or angles \n');
+
+    case 'transverse'
+        fprintf(1, 'up: scroll through M/L angles (for transverse sections)\n');
+        fprintf(1, 'right: scroll through A/P angles  (for transverse sections)\n');
+        fprintf(1, 'down: scroll through D/V atlas slices \n');
+        fprintf(1, 'left: scroll through slices \n');
+
+        fprintf(1, 'scroll: move between slices or angles \n');
+
+end
 
 fprintf(1, '\n Registration: \n');
 fprintf(1, 't: toggle mode where clicks are logged for transform \n');
