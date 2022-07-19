@@ -89,14 +89,14 @@ switch plane
         fprintf(1, 'up: scroll through D/V angles (for coronal sections)\n');
         fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
         fprintf(1, 'down: scroll through A/P atlas slices \n');
-        fprintf(1, 'left: scroll through slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
         
         fprintf(1, 'scroll: move between slices or angles \n');
     case 'sagittal'
         fprintf(1, 'up: scroll through D/V angles (for sagittal sections)\n');
         fprintf(1, 'right: scroll through A/P angles  (for sagittal sections)\n');
         fprintf(1, 'down: scroll through M/L atlas slices \n');
-        fprintf(1, 'left: scroll through slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
 
         fprintf(1, 'scroll: move between slices or angles \n');
 
@@ -104,7 +104,7 @@ switch plane
         fprintf(1, 'up: scroll through M/L angles (for transverse sections)\n');
         fprintf(1, 'right: scroll through A/P angles  (for transverse sections)\n');
         fprintf(1, 'down: scroll through D/V atlas slices \n');
-        fprintf(1, 'left: scroll through slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
 
         fprintf(1, 'scroll: move between slices or angles \n');
 
