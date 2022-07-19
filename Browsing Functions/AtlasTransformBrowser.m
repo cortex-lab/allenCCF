@@ -8,7 +8,7 @@ function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTre
 %
 
 % print instructions
-display_controls
+display_controls(plane)
 
 % create figure and adjust to user's screen size
 % f = figure('Name','Atlas Viewer'); 
@@ -80,11 +80,11 @@ set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figu
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
 % display user controls in the console
-function display_controls
+function display_controls(plane)
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'Navigation: \n');
-switch ud.plane
+switch plane
     case 'coronal'
         fprintf(1, 'up: scroll through D/V angles (for coronal sections)\n');
         fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
@@ -144,7 +144,7 @@ key_letter = lower(keydata.Key);
 switch key_letter  
 % space -- display controls    
     case 'space'
-        display_controls
+        display_controls(ud.plane)
 % o -- toggle showing brain region overlay
     case 'o'
         ud.showOverlay = ~ud.showOverlay;
