@@ -8,7 +8,7 @@ function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTre
 %
 
 % print instructions
-display_controls
+display_controls(plane)
 
 % create figure and adjust to user's screen size
 % f = figure('Name','Atlas Viewer'); 
@@ -80,14 +80,35 @@ set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figu
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
 % display user controls in the console
-function display_controls
+function display_controls(plane)
 fprintf(1, '\n Controls: \n');
 fprintf(1, '--------- \n');
 fprintf(1, 'Navigation: \n');
-fprintf(1, 'up: scroll through A/P angles (for coronal sections)\n');
-fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
-fprintf(1, 'down: scroll through slices \n');
-fprintf(1, 'scroll: move between slices \n');
+switch plane
+    case 'coronal'
+        fprintf(1, 'up: scroll through D/V angles (for coronal sections)\n');
+        fprintf(1, 'right: scroll through M/L angles  (for coronal sections)\n');
+        fprintf(1, 'down: scroll through A/P atlas slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
+        
+        fprintf(1, 'scroll: move between slices or angles \n');
+    case 'sagittal'
+        fprintf(1, 'up: scroll through D/V angles (for sagittal sections)\n');
+        fprintf(1, 'right: scroll through A/P angles  (for sagittal sections)\n');
+        fprintf(1, 'down: scroll through M/L atlas slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
+
+        fprintf(1, 'scroll: move between slices or angles \n');
+
+    case 'transverse'
+        fprintf(1, 'up: scroll through M/L angles (for transverse sections)\n');
+        fprintf(1, 'right: scroll through A/P angles  (for transverse sections)\n');
+        fprintf(1, 'down: scroll through D/V atlas slices \n');
+        fprintf(1, 'left: scroll for Slice Viewer \n');
+
+        fprintf(1, 'scroll: move between slices or angles \n');
+
+end
 
 fprintf(1, '\n Registration: \n');
 fprintf(1, 't: toggle mode where clicks are logged for transform \n');
@@ -123,7 +144,7 @@ key_letter = lower(keydata.Key);
 switch key_letter  
 % space -- display controls    
     case 'space'
-        display_controls
+        display_controls(ud.plane)
 % o -- toggle showing brain region overlay
     case 'o'
         ud.showOverlay = ~ud.showOverlay;
