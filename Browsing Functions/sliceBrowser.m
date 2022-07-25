@@ -45,6 +45,9 @@ function sliceClickCallback(im, keydata)
 f = get(get(im, 'Parent'), 'Parent');
 ud = get(f, 'UserData');
 
+if isempty(ud.pointHands)
+    ud.pointHands = gobjects(0);
+end
 
 if ud.getPoint
     clickX = round(keydata.IntersectionPoint(1));
@@ -127,7 +130,13 @@ function ud = updateSliceImage(ud)
     file_transformations = fullfile(ud.processed_images_folder, 'transformations\\' ,...
                             [processed_image_name(1:end-4) '_transform_data.mat']);
 
-    set(ud.pointHands(:), 'Visible', 'off'); 
+    try
+        delete(findobj(ud.im.Parent, 'Type','line','color',[0 0.5 0],'Marker','o')); % delete all the circles
+    end
+
+    ud.pointHands = gobjects(0);
+    % set(ud.pointHands(:), 'Visible', 'off'); %TODO WHY hiding? Maybe you
+    % want to delete/initialize them? ud is from fig.UserData
     ud.pointList = [];
     
     if exist(file_transformations,'file')
@@ -136,6 +145,9 @@ function ud = updateSliceImage(ud)
         transform_data = transform_data.save_transform;
         if ~isempty(transform_data.transform_points{2})
             ud.pointList = transform_data.transform_points{2};
+            for i = 1:size(ud.pointList,1)
+                ud.pointHands(end+1) = plot(ud.sliceAx, ud.pointList(i,1), ud.ref_size(1) - ud.pointList(i,2), 'ro', 'color', [0 .5 0],'linewidth',2,'markers',4);
+            end
             title_ending = ' (transform points loaded)';
         end       
     end
