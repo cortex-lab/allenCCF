@@ -1,4 +1,4 @@
-function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
+function f = AtlasTransformBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
 % ------------------------------------------------
 % Browser for the allen atlas ccf data in matlab.
 % ------------------------------------------------
@@ -359,7 +359,7 @@ switch key_letter
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
             end
-        else; disp('transform point mode OFF');    
+        else; disp('transform point mode OFF');
         end     
 % a -- toggle viewing of annotation boundaries  
     case 'a' 
@@ -432,7 +432,7 @@ switch key_letter
             ud.slice_at_shift_start = ud_slice.slice_num;
             ud.slice_shift = 0;
         end
-        disp('switch scroll mode -- scroll along slice images')     
+        disp('switch scroll mode -- scroll along slice images')
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
@@ -732,7 +732,7 @@ elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
   
 % scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+        set(ud.pointHands_for_transform(:), 'Visible', 'off');
   ud.showOverlay = 0;
   delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
@@ -776,7 +776,7 @@ elseif ud.scrollMode == 3
             ud.current_pointList_for_transform = transform_data.transform_points{1};
             ud_slice.pointList = transform_data.transform_points{2};
         else
-            ud_slice.pointList = [];           
+            ud_slice.pointList = [];
         end
         set(slice_figure, 'UserData', ud_slice);
         
