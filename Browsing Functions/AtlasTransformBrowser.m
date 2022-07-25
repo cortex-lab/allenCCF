@@ -79,6 +79,15 @@ set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figure, save_location))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
+ud.atlasAx.XLabel.Visible = 'on';
+if strcmp(ud.plane,'coronal')
+    xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+elseif strcmp(ud.plane,'sagittal')
+    xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+elseif strcmp(ud.plane,'transverse')
+    xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+end
+
 % display user controls in the console
 function display_controls(plane)
 fprintf(1, '\n Controls: \n');
@@ -402,29 +411,47 @@ switch key_letter
         ud.scrollMode = 1;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         end
     case 'rightarrow' % scroll angles along A/P axis
         ud.scrollMode = 2;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         end
         
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- scroll along A/P axis')
+            xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- scroll along M/L axis')
+            xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- scroll along D/V axis')
+            xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+
         end
     case 'leftarrow' % scroll along A/P axis
         ud.scrollMode = 3;
@@ -433,6 +460,8 @@ switch key_letter
             ud.slice_shift = 0;
         end
         disp('switch scroll mode -- scroll along slice images')
+        xlabel(ud.atlasAx, 'Scroll along slice images')
+
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
