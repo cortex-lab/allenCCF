@@ -79,6 +79,15 @@ set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figure, save_location))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
 
+ud.atlasAx.XLabel.Visible = 'on';
+if strcmp(ud.plane,'coronal')
+    xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+elseif strcmp(ud.plane,'sagittal')
+    xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+elseif strcmp(ud.plane,'transverse')
+    xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+end
+
 % display user controls in the console
 function display_controls(plane)
 fprintf(1, '\n Controls: \n');
@@ -359,7 +368,7 @@ switch key_letter
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
             end
-        else; disp('transform point mode OFF');    
+        else; disp('transform point mode OFF');
         end     
 % a -- toggle viewing of annotation boundaries  
     case 'a' 
@@ -402,29 +411,47 @@ switch key_letter
         ud.scrollMode = 1;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         end
     case 'rightarrow' % scroll angles along A/P axis
         ud.scrollMode = 2;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         end
         
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- scroll along A/P axis')
+            xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- scroll along M/L axis')
+            xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- scroll along D/V axis')
+            xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+
         end
     case 'leftarrow' % scroll along A/P axis
         ud.scrollMode = 3;
@@ -432,7 +459,9 @@ switch key_letter
             ud.slice_at_shift_start = ud_slice.slice_num;
             ud.slice_shift = 0;
         end
-        disp('switch scroll mode -- scroll along slice images')     
+        disp('switch scroll mode -- scroll along slice images')
+        xlabel(ud.atlasAx, 'Scroll along slice images')
+
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
@@ -732,7 +761,7 @@ elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
   
 % scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+        set(ud.pointHands_for_transform(:), 'Visible', 'off');
   ud.showOverlay = 0;
   delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
@@ -776,7 +805,7 @@ elseif ud.scrollMode == 3
             ud.current_pointList_for_transform = transform_data.transform_points{1};
             ud_slice.pointList = transform_data.transform_points{2};
         else
-            ud_slice.pointList = [];           
+            ud_slice.pointList = [];
         end
         set(slice_figure, 'UserData', ud_slice);
         
