@@ -355,12 +355,27 @@ switch key_letter
             if ~size(ud.current_pointList_for_transform,1)% ) (ud.curr_slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) ||  && ~ud.loaded 
                 ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
                 ud.current_pointList_for_transform = zeros(0,2);
+                try
                 set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+                catch
+                end
                 num_hist_points = size(ud_slice.pointList,1);
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
+            else
+                try
+                set(ud.pointHands_for_transform(:), 'Visible', 'on'); 
+                catch
+                end
             end
-        else; disp('transform point mode OFF');    
+        else; disp('transform point mode OFF');
+            % hide transform points
+
+            try 
+                set(ud.pointHands_for_transform(:), 'Visible', 'off');
+            catch
+            end
+
         end     
 % a -- toggle viewing of annotation boundaries  
     case 'a' 
@@ -433,7 +448,7 @@ switch key_letter
             ud.slice_at_shift_start = ud_slice.slice_num;
             ud.slice_shift = 0;
         end
-        disp('switch scroll mode -- scroll along slice images')     
+        disp('switch scroll mode -- scroll along slice images')
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
@@ -631,13 +646,13 @@ switch key_letter
             
             % Try to delete only the most recent point
             ud.current_pointList_for_transform = ud.current_pointList_for_transform(1:end-1,:);
-            ud_slice.pointList = ud_slice.pointList(1:end-1,:); 
+            ud_slice.pointList = ud_slice.pointList(1:end-1,:); %TODO this should be accompanied by deleting circles on Slive Viewer
             set(slice_figure, 'UserData', ud_slice);
-            if ud.pointHands_for_transform
+            if ~isempty(ud.pointHands_for_transform)
                 % remove circle for most revent point
-                set(ud.pointHands_for_transform(end), 'Visible', 'off');
+                set(ud.pointHands_for_transform(end), 'Visible', 'off');%TODO why hiding rather than deleting???
                 ud.pointHands_for_transform = ud.pointHands_for_transform(1:end-1); 
-                if ud.pointHands_for_transform
+                if  ~isempty(ud.pointHands_for_transform)
                     % recolor points
                     set(ud.pointHands_for_transform(end), 'color', [0 .9 0]);
                 end
@@ -733,7 +748,10 @@ elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
   
 % scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+    try
+        set(ud.pointHands_for_transform(:), 'Visible', 'off');
+    catch
+    end
   ud.showOverlay = 0;
   delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
@@ -787,7 +805,7 @@ elseif ud.scrollMode == 3
 
             ud_slice.pointList = transform_data.transform_points{2};
         else
-            ud_slice.pointList = [];           
+            ud_slice.pointList = [];
         end
         set(slice_figure, 'UserData', ud_slice);
         
@@ -811,6 +829,8 @@ elseif ud.scrollMode == 3
         % if no transform, just show reference
         ud.histology_overlay = 0;
         ud.current_pointList_for_transform = zeros(0,2);
+        delete(ud.pointHands_for_transform);% delete them %TODO not working
+        ud.pointHands_for_transform = gobjects(0);% initialize
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
@@ -845,7 +865,10 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
         updateOverlay(f, allData, ann, slice_figure, save_location);
     end  
     ud.ref = uint8(reference_slice);
-    set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+%     try 
+%         set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+%     catch
+%     end
     ud.offset_map = zeros(ud.ref_size); 
     set(f, 'UserData', ud);
     
@@ -1071,7 +1094,10 @@ elseif ud.getPoint_for_transform
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
+    try
     set(ud.pointHands_for_transform(:), 'color', [.7 .3 .3]);
+    catch
+    end
     ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'LineWidth',2,'markers',4);    
         
     ud.slice_at_shift_start = ud_slice.slice_num;
