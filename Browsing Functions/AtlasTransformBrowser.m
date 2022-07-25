@@ -775,6 +775,16 @@ elseif ud.scrollMode == 3
         
         if ~isempty(transform_data.transform_points{1}) && ~isempty(transform_data.transform_points{2})
             ud.current_pointList_for_transform = transform_data.transform_points{1};
+            delete(ud.pointHands_for_transform);% delete them %TODO not working
+            ud.pointHands_for_transform = gobjects(0);% initialize
+            for i = 1:size(ud.current_pointList_for_transform,1)
+                ud.pointHands_for_transform(i) = plot(ud.atlasAx, ...
+                    ud.current_pointList_for_transform(i,1), ...
+                    ud.current_pointList_for_transform(i,2), ...
+                    'ro', 'color', [.7 .3 .3],'LineWidth',2,'markers',4);
+            end
+            set(ud.pointHands_for_transform(end),'color', [0 .9 0]);
+
             ud_slice.pointList = transform_data.transform_points{2};
         else
             ud_slice.pointList = [];           
