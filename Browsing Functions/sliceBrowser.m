@@ -11,8 +11,8 @@ ud_slice.total_num_files = total_num_files;
 ud_slice.break = 0; 
 ud_slice.slice_num = 1;
 ud_slice.key = 1; 
-ud_slice.pointList = []; 
-ud_slice.pointHands = [];
+ud_slice.pointList = [];  % point coordinates
+ud_slice.pointHands = []; % graphic objects
 ud_slice.getPoint = 0;
 ud_slice.ref_size = reference_size(2:3);
 
@@ -22,6 +22,10 @@ ud_slice.sliceAx = axes('Position', [0.05 0.05 0.9 0.9]);
 hold(ud_slice.sliceAx, 'on');
 set(ud_slice.sliceAx, 'HitTest', 'off');
 ud_slice.im = plotTVslice(zeros(ud_slice.ref_size, 'uint8'));
+
+ud_slice.pointsText = annotation('textbox', [0.88 0.03 0.1 0.05], ...
+    'String', '0 point', 'EdgeColor', 'none', 'Color', 'k', 'HorizontalAlignment', 'right');
+ud_slice.pointsText.Visible = 'off';
 
 % create functions needed to interact with the figure
 set(ud_slice.im, 'ButtonDownFcn', @(slice_figure,k)sliceClickCallback(slice_figure, k));
@@ -37,6 +41,9 @@ movegui(slice_figure,'onscreen')
 
 % set up first slice image
 ud_slice = updateSliceImage(ud_slice);
+
+set(slice_figure, 'UserData', ud_slice);
+
 
 % ------------------------------------------------    
 % Clicking function to register transform points  
@@ -60,6 +67,8 @@ if ud.getPoint
         ud.pointList = []; 
         set(ud.pointHands(:), 'Visible', 'off');     
      end
+
+     ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
     
 end
 set(f, 'UserData', ud);
@@ -91,14 +100,28 @@ elseif strcmp(keydata.Key,'d')
 %     ud.pointList = [];    
     
     % Try to delete only most recent point
-    set(ud.pointHands(end), 'Visible', 'off'); 
-    ud.pointHands = ud.pointHands(1:end-1); 
-    ud.pointList = ud.pointList(1:end-1,:); 
-    disp('transform point deleted')
+    if isempty(ud.pointHands)
+        disp('There is no transform point to delete.')
+    else
+        set(ud.pointHands(end), 'Visible', 'off'); 
+        ud.pointHands = ud.pointHands(1:end-1);
+        ud.pointList = ud.pointList(1:end-1,:);
+        disp('transform point deleted')
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
+
+    end
 % t -- transform point mode
 elseif strcmp(keydata.Key,'t')
     ud.getPoint = ~ud.getPoint;
-        if ud.getPoint; disp('transform point mode!'); end
+    if ud.getPoint
+        disp('transform point mode!'); 
+        set(ud.pointHands(:), 'Visible', 'on')
+        ud.pointsText.Visible = 'on';
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));    
+    else
+        ud.pointsText.Visible = 'off';
+        set(ud.pointHands(:), 'Visible', 'off')
+    end
 else
 % otherwise -- call function to atlas browser       
     figure(f);
@@ -135,8 +158,6 @@ function ud = updateSliceImage(ud)
     end
 
     ud.pointHands = gobjects(0);
-    % set(ud.pointHands(:), 'Visible', 'off'); %TODO WHY hiding? Maybe you
-    % want to delete/initialize them? ud is from fig.UserData
     ud.pointList = [];
     
     if exist(file_transformations,'file')
@@ -151,4 +172,6 @@ function ud = updateSliceImage(ud)
             title_ending = ' (transform points loaded)';
         end       
     end
+    set(ud.pointHands(:), 'Visible', 'off'); %Hide because not in 't' mode
+
     title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    
