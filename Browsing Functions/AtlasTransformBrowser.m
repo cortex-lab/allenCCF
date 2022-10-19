@@ -852,6 +852,7 @@ elseif ud.scrollMode == 3
             ud_slice.pointList = transform_data.transform_points{2};
         else
             ud_slice.pointList = [];
+            ud.pointHands_for_transform = gobjects(0);
         end
         set(slice_figure, 'UserData', ud_slice);
         
@@ -868,6 +869,9 @@ elseif ud.scrollMode == 3
         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
         
         ud.histology_overlay = 1;
+
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
         
         set(ud.text,'Visible','off');
         fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
@@ -880,7 +884,9 @@ elseif ud.scrollMode == 3
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
-        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
+        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white'); 
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
     end  
         
 end  
