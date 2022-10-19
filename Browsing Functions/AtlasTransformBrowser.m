@@ -70,6 +70,10 @@ ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
 ud.angleText = annotation('textbox', [.7 0.95 0.4 0.05], ...
     'EdgeColor', 'none', 'Color', 'k');
 
+ud.pointsText = annotation('textbox', [0.88 0.03 0.1 0.05], ...
+    'String', '0 point', 'EdgeColor', 'none', 'Color', 'k', 'HorizontalAlignment', 'right');
+ud.pointsText.Visible = 'off';
+
 allData.tv = templateVolume;
 allData.av = annotationVolume;
 allData.st = structureTree;
@@ -358,6 +362,10 @@ switch key_letter
         if ud.getPoint_for_transform
             disp('transform point mode on'); 
 
+            % set(ud.pointHands_for_transform(:), 'Visible', 'on') %TODO
+            ud.pointsText.Visible = 'on';
+            ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
             ud.currentProbe = 0;
 
             % launch transform point mode
@@ -382,6 +390,7 @@ switch key_letter
 
             try 
                 set(ud.pointHands_for_transform(:), 'Visible', 'off');
+                ud.pointsText.Visible = 'off';
             catch
             end
 
@@ -535,11 +544,18 @@ switch key_letter
                     ud.curr_im = ud.curr_slice_trans;
                 end
             % if wrong number of points clicked
-            catch
+            catch mexc1
+                if mexc1.identifier == "images:geotrans:requiredNonCollinearPoints"
+                    disp(['Unable to transform -- ', mexc1.message])
+
+                else
+
                 ref_mode = true;
                 disp(['Unable to transform -- ' num2str(size(ud_slice.pointList,1)) ...
                      ' slice points and ' num2str(size(ud.current_pointList_for_transform,1)) ' reference points']);
                 key_letter = 'h'; 
+
+                end
             end
         end
         % if not doing transform, just show reference atlas
@@ -687,6 +703,8 @@ switch key_letter
             end
             
             disp('transform point deleted');
+            ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
             
         elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
@@ -1133,6 +1151,10 @@ elseif ud.getPoint_for_transform
     ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     ud.loaded = 0;
     ud.clicked = true;
+
+    ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
+
 end
 set(f, 'UserData', ud);
 
