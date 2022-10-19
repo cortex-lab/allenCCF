@@ -855,7 +855,13 @@ elseif ud.scrollMode == 3
             ud.pointHands_for_transform = gobjects(0);
         end
         set(slice_figure, 'UserData', ud_slice);
-        
+
+        if ud.getPoint_for_transform
+            set(ud.pointHands_for_transform, 'Visible', 'on')
+        else
+            set(ud.pointHands_for_transform, 'Visible', 'off')
+        end
+
         % load allen ref location
         ud.currentSlice = transform_data.allen_location{1}; ud.currentAngle = transform_data.allen_location{2};
 
