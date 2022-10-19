@@ -172,6 +172,11 @@ function ud = updateSliceImage(ud)
             title_ending = ' (transform points loaded)';
         end       
     end
-    set(ud.pointHands(:), 'Visible', 'off'); %Hide because not in 't' mode
-
+    if ud.getPoint
+        set(ud.pointHands(:), 'Visible', 'on');
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));        
+    else
+        set(ud.pointHands(:), 'Visible', 'off'); %Hide because not in 't' mode
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));        
+    end
     title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    
