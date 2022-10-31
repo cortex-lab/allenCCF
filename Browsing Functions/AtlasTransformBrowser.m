@@ -190,6 +190,11 @@ switch key_letter
                         
             disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ud.ProbeColor{ud.currentProbe} ')']); 
             ud.getPoint_for_transform = false; 
+            try
+                set(ud.pointHands_for_transform(:), 'Visible', 'off');
+                ud.pointsText.Visible = 'off';
+            catch
+            end
             
             % show Transformed Slice & Probage Viewer, if not already showing
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end

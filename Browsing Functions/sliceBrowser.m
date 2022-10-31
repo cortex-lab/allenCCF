@@ -61,7 +61,8 @@ if ud.getPoint
     clickY = round(keydata.IntersectionPoint(2));
 
     ud.pointList(end+1, :) = [clickX, ud.ref_size(1) - clickY];
-    ud.pointHands(end+1) = plot(ud.sliceAx, clickX, clickY, 'ro', 'color', [0 .5 0],'linewidth',2,'markers',4);    
+    set(ud.pointHands,'Color',[.7 .3 .3])
+    ud.pointHands(end+1) = plot(ud.sliceAx, clickX, clickY, 'o', 'color', [0 .9 0],'linewidth',2,'markers',4);
     
      if clickX < 100 && (ud.ref_size(1) - clickY) < 100 % if click in corner, break
         ud.pointList = []; 
@@ -134,6 +135,7 @@ set(fig, 'UserData', ud);
 
 
 function ud = updateSliceImage(ud)
+    %TODO occasionally pointList has more items than pointHands
 
     title_ending = '';
     
@@ -169,6 +171,8 @@ function ud = updateSliceImage(ud)
             for i = 1:size(ud.pointList,1)
                 ud.pointHands(end+1) = plot(ud.sliceAx, ud.pointList(i,1), ud.ref_size(1) - ud.pointList(i,2), 'ro', 'color', [0 .5 0],'linewidth',2,'markers',4);
             end
+            set(ud.pointHands(end),'color', [0 .9 0]);
+
             title_ending = ' (transform points loaded)';
         end       
     end
