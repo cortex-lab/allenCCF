@@ -863,7 +863,8 @@ elseif ud.scrollMode == 3
             ud_slice.pointList = [];
             ud.pointHands_for_transform = gobjects(0);
         end
-        set(slice_figure, 'UserData', ud_slice);
+        % set(slice_figure, 'UserData', ud_slice);
+        %TODO causing a bug of mismatching numbers of points
 
         if ud.getPoint_for_transform
             set(ud.pointHands_for_transform, 'Visible', 'on')
