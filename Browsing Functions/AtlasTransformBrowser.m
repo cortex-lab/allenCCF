@@ -1003,7 +1003,7 @@ else
   end  
 
   ud.ref = uint8(angle_slice);
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+  % set(ud.pointHands_for_transform(:), 'Visible', 'off'); %TODO is this needed???
 end
 
 
