@@ -104,7 +104,7 @@ elseif strcmp(keydata.Key,'d')
     if isempty(ud.pointHands)
         disp('There is no transform point to delete.')
     else
-        set(ud.pointHands(end), 'Visible', 'off'); 
+        set(ud.pointHands(end), 'Visible', 'off'); %TODO isn't this better to be deleted? But if you do, you have a problem for callbacks        
         ud.pointHands = ud.pointHands(1:end-1);
         ud.pointList = ud.pointList(1:end-1,:);
         disp('transform point deleted')
@@ -156,7 +156,7 @@ function ud = updateSliceImage(ud)
                             [processed_image_name(1:end-4) '_transform_data.mat']);
 
     try
-        delete(findobj(ud.im.Parent, 'Type','line','color',[0 0.5 0],'Marker','o')); % delete all the circles
+        delete(findobj(ud.im.Parent, 'Type','line','Marker','o')); % delete all the circles
     end
 
     ud.pointHands = gobjects(0);

@@ -483,7 +483,7 @@ switch key_letter
             xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
 
         end
-    case 'leftarrow' % scroll along A/P axis
+    case 'leftarrow' % scroll along along slice images
         ud.scrollMode = 3;
         if ~ud.slice_at_shift_start
             ud.slice_at_shift_start = ud_slice.slice_num;
@@ -694,8 +694,12 @@ switch key_letter
 %             disp('current transform erased');
             
             % Try to delete only the most recent point
+            if isempty(ud.pointHands_for_transform)
+                disp('There is no transform point to delete.')
+            else
+
             ud.current_pointList_for_transform = ud.current_pointList_for_transform(1:end-1,:);
-            ud_slice.pointList = ud_slice.pointList(1:end-1,:); %TODO this should be accompanied by deleting circles on Slive Viewer
+                ud_slice.pointList = ud_slice.pointList(1:end-1,:); %TODO this should be accompanied by deleting circles on Slice Viewer
             set(slice_figure, 'UserData', ud_slice);
             if ~isempty(ud.pointHands_for_transform)
                 % remove circle for most revent point
@@ -709,7 +713,7 @@ switch key_letter
             
             disp('transform point deleted');
             ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
-
+            end
             
         elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
