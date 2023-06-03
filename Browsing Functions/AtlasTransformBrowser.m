@@ -713,6 +713,21 @@ switch key_letter
             
             disp('transform point deleted');
             ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
+            if abs(length(ud.pointHands_for_transform) - length(ud_slice.pointHands)) >= 2
+                beep
+                if length(ud.pointHands_for_transform) - length(ud_slice.pointHands) >= 2
+                    ud.pointsText.Color = 'red';
+                    ud_slice.pointsText.Color = 'blue';
+                else
+                    ud.pointsText.Color = 'blue';
+                    ud_slice.pointsText.Color = 'red';
+                end
+            else
+                ud.pointsText.Color = 'black';
+                ud_slice.pointsText.Color = 'black';
+            end 
+
             end
             
         elseif ud.currentProbe
@@ -1176,6 +1191,20 @@ elseif ud.getPoint_for_transform
 
     ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
 
+    if abs(length(ud.pointHands_for_transform) - length(ud_slice.pointHands)) >= 2
+        beep
+        if length(ud.pointHands_for_transform) - length(ud_slice.pointHands) >= 2
+            ud.pointsText.Color = 'red';
+            ud_slice.pointsText.Color = 'blue';
+
+        else
+            ud.pointsText.Color = 'blue';
+            ud_slice.pointsText.Color = 'red';            
+        end
+    else
+        ud.pointsText.Color = 'black';
+        ud_slice.pointsText.Color = 'black';
+    end    
 
 end
 set(f, 'UserData', ud);
