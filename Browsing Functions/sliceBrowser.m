@@ -60,16 +60,25 @@ if ud.getPoint
     clickX = round(keydata.IntersectionPoint(1));
     clickY = round(keydata.IntersectionPoint(2));
 
-    ud.pointList(end+1, :) = [clickX, ud.ref_size(1) - clickY];
+    % ud.pointList(end+1, :) = [clickX, ud.ref_size(1) - clickY]; % often pointList is shorter than pointHands
     set(ud.pointHands,'Color',[.7 .3 .3])
     ud.pointHands(end+1) = plot(ud.sliceAx, clickX, clickY, 'o', 'color', [0 .9 0],'linewidth',2,'markers',4);
-    
-     if clickX < 100 && (ud.ref_size(1) - clickY) < 100 % if click in corner, break
-        ud.pointList = []; 
-        set(ud.pointHands(:), 'Visible', 'off');     
-     end
 
-     ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
+    % make sure what you see are what you have
+    phx = zeros(length(ud.pointHands), 1);
+    phy = zeros(length(ud.pointHands), 1);
+    for i = 1:length(ud.pointHands)
+        phx(i) = ud.pointHands(i).XData;
+        phy(i) = ud.pointHands(i).YData;
+    end
+    ud.pointList = [phx, ud.ref_size(1) - phy]; %TODO
+
+    if clickX < 100 && (ud.ref_size(1) - clickY) < 100 % if click in corner, break
+        ud.pointList = [];
+        set(ud.pointHands(:), 'Visible', 'off');
+    end
+
+    ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
     
 end
 set(f, 'UserData', ud);
@@ -106,7 +115,17 @@ elseif strcmp(keydata.Key,'d')
     else
         set(ud.pointHands(end), 'Visible', 'off'); %TODO isn't this better to be deleted? But if you do, you have a problem for callbacks        
         ud.pointHands = ud.pointHands(1:end-1);
-        ud.pointList = ud.pointList(1:end-1,:);
+        
+        % make sure the length of ud.pointHands and the rows of ud.pointList match
+        % make sure what you see are what you have
+        phx = zeros(length(ud.pointHands), 1);
+        phy = zeros(length(ud.pointHands), 1);
+        for i = 1:length(ud.pointHands)
+            phx(i) = ud.pointHands(i).XData;
+            phy(i) = ud.pointHands(i).YData;
+        end
+        ud.pointList = [phx, ud.ref_size(1) - phy];
+
         disp('transform point deleted')
         ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
 

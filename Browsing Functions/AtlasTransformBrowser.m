@@ -715,7 +715,7 @@ switch key_letter
             ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
 
             if abs(length(ud.pointHands_for_transform) - length(ud_slice.pointHands)) >= 2
-                beep
+                % beep
                 if length(ud.pointHands_for_transform) - length(ud_slice.pointHands) >= 2
                     ud.pointsText.Color = 'red';
                     ud_slice.pointsText.Color = 'blue';
