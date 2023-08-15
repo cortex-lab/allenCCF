@@ -1,4 +1,4 @@
-function Tapdvml = apdvml2info(apdvml_points, av, st)
+function Tapdvml = apdvml2info(apdvml_points, av, st, plane)
 % apdvml_points has three columns for ap, dv, and ml
 % bregma is 1 x 3 in size
 % atlas_resolution in mm
@@ -6,7 +6,15 @@ function Tapdvml = apdvml2info(apdvml_points, av, st)
 % st
 %
 % see also
-% Analyze_Clicked_Points.m
+% Analyze_Clicked_Points.m, accf2pxs_mm
+
+arguments
+    apdvml_points (:,3)
+    av
+    st
+    plane (1,1) string {mustBeMember(plane, {'coronal','sagittal','transverse'})}
+end
+
 
 % generate needed values
 bregma = allenCCFbregma(); % bregma position in reference data space
@@ -50,7 +58,7 @@ for point = 1:size(apdvml_points,1)
 
 end
 
-Tapdvml = [table(ap, dv, accf2pxs_mm(dv), ml, 'VariableNames',{'ap_mm','dv_mm', 'dv_mm_paxinos', 'ml_mm'}), ...
+Tapdvml = [table(ap, dv, accf2pxs_mm(dv, plane), ml, 'VariableNames',{'ap_mm','dv_mm', 'dv_mm_paxinos', 'ml_mm'}), ...
     cell2table(roi_annotation_curr, 'VariableNames', {'annotation', 'name', 'acronym'})];
 
 end
