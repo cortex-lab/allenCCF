@@ -27,6 +27,8 @@ ud_slice.pointsText = annotation('textbox', [0.88 0.03 0.1 0.05], ...
     'String', '0 point', 'EdgeColor', 'none', 'Color', 'k', 'HorizontalAlignment', 'right');
 ud_slice.pointsText.Visible = 'off';
 
+check_file_status(ud_slice)
+
 % create functions needed to interact with the figure
 set(ud_slice.im, 'ButtonDownFcn', @(slice_figure,k)sliceClickCallback(slice_figure, k));
 set(slice_figure, 'KeyPressFcn', @(slice_figure, keydata)SliceAtlasHotkeyFcn(slice_figure, keydata, f));
@@ -82,6 +84,7 @@ if ud.getPoint
     
 end
 set(f, 'UserData', ud);
+end
 
 % ------------------------
 % react to keyboard press
@@ -151,7 +154,7 @@ end
 
 
 set(fig, 'UserData', ud);
-
+end
 
 function ud = updateSliceImage(ud)
     %TODO occasionally pointList has more items than pointHands
@@ -202,4 +205,46 @@ function ud = updateSliceImage(ud)
         set(ud.pointHands(:), 'Visible', 'off'); %Hide because not in 't' mode
         ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));        
     end
-    title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])    
+    title(['Slice Viewer -- Slice ' num2str(ud.slice_num) '/' num2str(ud.total_num_files) title_ending])
+
+end
+
+end
+
+
+function check_file_status(ud_slice)
+
+proc_file_names = [string({ud_slice.processed_images.name})]';
+processed_images_folder = ud_slice.processed_images_folder;
+
+
+T_files = table(proc_file_names, zeros(length(proc_file_names),1),'VariableNames',{'file_names','status'});
+
+if isfile(fullfile(processed_images_folder, 'file_status.mat'))
+
+    S = load(fullfile(processed_images_folder, 'file_status.mat'));
+    for i = 1:height(T_files)
+        % apply saved values for the existing images
+        T_files.status(i) = S.T_files{S.T_files.file_names == T_files.file_names(i) , 2};
+    end
+
+else
+    error('You have to run HistologyBrowser first for the image %s', this_image_name)    
+
+end
+
+T_files.Properties.VariableDescriptions = ["",...
+    "0, raw; 1, HistologyBrowser; 2, SliceFlipper"];
+
+for i = 1:height(T_files)
+    switch T_files.status(i) 
+        case 0
+            error('You have to run HistologyBrowser and SliceFlipper for the image %s', this_image_name)
+        case 1
+            error('You have to run SliceFlipper for the image %s', this_image_name)      
+        case 2
+            % good to go!
+    end
+end
+
+end
