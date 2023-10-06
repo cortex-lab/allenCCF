@@ -1,4 +1,4 @@
-function [probes, fwireframe, fwireframe2, fig_probes, T_probes, Tapdvml_contacts, T_borders] ...
+function [probes, fwireframe, fig_probes, T_probes, Tapdvml_contacts, T_borders] ...
     = plot_and_compute_probe_positions_from2(av, st, subject_id, plane,...
     processed_images_folder, probe_save_name_suffix,probes_to_analyze, probe_lengths,...
     active_probe_length, probe_radius)
@@ -35,20 +35,38 @@ function [probes, fwireframe, fwireframe2, fig_probes, T_probes, Tapdvml_contact
 %
 % probes_to_analyze
 %             'all' | a row vector of positive integers specifying probes
-%             
-
-% B           0 (default) | non-negative integers
-%             (Optional) Description about B comes here.
-% 
 %
-% OPTIONAL PARAMETER/VALUE PAIRS
-% 'C'         'on' (default) | 'off'
-%             (Optional) Description about 'C' comes here.
+% probe_lengths 
+%              vector
+%              A vector of the depths of the deepest points for all the
+%              probes. Previously in the original SharpTrack, this
+%              information was used to calculate the depth, but now this is
+%              much less important.
+%
+% active_probe_length
+%              Should be 3.84 mm for Neuropixels 1.0 probes
+% 
+% probe_radius scalar
+%              in micrometers
 %
 %
 % OUTPUT ARGUMENTS
-% D           cell array 
-%             Description about D comes here.
+% probes
+% 
+% fwireframe figure
+% 
+% fig_probes figure
+%            
+% 
+% T_probes   table
+%            Summary for probe penetrations
+%
+% Tapdvml_contacts
+%            table
+%            A table containig whereabouts of all the recording contacts
+%
+% T_borders  table
+%            Modified from original SharpTrack output
 %
 % Written by Kouichi C. Nakamura Ph.D.
 % MRC Brain Network Dynamics Unit
@@ -57,7 +75,7 @@ function [probes, fwireframe, fwireframe2, fig_probes, T_probes, Tapdvml_contact
 % 09-Aug-2023 11:12:42
 %
 % See also
-% doc
+% apdvml2info
 
 
 
@@ -126,10 +144,6 @@ end
 fwireframe = plotBrainGrid([], [], fwireframe, black_brain);
 hold on; 
 fwireframe.InvertHardcopy = 'off';
-
-fwireframe2 = plotBrainGrid([], [], fwireframe, black_brain); %TODO what is this one for?????????
-hold on;
-fwireframe2.InvertHardcopy = 'off';
 
 fig_probes = gobjects(1,length(probes));
 borders_table = cell(1,length(probes)) %TODO

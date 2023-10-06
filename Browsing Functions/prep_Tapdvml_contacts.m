@@ -70,11 +70,11 @@ for i = 1:height(Tapdvml_contacts)
     dv = round(Tapdvml_contacts.dv_mm(i) * 100 + bregma_dv);
     ap = round(Tapdvml_contacts.ap_mm(i) * 100 + bregma_ap);
     
-    if dv < 0
+    if dv <= 0
         dv = 1;
     end
 
-    if ap < 0
+    if ap <= 0
         ap = 1;
     end
     % Check the boundary_mask array
