@@ -33,6 +33,14 @@ ud.file_name_suffix = '_processed';
 ud.channel = min( 3, size(image,3));
 original_image = image(:,:,1:ud.channel)*gain;
 
+out = update_file_status(ud, image_file_names, 0, 0);
+if out == 0
+    fprintf("Aborted\n")
+    close();
+    return
+end
+
+
 imshow(original_image);
 title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
                     'color',[1==ud.channel 2==ud.channel 3==ud.channel])
@@ -165,7 +173,7 @@ set(fig, 'UserData', ud);
 
 end
 
-function update_file_status(ud, image_file_names, K, status)
+function out = update_file_status(ud, image_file_names, K, status)
 
     proc_file_names = strings(length(image_file_names),1);
     for i = 1:length(image_file_names)
@@ -191,10 +199,33 @@ function update_file_status(ud, image_file_names, K, status)
     T_files.Properties.VariableDescriptions = ["",...
         "0, raw; 1, HistologyBrowser; 2, SliceFlipper"];
 
+    if K == 0 % check this for the first run only
+        if ~any(T_files.status == 0)
+            answer  = questdlg("All the files have been processed by HistologyBrowser. Would you like to do it again?",...
+                "HistologyBrowser",...
+                "Yes", "No", "No");
+
+            switch answer
+                case "Yes"
+                    % proceed
+                    out = 1;
+                    return
+                case "No"
+                    % quit the function
+                    out = 0;
+                    return
+            end
+        end
+
+        out = 1;
+        return
+    end
+
     T_files.status(K) = status;
 
     save(fullfile(ud.save_folder, 'file_status.mat'),'T_files')
 
+    out = 1;
 end
 
 

@@ -21,7 +21,15 @@ imshow(ud.current_slice_image + ud.grid)
 title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 set(slice_figure, 'UserData', ud);
 
-     
+
+out = update_file_status(folder_processed_images, ud, 0); %TODO
+if out == 0
+    fprintf("Aborted\n")
+    close();
+    return
+end
+
+
 
 % key function for slice
 set(slice_figure, 'KeyPressFcn', @(slice_figure,keydata)SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images));
@@ -183,7 +191,7 @@ end
 end
 
 
-function update_file_status(folder_processed_images, ud, status)
+function out = update_file_status(folder_processed_images, ud, status)
 
 proc_file_names = ud.processed_image_names;
 this_image_name = ud.processed_image_name;
@@ -204,6 +212,28 @@ end
 T_files.Properties.VariableDescriptions = ["",...
     "0, raw; 1, HistologyBrowser; 2, SliceFlipper"];
 
+if status == 0 % check this for the first run only
+    if all(T_files.status == 2)
+        answer  = questdlg("All the files have been processed by SliceFlipper. Would you like to do it again?",...
+            "HistologyBrowser",...
+            "Yes", "No", "No");
+
+        switch answer
+            case "Yes"
+                % proceed
+                out = 1;
+                return
+            case "No"
+                % quit the function
+                out = 0;
+                return
+        end
+    end
+
+    out = 1;
+    return
+end
+
 switch T_files.status(K)
     case 0
         error('You have to run HistologyBrowser first for the image %s', this_image_name)
@@ -214,5 +244,5 @@ switch T_files.status(K)
 end
 
 save(fullfile(folder_processed_images, 'file_status.mat'),'T_files')
-
+out = 1;
 end
