@@ -128,8 +128,9 @@ elseif strcmp(keydata.Key,'d')
             phy(i) = ud.pointHands(i).YData;
         end
         ud.pointList = [phx, ud.ref_size(1) - phy];
-        set(ud.pointHands(end),'color', [0 .9 0]);
-
+        if ~isempty(ud.pointHands)
+            set(ud.pointHands(end),'color', [0 .9 0]);
+        end
 
         disp('transform point deleted')
         ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands));
