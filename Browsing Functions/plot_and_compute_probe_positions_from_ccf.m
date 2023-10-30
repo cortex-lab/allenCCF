@@ -1,5 +1,5 @@
-function [probes, fwireframe, fig_probes, T_probes, Tapdvml_contacts, T_borders] ...
-    = plot_and_compute_probe_positions_from2(av, st, subject_id, plane,...
+function [probes, fwireframe, fig_probes, Tapdvml_contacts, T_borders, p] ...
+    = plot_and_compute_probe_positions_from_ccf(av, st, subject_id, plane,...
     processed_images_folder, probe_save_name_suffix,probes_to_analyze, probe_lengths,...
     active_probe_length, probe_radius)
 % Create 3D plot for probe positions, 2D plots for brain structures along
@@ -7,7 +7,7 @@ function [probes, fwireframe, fig_probes, T_probes, Tapdvml_contacts, T_borders]
 %
 %
 % SYNTAX
-% [] = plot_and_compute_probe_positions(fwireframe, black_brain, probes, subject_id, plane,...
+% [] = plot_and_compute_probe_positions_from_ccf(fwireframe, black_brain, probes, subject_id, plane,...
 %    use_tip_to_get_reference_probe_length, probe_insertion_direction)
 % [D] = func1(A,B)
 % [D] = func1(____,'Param',value)
@@ -56,10 +56,6 @@ function [probes, fwireframe, fig_probes, T_probes, Tapdvml_contacts, T_borders]
 % fwireframe figure
 % 
 % fig_probes figure
-%            
-% 
-% T_probes   table
-%            Summary for probe penetrations
 %
 % Tapdvml_contacts
 %            table
@@ -67,6 +63,9 @@ function [probes, fwireframe, fig_probes, T_probes, Tapdvml_contacts, T_borders]
 %
 % T_borders  table
 %            Modified from original SharpTrack output
+%
+% p          array with 3 columns
+%            eigen vectors for the largest eigen values            
 %
 % Written by Kouichi C. Nakamura Ph.D.
 % MRC Brain Network Dynamics Unit
@@ -123,7 +122,11 @@ end
 % load probe points
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
 ProbeColors = .75*[1.3 1.3 1.3; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 .9; .65 .4 .25; .7 .95 .3; .7 0 0; .6 0 .7; 1 .6 0]; 
-% order of colors: {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','red','purple','orange'};
+
+ProbeColors255 = uint8(255 * ProbeColors);
+order_of_colors = ["white","gold","turquoise","fern","bubble gum","overcast sky","rawhide", "green apple","red","purple","orange"]';
+T_colors = table(order_of_colors, ProbeColors255); % useful when managing multiple probes
+
 fwireframe = [];
 
 % % scale active_probe_length appropriately
@@ -146,8 +149,9 @@ hold on;
 fwireframe.InvertHardcopy = 'off';
 
 fig_probes = gobjects(1,length(probes));
-borders_table = cell(1,length(probes)) %TODO
+borders_table = cell(1,length(probes)); %TODO
 t_size = [size(probePoints.pointList.pointList,1),1];
+
 T_probes = table(repmat(string(subject_id), t_size),...
     strings(t_size), ...
     NaN(t_size),...
@@ -157,12 +161,13 @@ T_probes = table(repmat(string(subject_id), t_size),...
     NaN(t_size),...
     NaN(t_size),...
     NaN(t_size),...
-    NaN(t_size),...
     strings(t_size), ...    
     'VariableNames',{'subject_id','session_id','probe_id','probe_AB',...
         'depth_reported_um','depth_from_ACCF_um','scaling', ...
-        'scaling2',...
-        'tip_active_um', 'top_active_um', 'probe_note'});
+        'tip_active_um', 'top_active_um', 'probe_note', ...
+        });
+P = zeros([size(probePoints.pointList.pointList,1),3]);
+
 T_probes.probe_id(probes') = probes';
 T_probes.probe_lengths(probes) = probe_lengths(probes)' * 1000;
 
@@ -260,6 +265,7 @@ for selected_probe = probes
 
         T_probes.depth_from_ACCF_um(selected_probe) = reference_probe_length_tip/100 * 1000; 
         T_probes.scaling(selected_probe) = shrinkage_factor; 
+        P(selected_probe,:) = p; % eigenvector for largest eigenvalue
 
         % plot line the length of the probe in reference space
         probe_length_histo = round(reference_probe_length_tip);
@@ -388,3 +394,4 @@ T_borders.Properties.VariableNames{i} = 'upperBorder_um';
 i = T_borders.Properties.VariableNames == "lowerBorder";
 T_borders.Properties.VariableNames{i} = 'lowerBorder_um';
 
+p = P; %rename
