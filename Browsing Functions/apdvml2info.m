@@ -5,6 +5,36 @@ function Tapdvml = apdvml2info(apdvml_points, av, st, plane)
 % av  1320 ,800, 1140
 % st
 %
+% SYNTAX
+% Tapdvml = apdvml2info(apdvml_points, av, st, plane)
+%
+% INPUT ARGUMENTS
+% apdvml_points
+%             n by 3 array
+%             [ap, dv, ml]
+%             Allen CCF coordinates in 10 micrometers.
+%
+% av          uint16 (1320 x 800 x 1140)
+%             3D array for structure delineation
+%
+% st          table
+%             For structures
+%
+% plane       'coronal' | 'sagittal' | 'transverse'
+%
+% OUTPUT ARGUMENTS
+% Tapdvml     table
+%             Including output ap_mm, dv_mm, and ml_mm
+%
+% Written by Kouichi C. Nakamura Ph.D.
+% MRC Brain Network Dynamics Unit
+% University of Oxford
+% kouichi.c.nakamura@gmail.com
+% 06-Nov-2023 14:41:14
+%
+% See also
+% apdvml_mm2ccf
+
 % see also
 % Analyze_Clicked_Points.m, accf2pxs_mm
 

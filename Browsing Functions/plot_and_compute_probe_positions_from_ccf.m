@@ -1,4 +1,4 @@
-function [probes, fwireframe, fig_probes, Tapdvml_contacts, T_borders, p] ...
+function [probes, fwireframe, fig_probes, Tapdvml_contacts, T_borders, p, m] ...
     = plot_and_compute_probe_positions_from_ccf(av, st, subject_id, plane,...
     processed_images_folder, probe_save_name_suffix,probes_to_analyze, probe_lengths,...
     active_probe_length, probe_radius)
@@ -167,6 +167,7 @@ T_probes = table(repmat(string(subject_id), t_size),...
         'tip_active_um', 'top_active_um', 'probe_note', ...
         });
 P = zeros([size(probePoints.pointList.pointList,1),3]);
+M = zeros([size(probePoints.pointList.pointList,1),3]);
 
 T_probes.probe_id(probes') = probes';
 T_probes.probe_lengths(probes) = probe_lengths(probes)' * 1000;
@@ -266,6 +267,7 @@ for selected_probe = probes
         T_probes.depth_from_ACCF_um(selected_probe) = reference_probe_length_tip/100 * 1000; 
         T_probes.scaling(selected_probe) = shrinkage_factor; 
         P(selected_probe,:) = p; % eigenvector for largest eigenvalue
+        M(selected_probe,:) = m; % highest point
 
         % plot line the length of the probe in reference space
         probe_length_histo = round(reference_probe_length_tip);
@@ -395,3 +397,4 @@ i = T_borders.Properties.VariableNames == "lowerBorder";
 T_borders.Properties.VariableNames{i} = 'lowerBorder_um';
 
 p = P; %rename
+m = M;
