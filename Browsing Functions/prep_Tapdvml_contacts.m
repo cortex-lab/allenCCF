@@ -44,6 +44,7 @@ for i = 1:height(T_probes)
 
     tf = Tapdvml_contacts.probe_id == i;
     Tapdvml_contacts.session_id(tf) = string(T_probes.session_id(i));
+    Tapdvml_contacts.subject_id(tf) = string(T_probes.subject_id(i));
     Tapdvml_contacts.probe_AB(tf) = string(T_probes.probe_AB(i));
     Tapdvml_contacts.probe_note(tf) = string(T_probes.probe_note(i));
     
