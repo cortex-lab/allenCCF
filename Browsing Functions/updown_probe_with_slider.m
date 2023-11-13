@@ -1,16 +1,39 @@
-function updown_probe_with_slider(session_id, probeAB, plane, sessions_dir,...
-    task_dir_name, imaging_session_dir, image_folder_name, active_probe_length, depth_level)
+function updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_dir,...
+    task_dir_name, imaging_session_dir, image_folder_name, depth_level, ...
+    active_probe_length, probe_insertion_direction)
+% Move up and down a probe using a slider to match the anatomical borders
+% to the changes in the firing rates of neurons
+%
+% EXAMPLE USAGE
+% session_id = "kms058-2023-03-25-184034"
+% probeAB ="ProbeA";
+% plane = "sagittal";
+% sessions_dir = "\\ettina\Magill_Lab\Julien\Data\head-fixed\by_sessions";
+% task_dir_name = "reaching_go_spout_bar_nov22"
+% imaging_session_dir = "\\ettina\Magill_Lab\Kouichi Nakamura\Analysis\Images from Otto\20230406 kms058";
+% image_folder_name = 'RGB_ignore';
+% 
+% % load the reference brain and region annotations
+% if ~exist('av','var') || ~exist('st','var') || ~exist('tv','var')
+%     disp('loading reference atlas...')
+%     av = readNPY(annotation_volume_location);
+%     st = loadStructureTree(structure_tree_location);
+%     tv = readNPY(template_volume_location);
+% end
 
 arguments
-    session_id (1,1) string
-    probeAB (1,1) string {mustBeMember(probeAB,["ProbeA","ProbeB"])}
-    plane (1,1) string {mustBeMember(plane,["coronal","sagittal", "transverse"])}
-    sessions_dir (1,1) string  {mustBeFolder}
-    task_dir_name (1,1) string
-    imaging_session_dir (1,1) string  {mustBeFolder}
-    image_folder_name (1,1) string
-    active_probe_length (1,1) double = 3.84 % in mm
+    av uint16
+    st table
+    session_id (1,1) string % eg. "kms058-2023-03-25-184034"
+    probeAB (1,1) string {mustBeMember(probeAB,["ProbeA","ProbeB"])} % eg. "ProbeA"
+    plane (1,1) string {mustBeMember(plane,["coronal","sagittal", "transverse"])} % eg. "sagittal"
+    sessions_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Julien\Data\head-fixed\by_sessions"
+    task_dir_name (1,1) string % eg. "reaching_go_spout_bar_nov22"
+    imaging_session_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Kouichi Nakamura\Analysis\Images from Otto\20230406 kms058"
+    image_folder_name (1,1) string = "RGB"
     depth_level (1,1) double {mustBePositive, mustBeInteger} = 6
+    active_probe_length (1,1) double = 3.84 % in mm
+    probe_insertion_direction (1,1) string {mustBeMember(probe_insertion_direction, ["down","up"])} = "down"
 end
 
 sorter_output_dir = fullfile(sessions_dir, task_dir_name,  ...
@@ -19,6 +42,17 @@ sorter_output_dir = fullfile(sessions_dir, task_dir_name,  ...
 recording_cell_metrics_path = fullfile(sorter_output_dir, "recording.cell_metrics.cellinfo.mat");
 s = load(recording_cell_metrics_path);
 recording_cell_metrics = s.cell_metrics;
+
+image_folder =fullfile(imaging_session_dir, image_folder_name);  %TODO
+
+probe_save_name_suffix = '_probe';
+
+Tapdvml_contacts_path = fullfile(imaging_session_dir, "Tapdvml_contacts.xlsx");
+
+% borders_table_path= fullfile(imaging_session_dir, "borders_table.xlsx");
+
+Tprobes_path= fullfile(imaging_session_dir, "T_probes.xlsx");
+
 
 opts = detectImportOptions(Tapdvml_contacts_path);
 opts = setvartype(opts, 'session_id', 'string');
@@ -178,7 +212,7 @@ anc = preallocatestruct(["index", "anc_id", "anc_name", "anc_color_hex", "anc_co
 % profile on
 st.name = regexprep(st.name, '["'']',''); % remove clutters
 
-f = waitbar(0,'1','Name','Approximating pi...',...
+f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
     'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
 
 for i = 1:height(Tapdvml_contacts_this) % SLOW
@@ -247,14 +281,14 @@ function move_back_to_original(uax1)
 if isfield(uax1.UserData, 'YLim_shift_mm')
     ch = uax1.Children;
 
-    for i = 1:length(ch)
+    for j = 1:length(ch)
         step = - uax1.UserData.YLim_shift_mm;
 
-        if isa(ch(i),'matlab.graphics.primitive.Text')
-            ch(i).Position(2) = ch(i).Position(2) + step;
+        if isa(ch(j),'matlab.graphics.primitive.Text')
+            ch(j).Position(2) = ch(j).Position(2) + step;
 
-        elseif isa(ch(i),'matlab.graphics.primitive.Patch')
-            ch(i).YData = ch(i).YData + step;
+        elseif isa(ch(j),'matlab.graphics.primitive.Patch')
+            ch(j).YData = ch(j).YData + step;
 
         end
 
@@ -345,7 +379,7 @@ else
 end
 
 %% Job
-see plot_and_compute_probe_positions_from_ccf.m
+% see plot_and_compute_probe_positions_from_ccf.m
 % I need the eigen vector, to be saved in T_probes?
 
 switch probeAB
@@ -374,12 +408,13 @@ processed_images_folder = fullfile(image_folder, 'processed');
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
 
 % get the probe points for the currently analyzed probe
+
 if strcmp(plane,'coronal')
-    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [3 2 1]);
+    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [3 2 1]);
 elseif strcmp(plane,'sagittal')
-    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [1 2 3]);
+    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 2 3]);
 elseif strcmp(plane,'transverse')
-    curr_probePoints = probePoints.pointList.pointList{selected_probe,1}(:, [1 3 2]);
+    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 3 2]);
 end
 
 % m is the brain entry point
@@ -446,7 +481,7 @@ theta = acos(p(2)); % Assuming p(2) corresponds to the DV direction
 for j = 1:384
     c_t_contacts{j} = apdvml2info(probe_contact_points(j,:), av, st, plane);
     c_t_contacts{j}.contact_id = repmat(j,height(c_t_contacts{j}));
-    c_t_contacts{j}.probe_id = repmat(selected_probe,height(c_t_contacts{j}));
+    c_t_contacts{j}.probe_id = repmat(probe_id,height(c_t_contacts{j}));
     c_t_contacts{j}.depth_mm = tip2surface_mm - 0.020 * floor((j-1)/2);
     
     % Project the depth along the line
@@ -474,8 +509,8 @@ for j = 1:height(Tapdvml_contacts_new)
         Tapdvml_contacts_new(j, cols);   
 end
 
-writetable(Tapdvml_contacts, "Tapdvml_contacts.xlsx",'FileType','spreadsheet')
-
+writetable(Tapdvml_contacts, fullfile(imaging_session_dir,"Tapdvml_contacts.xlsx"),'FileType','spreadsheet')
+frpint("Tapdvml_contacts.xlsx has been updated.\n")
 
 end
 
