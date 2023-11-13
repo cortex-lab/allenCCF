@@ -36,6 +36,14 @@ arguments
     probe_insertion_direction (1,1) string {mustBeMember(probe_insertion_direction, ["down","up"])} = "down"
 end
 
+%TODO add button to go next and previous probe
+%TODO use probe_id
+% related, use animal_id
+% make session_id, probeAB
+
+%TODO what if optic fiber data is chosen?
+
+
 sorter_output_dir = fullfile(sessions_dir, task_dir_name,  ...
     session_id, "processed\kilosort", probeAB, "sorter_output");
 
@@ -49,15 +57,29 @@ probe_save_name_suffix = '_probe';
 
 Tapdvml_contacts_path = fullfile(imaging_session_dir, "Tapdvml_contacts.xlsx");
 
+original_backup_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_original.xlsx");
+
 % borders_table_path= fullfile(imaging_session_dir, "borders_table.xlsx");
 
 Tprobes_path= fullfile(imaging_session_dir, "T_probes.xlsx");
 
+YLim_shift_mm_path = fullfile(imaging_session_dir,"YLim_shift_mm.mat");
 
 opts = detectImportOptions(Tapdvml_contacts_path);
 opts = setvartype(opts, 'session_id', 'string');
 
-Tapdvml_contacts = readtable(Tapdvml_contacts_path, opts );
+YLim_shift_mm = [];
+if isfile(original_backup_path)
+    Tapdvml_contacts = readtable(original_backup_path, opts );
+    
+    if isfile(YLim_shift_mm_path)
+        S = load(YLim_shift_mm_path); % YLim_shift_mm
+        YLim_shift_mm = S.YLim_shift_mm;
+        clear S
+    end
+else
+    Tapdvml_contacts = readtable(Tapdvml_contacts_path, opts );
+end
 
 % Tborders_table = readtable(borders_table_path);
 
@@ -79,6 +101,11 @@ uax1.PositionConstraint = 'innerposition';
 uax1.Position=[100, 150, 350, 800];
 ylabel(uax1, 'Dsitance from the tip (mm)')
 uax1.XTick =[];
+
+if ~isempty(YLim_shift_mm)
+    assert(isequal(size(YLim_shift_mm), [1 1]))
+    uax1.UserData.YLim_shift_mm = YLim_shift_mm;
+end
 
 uax2 = uiaxes(ufig);
 uax2.PositionConstraint = 'innerposition';
@@ -209,7 +236,7 @@ Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, 
 
 %%
 anc = preallocatestruct(["index", "anc_id", "anc_name", "anc_color_hex", "anc_color_255", "anc_color"], [height(Tapdvml_contacts_this), 1]);
-% profile on
+
 st.name = regexprep(st.name, '["'']',''); % remove clutters
 
 f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
@@ -217,16 +244,17 @@ f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
 
 for i = 1:height(Tapdvml_contacts_this) % SLOW
     waitbar( i/height(Tapdvml_contacts_this), f, ...
-        fprintf("%d of %d", i, height(Tapdvml_contacts_this)))
+        sprintf("%d of %d", i, height(Tapdvml_contacts_this))) %TODO not shown properly
     name = Tapdvml_contacts_this.name{i};
     [anc(i)] = find_name_for_depth(st, depth_level, name); %TODO stopped working for i = 61, i = 1327
 end
-% profile viewer
 
 delete(f)
 
 %%
 Tanc = struct2table(anc, AsArray=true);
+%TODO save a cache file??
+
 
 Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc];
 
@@ -274,6 +302,22 @@ ylim(uax1, [-0.100, 3.940])
 
 uax1.YLabel.FontSize = 14;
 
+% move items after initialiation
+if isfield(uax1.UserData, 'YLim_shift_mm')
+    uax1.UserData.YLim_shift_mm
+
+    ch = uax1.Children;
+
+    for i = 1:length(ch)
+        if isa(ch(i),'matlab.graphics.primitive.Text')
+            ch(i).Position(2) = ch(i).Position(2) + YLim_shift_mm;
+
+        elseif isa(ch(i),'matlab.graphics.primitive.Patch')
+            ch(i).YData = ch(i).YData + YLim_shift_mm;
+
+        end
+    end
+end
 
 
 function move_back_to_original(uax1)
@@ -363,10 +407,8 @@ suffix = string(dt);
 
 new_file_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_" + suffix + ".xlsx");
 
-original_backup_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_" + suffix + "_original.xlsx");
-
 if isfile(original_backup_path)
-    % save a backup file
+    % save a backup file for the latest
 
     copyfile(Tapdvml_contacts_path, new_file_path)
 
@@ -439,6 +481,14 @@ end
 
 YLim_shift_mm = uax1.UserData.YLim_shift_mm;
 new_cp = curr_probePoints(tip_index,:) - YLim_shift_mm*100; % minus to move up
+%TODO in case the probe has already moved prevously, YLim_shift_mm won't be
+% accurate
+%
+% always read both the original and the latest Excel
+% YLim_shift_mm should represent the gap from the original
+
+%GOOD always read the original Excel and saved value of YLim_shift_mm
+% YLim_shift_mm should represent the gap from the original
 
 
 Tapdvml_m = apdvml2info(m, av, st, plane);
@@ -510,7 +560,9 @@ for j = 1:height(Tapdvml_contacts_new)
 end
 
 writetable(Tapdvml_contacts, fullfile(imaging_session_dir,"Tapdvml_contacts.xlsx"),'FileType','spreadsheet')
-frpint("Tapdvml_contacts.xlsx has been updated.\n")
+fprintf("Tapdvml_contacts.xlsx has been updated with %.3f mm shift from the original.\n", YLim_shift_mm)
+% save the value of YLim_shift_mm
+save(YLim_shift_mm_path, 'YLim_shift_mm');
 
 end
 
