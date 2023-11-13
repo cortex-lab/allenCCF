@@ -653,7 +653,8 @@ switch key_letter
             disp('transform loaded -- press ''l'' again now to load probe points');
         else % load probe points
             if ~size(ud.pointList{1,1},1)
-                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('probe points loaded')
+                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  
+                fprintf('%d probe points loaded\n', length(probe_points.pointList.pointList))
                 ud.pointList = probe_points.pointList.pointList;
                 ud.pointHands = probe_points.pointList.pointHands;
             else
