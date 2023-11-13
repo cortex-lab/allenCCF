@@ -1,5 +1,5 @@
 function updown_probe_with_slider(session_id, probeAB, plane, sessions_dir,...
-    task_dir_name, imaging_session_dir, image_folder_name, depth_level)
+    task_dir_name, imaging_session_dir, image_folder_name, active_probe_length, depth_level)
 
 arguments
     session_id (1,1) string
@@ -9,6 +9,7 @@ arguments
     task_dir_name (1,1) string
     imaging_session_dir (1,1) string  {mustBeFolder}
     image_folder_name (1,1) string
+    active_probe_length (1,1) double = 3.84 % in mm
     depth_level (1,1) double {mustBePositive, mustBeInteger} = 6
 end
 
@@ -170,8 +171,6 @@ tf = T_probes.session_id == session_id & T_probes.probe_AB == probeAB_short;
 probe_id = T_probes{tf, "probe_id"};
 
 
-depth = 6;
-
 Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
 
 %%
@@ -278,13 +277,13 @@ function move_vertically(uax1, step)
 
 ch = uax1.Children;
 
-for i = 1:length(ch)
+for j = 1:length(ch)
 
-    if isa(ch(i),'matlab.graphics.primitive.Text')
-        ch(i).Position(2) = ch(i).Position(2) + step*0.01;
+    if isa(ch(j),'matlab.graphics.primitive.Text')
+        ch(j).Position(2) = ch(j).Position(2) + step*0.01;
 
-    elseif isa(ch(i),'matlab.graphics.primitive.Patch')
-        ch(i).YData = ch(i).YData + step*0.01;
+    elseif isa(ch(j),'matlab.graphics.primitive.Patch')
+        ch(j).YData = ch(j).YData + step*0.01;
 
     end
 
@@ -370,8 +369,6 @@ p = T_probes{T_probes.session_id == session_id & ...
 m = T_probes{T_probes.session_id == session_id & ...
     T_probes.probe_AB == probeAB_, ["m_1","m_2","m_3"]};
 
-%TODO what columns to change or add???
-
 processed_images_folder = fullfile(image_folder, 'processed');
 
 probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
@@ -421,24 +418,24 @@ tip2surface_mm = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
     (Tapdvml_tip.dv_mm - Tapdvml_m.dv_mm)^2 + ...
     (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
 
-tip2surface_mm_paxinos = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
-    (Tapdvml_tip.dv_mm_paxinos - Tapdvml_m.dv_mm_paxinos)^2 + ...
-    (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
+% tip2surface_mm_paxinos = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
+%     (Tapdvml_tip.dv_mm_paxinos - Tapdvml_m.dv_mm_paxinos)^2 + ...
+%     (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
 
 top_active = (m * active_probe_length + ...
-    curr_probePoints(tip_index,:) * (tip2surface_mm - active_probe_length))...
+    new_cp * (tip2surface_mm - active_probe_length))...
     /tip2surface_mm;
 
 % obtained the information for all the 384 channels
 
 
-a = [linspace(curr_probePoints(tip_index,1), top_active(1), 192)', ...
-    linspace(curr_probePoints(tip_index,2), top_active(2), 192)', ...
-    linspace(curr_probePoints(tip_index,3), top_active(3), 192)'];
+a = [linspace(new_cp(1), top_active(1), 192)', ...
+    linspace(new_cp(2), top_active(2), 192)', ...
+    linspace(new_cp(3), top_active(3), 192)'];
 probe_contact_points = zeros(384, 3);
-for i = 1:192
-    probe_contact_points(2*i-1,:) = a(i,:);
-    probe_contact_points(2*i,:) = a(i,:);
+for j = 1:192
+    probe_contact_points(2*j-1,:) = a(j,:);
+    probe_contact_points(2*j,:) = a(j,:);
 end
 clear a
 
@@ -446,27 +443,39 @@ c_t_contacts = cell(384,1);
 
 theta = acos(p(2)); % Assuming p(2) corresponds to the DV direction
 
-for i = 1:384
-    c_t_contacts{i} = apdvml2info(probe_contact_points(i,:), av, st, plane);
-    c_t_contacts{i}.contact_id = repmat(i,height(c_t_contacts{i}));
-    c_t_contacts{i}.probe_id = repmat(selected_probe,height(c_t_contacts{i}));
-    c_t_contacts{i}.depth_mm = tip2surface_mm - 0.020 * floor((i-1)/2);
+for j = 1:384
+    c_t_contacts{j} = apdvml2info(probe_contact_points(j,:), av, st, plane);
+    c_t_contacts{j}.contact_id = repmat(j,height(c_t_contacts{j}));
+    c_t_contacts{j}.probe_id = repmat(selected_probe,height(c_t_contacts{j}));
+    c_t_contacts{j}.depth_mm = tip2surface_mm - 0.020 * floor((j-1)/2);
     
     % Project the depth along the line
-    projected_depth_mm = c_t_contacts{i}.depth_mm * cos(theta);
+    projected_depth_mm = c_t_contacts{j}.depth_mm * cos(theta);
 
     % Convert using the transformation for the chosen plane
     projected_depth_mm_paxinos = accf2pxs_mm(projected_depth_mm, plane, 'distance');
 
-    c_t_contacts{i}.depth_mm_paxinos = projected_depth_mm_paxinos;
+    c_t_contacts{j}.depth_mm_paxinos = projected_depth_mm_paxinos;
 end
 
-c_Tapdvml_contacts{selected_probe} = vertcat(c_t_contacts{:});
+Tapdvml_contacts_new = vertcat(c_t_contacts{:});
 clear c_t_contacts
 
-%TODO writetable()
+%% update the relevant rows of Tapdvml_contacts
 
-keyboard()
+%% update values
+for j = 1:height(Tapdvml_contacts_new)
+    probe_id = Tapdvml_contacts_new{j,"probe_id"};
+    contact_id = Tapdvml_contacts_new{j,"contact_id"};
+
+    cols = ["ap_mm","dv_mm","dv_mm_paxinos","ml_mm","annotation","name","acronym","contact_id","probe_id","depth_mm","depth_mm_paxinos"];
+    Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id ...
+        & Tapdvml_contacts.contact_id == contact_id,  cols) = ...
+        Tapdvml_contacts_new(j, cols);   
+end
+
+writetable(Tapdvml_contacts, "Tapdvml_contacts.xlsx",'FileType','spreadsheet')
+
 
 end
 
@@ -491,17 +500,7 @@ cstr = arrayfun(@(x) strsplit(x, "/"), string(st.structure_id_path),'UniformOutp
 
 % remove empty string ""
 
-% cemp = cellfun(@(x) x == "" , cstr,'UniformOutput',false);
-
-for j = 1:size(cstr,1) % i = 741
-    % fprintf("j = %d\n",j)
-    % cstr{i}(cemp{i}) = [];
-    % v = zeros(1,length(cstr{i}),'int32');
-    % for j = 1:length(cstr{i})
-    %     fprintf("j = %d\n",j)
-    %     v(j) = int32(str2double(cstr{i}(j)));
-    % end
-    % cstr{i} = v;
+for j = 1:size(cstr,1) 
 
     if cstr{j}(1) == ""
         cstr{j}(1) = [];
