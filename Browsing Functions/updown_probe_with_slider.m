@@ -5,6 +5,7 @@ function updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_d
 % to the changes in the firing rates of neurons
 %
 % EXAMPLE USAGE
+%
 % session_id = "kms058-2023-03-25-184034"
 % probeAB ="ProbeA";
 % plane = "sagittal";
@@ -41,6 +42,8 @@ end
 %TODO what if optic fiber data is chosen?
 
 
+
+
 sorter_output_dir = fullfile(sessions_dir, task_dir_name,  ...
     session_id, "processed\kilosort", probeAB, "sorter_output");
 
@@ -60,23 +63,12 @@ original_backup_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_original.x
 
 Tprobes_path= fullfile(imaging_session_dir, "T_probes.xlsx");
 
-YLim_shift_mm_path = fullfile(imaging_session_dir,"YLim_shift_mm.mat");
+%YLim_shift_mm_path = fullfile(imaging_session_dir,"YLim_shift_mm.mat"); %TODO
+Y_shift_path = fullfile(imaging_session_dir,"T_Y_shift.mat"); %TODO
 
-opts = detectImportOptions(Tapdvml_contacts_path);
-opts = setvartype(opts, 'session_id', 'string');
 
-YLim_shift_mm = [];
-if isfile(original_backup_path)
-    Tapdvml_contacts = readtable(original_backup_path, opts );
-    
-    if isfile(YLim_shift_mm_path)
-        S = load(YLim_shift_mm_path); % YLim_shift_mm
-        YLim_shift_mm = S.YLim_shift_mm;
-        clear S
-    end
-else
-    Tapdvml_contacts = readtable(Tapdvml_contacts_path, opts );
-end
+
+
 
 % Tborders_table = readtable(borders_table_path);
 
@@ -86,6 +78,75 @@ if ~ ismember('p_1',T_probes.Properties.VariableNames) || ...
         ~ ismember('p_2',T_probes.Properties.VariableNames) ||...
         ~ ismember('p_3',T_probes.Properties.VariableNames)
     warning('The eigen vectors p is not found in T_probes. You cannot update the Tapdvml_contacts.')
+end
+
+switch probeAB
+    case "ProbeA"
+        probeAB_short = "A";
+    case "ProbeB"
+        probeAB_short = "B";
+    otherwise
+
+end
+
+tf = T_probes.session_id == session_id & T_probes.probe_AB == probeAB_short;
+
+probe_id = T_probes{tf, "probe_id"};
+
+%% deal with the cache file
+opts = detectImportOptions(Tapdvml_contacts_path);
+opts = setvartype(opts, 'session_id', 'string');
+
+YLim_shift_mm = [];
+if isfile(original_backup_path)
+
+    Tapdvml_contacts = readtable(original_backup_path, opts );
+    Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
+
+    if isfile(Y_shift_path) % use the cache
+        S = load(Y_shift_path); % YLim_shift_mm
+
+        assert(istable(S.T_Y_shift))
+        T_Y_shift = S.T_Y_shift;
+        YLim_shift_mm = S.T_Y_shift.YLim_shift_mm(probe_id);
+        Tanc = S.T_Y_shift.Tanc{probe_id};
+        clear S
+    else
+        % cache file is not found
+        Tanc_ = cell(height(T_probes), 1);
+        for i = 1:size(Tanc_,1)
+            Tanc_{i} = table();
+        end
+
+        T_Y_shift = table(zeros(height(T_probes), 1), Tanc_,...
+            'VariableNames', ["YLim_shift_mm","Tanc"]); % YLim_shift_mm and Tanc
+        clear Tanc_
+        Tanc = compute_Tanc(Tapdvml_contacts_this, st, depth_level);
+        T_Y_shift.Tanc{probe_id} = Tanc;
+        save(Y_shift_path, 'T_Y_shift');
+    end
+    Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc];
+
+else
+    % the very first run
+
+    Tapdvml_contacts = readtable(Tapdvml_contacts_path, opts );
+    Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
+
+    Tanc_ = cell(height(T_probes), 1);
+    for i = 1:size(Tanc_,1)
+        Tanc_{i} = table();
+    end
+
+    T_Y_shift = table(zeros(height(T_probes), 1), Tanc_,...
+        'VariableNames', ["YLim_shift_mm","Tanc"]); % YLim_shift_mm and Tanc
+    clear Tanc_
+    Tanc = compute_Tanc(Tapdvml_contacts_this, st, depth_level);
+    T_Y_shift.Tanc{probe_id} = Tanc;
+    save(Y_shift_path, 'T_Y_shift');
+
+    Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc];
+
 end
 
 
@@ -195,64 +256,14 @@ uax2.Color = 'k';
 uax3.CLim = uax2.CLim; % same color scale
 
 
-%% Read the Allen CCF data
-% directory of reference atlas files
-annotation_volume_location = "\\ettina\Magill_lab\Kouichi Nakamura\Analysis\allenCCFdata\annotation_volume_10um_by_index.npy";
-structure_tree_location = "\\ettina\Magill_lab\Kouichi Nakamura\Analysis\allenCCFdata\structure_tree_safe_2017.csv";
-template_volume_location = "\\ettina\Magill_lab\Kouichi Nakamura\Analysis\allenCCFdata\template_volume_10um.npy";
 
-% load the reference brain and region annotations
-if ~exist('av','var') || ~exist('st','var') || ~exist('tv','var')
-    disp('loading reference atlas...')
-    av = readNPY(annotation_volume_location);
-    st = loadStructureTree(structure_tree_location);
-    tv = readNPY(template_volume_location);
-end
-
-
-probeAB = "ProbeA";
-
-switch probeAB
-    case "ProbeA"
-        probeAB_short = "A";
-    case "ProbeB"
-        probeAB_short = "B";
-    otherwise
-
-end
-
-tf = T_probes.session_id == session_id & T_probes.probe_AB == probeAB_short;
-
-probe_id = T_probes{tf, "probe_id"};
-
-
-Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
+% Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
 
 tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
     sprintf("%s/%s (%d)", session_id, probeAB, probe_id),...
     HorizontalAlignment='center',FontSize=18,LineStyle='none');
 
-%%
-anc = preallocatestruct(["index", "anc_id", "anc_name", "anc_color_hex", "anc_color_255", "anc_color"], [height(Tapdvml_contacts_this), 1]);
-
-st.name = regexprep(st.name, '["'']',''); % remove clutters
-
-f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
-    'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
-
-for i = 1:height(Tapdvml_contacts_this) % SLOW
-    waitbar( i/height(Tapdvml_contacts_this), f, ...
-        sprintf("%d of %d", i, height(Tapdvml_contacts_this)));
-    name = Tapdvml_contacts_this.name{i};
-    [anc(i)] = find_name_for_depth(st, depth_level, name);
-end
-
-delete(f)
-
-%%
-Tanc = struct2table(anc, AsArray=true);
-
-Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc];
+% Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc]; %TODO
 
 
 % Sample data
@@ -279,6 +290,7 @@ Tblocks = table(block_names, start_ind, end_ind, block_colors, ...
 
 
 %% Plot structures
+
 cla(uax1)
 
 uax1.Color = 'k';
@@ -294,13 +306,25 @@ for i = 1:height(Tblocks)
         'HorizontalAlignment','center', Clipping='on');
 end
 
+horzline = line(uax1, [0 1], [0 0], 'Color','r'); % distance from the tip 0 mm
+
 ylim(uax1, [-0.100, 3.940])
 
 uax1.YLabel.FontSize = 14;
 
+if isempty(uax1.UserData) || ~isfield(uax1.UserData, 'YLim_shift_mm')
+    tx2 = annotation(ufig, 'textbox', [0.2 0.03 0.3 0.1],  'String', ...
+        regexprep(sprintf("%+.2f mm", 0), '-', char(8722)),...
+        HorizontalAlignment='left',FontSize=12, LineStyle='none');
+else
+    tx2 = annotation(ufig, 'textbox', [0.2 0.03 0.3 0.1],  'String', ...
+        regexprep(sprintf("%+.2f mm", uax1.UserData.YLim_shift_mm), '-', char(8722)),...
+        HorizontalAlignment='left',FontSize=12, LineStyle='none');
+end
+
 % move items after initialiation
 if isfield(uax1.UserData, 'YLim_shift_mm')
-    uax1.UserData.YLim_shift_mm
+    % uax1.UserData.YLim_shift_mm
 
     ch = uax1.Children;
 
@@ -311,249 +335,263 @@ if isfield(uax1.UserData, 'YLim_shift_mm')
         elseif isa(ch(i),'matlab.graphics.primitive.Patch')
             ch(i).YData = ch(i).YData + YLim_shift_mm;
 
+        elseif isa(ch(i),'matlab.graphics.primitive.Line')
+            ch(i).YData = ch(i).YData + YLim_shift_mm;            
+        
         end
     end
 end
 
 
-function move_back_to_original(uax1)
+    function move_back_to_original(uax1)
 
-if isfield(uax1.UserData, 'YLim_shift_mm')
-    ch = uax1.Children;
+        if isfield(uax1.UserData, 'YLim_shift_mm')
+            ch = uax1.Children;
 
-    for j = 1:length(ch)
-        step = - uax1.UserData.YLim_shift_mm;
+            for j = 1:length(ch)
+                step = - uax1.UserData.YLim_shift_mm;
 
-        if isa(ch(j),'matlab.graphics.primitive.Text')
-            ch(j).Position(2) = ch(j).Position(2) + step;
+                if isa(ch(j),'matlab.graphics.primitive.Text')
+                    ch(j).Position(2) = ch(j).Position(2) + step;
 
-        elseif isa(ch(j),'matlab.graphics.primitive.Patch')
-            ch(j).YData = ch(j).YData + step;
+                elseif isa(ch(j),'matlab.graphics.primitive.Patch')
+                    ch(j).YData = ch(j).YData + step;
 
+                elseif isa(ch(j),'matlab.graphics.primitive.Line')
+                    ch(j).YData = ch(j).YData + step;
+                    
+                end
+
+            end
+
+            uax1.UserData.YLim_shift_mm = 0;
+
+            tx2.String = regexprep(sprintf("%+.2f mm", uax1.UserData.YLim_shift_mm), '-', char(8722));
+        else
+            %nothing to do
         end
 
     end
 
-    uax1.UserData.YLim_shift_mm = 0;
-else
-    %nothing to do
-end
 
-end
+    function move_vertically(uax1, step)
 
+        % arguments
+        %     uax1(1,1)
+        %     step (1,1) {mustBeInteger}
+        % end
 
-function move_vertically(uax1, step)
+        ch = uax1.Children;
 
-% arguments
-%     uax1(1,1)
-%     step (1,1) {mustBeInteger}
-% end
+        for j = 1:length(ch)
 
-ch = uax1.Children;
+            if isa(ch(j),'matlab.graphics.primitive.Text')
+                ch(j).Position(2) = ch(j).Position(2) + step*0.01;
 
-for j = 1:length(ch)
+            elseif isa(ch(j),'matlab.graphics.primitive.Patch')
+                ch(j).YData = ch(j).YData + step*0.01;
 
-    if isa(ch(j),'matlab.graphics.primitive.Text')
-        ch(j).Position(2) = ch(j).Position(2) + step*0.01;
+            elseif isa(ch(j),'matlab.graphics.primitive.Line')
+                ch(j).YData = ch(j).YData + step*0.01;
 
-    elseif isa(ch(j),'matlab.graphics.primitive.Patch')
-        ch(j).YData = ch(j).YData + step*0.01;
+            end
+
+        end
+
+        if isfield(uax1.UserData, 'YLim_shift_mm')
+            uax1.UserData.YLim_shift_mm = uax1.UserData.YLim_shift_mm + step*0.01;
+        else
+            uax1.UserData.YLim_shift_mm = step*0.01;
+        end
+
+        tx2.String = regexprep(sprintf("%+.2f mm", uax1.UserData.YLim_shift_mm), '-', char(8722));
 
     end
 
-end
 
-if isfield(uax1.UserData, 'YLim_shift_mm')
-    uax1.UserData.YLim_shift_mm = uax1.UserData.YLim_shift_mm + step*0.01;
-else
-    uax1.UserData.YLim_shift_mm = step*0.01;
-end
+    function save_updown_to_table(uax1, ~)
 
-end
+        if isempty(uax1.UserData)
+            disp('The probe has not moved on GUI yet. No change made.')
+            return
+        else
+            if isfield(uax1.UserData, 'YLim_shift_mm')
+                % move
+            else
+                disp('YLim_shift_mm is not found. No change made.')
+                return
+            end
+        end
+
+
+        %% save the backup
+
+        assert(endsWith(Tapdvml_contacts_path,'.xlsx'))
+
+        assert(isfile(Tapdvml_contacts_path))
+
+        f_info = dir(Tapdvml_contacts_path);
+
+        dt = datetime(f_info.date, 'InputFormat', 'dd-MMM-yyyy HH:mm:ss');
+
+        dt.Format = 'yyyy-MM-dd_HH-mm-ss';
+        suffix = string(dt);
+
+        new_file_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_" + suffix + ".xlsx");
+
+        if isfile(original_backup_path)
+            % save a backup file for the latest
+
+            copyfile(Tapdvml_contacts_path, new_file_path)
+
+        else
+            % this is the first time you change the Excel file
+            % save a backup file
+
+            copyfile(Tapdvml_contacts_path, original_backup_path)
+
+        end
+
+        %% Job
+        % see plot_and_compute_probe_positions_from_ccf.m
+        % I need the eigen vector, to be saved in T_probes?
+
+        switch probeAB
+            case "ProbeA"
+                probeAB_ = "A";
+            case "ProbeB"
+                probeAB_ = "B";
+            case "optic fiber"
+                probeAB_ = "optic fiber";
+        end
+
+        % eigen vector
+        tf = T_probes.session_id == session_id & ...
+            T_probes.probe_AB == probeAB_;
+
+        assert(nnz(tf) == 1)
+
+        p = T_probes{T_probes.session_id == session_id & ...
+            T_probes.probe_AB == probeAB_, ["p_1","p_2","p_3"]};
+
+        m = T_probes{T_probes.session_id == session_id & ...
+            T_probes.probe_AB == probeAB_, ["m_1","m_2","m_3"]};
+
+        processed_images_folder = fullfile(image_folder, 'processed');
+
+        probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
+
+        % get the probe points for the currently analyzed probe
+
+        if strcmp(plane,'coronal')
+            curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [3 2 1]);
+        elseif strcmp(plane,'sagittal')
+            curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 2 3]);
+        elseif strcmp(plane,'transverse')
+            curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 3 2]);
+        end
+
+        % m is the brain entry point
+
+        % modifiy the m and curr_probePoints(tip_index,:) by YLim_shift_mm
+        % p is in 10 µm
+
+        if strcmp(probe_insertion_direction, 'down')
+            [depth, tip_index] = max(curr_probePoints(:,2));
+        elseif strcmp(probe_insertion_direction, 'up')
+            [depth, tip_index] = min(curr_probePoints(:,2));
+        end
+
+        % curr_probePoints(tip_index,:) either to get it from the ProbePoints or
+        % from Tapdvml_contacts.xlsx (convert ap_mm, dv_mm, ml_mm back to allen coordinates)
+        % opposite of apdvml2info
+
+
+        % Tapdvml_contacts.session_id
+
+        % tip_mm =
+
+        YLim_shift_mm = uax1.UserData.YLim_shift_mm;
+        new_cp = curr_probePoints(tip_index,:) - YLim_shift_mm*100; % minus to move up
+        %NOTE always read the original Excel and saved value of YLim_shift_mm
+        % YLim_shift_mm should represent the gap from the original
+
+        Tapdvml_m = apdvml2info(m, av, st, plane);
+
+        Tapdvml_tip = apdvml2info(new_cp, av, st, plane);
 
 
 
-function save_updown_to_table(uax1, ~) 
+        %% measure the distance
 
-if isempty(uax1.UserData)
-    disp('The probe has not moved on GUI yet. No change made.')
-    return
-else
-    if isfield(uax1.UserData, 'YLim_shift_mm')
-        % move
-    else
-        disp('YLim_shift_mm is not found. No change made.')
-        return
+        tip2surface_mm = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
+            (Tapdvml_tip.dv_mm - Tapdvml_m.dv_mm)^2 + ...
+            (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
+
+        % tip2surface_mm_paxinos = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
+        %     (Tapdvml_tip.dv_mm_paxinos - Tapdvml_m.dv_mm_paxinos)^2 + ...
+        %     (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
+
+        top_active = (m * active_probe_length + ...
+            new_cp * (tip2surface_mm - active_probe_length))...
+            /tip2surface_mm;
+
+        %% obtain the information for all the 384 channels
+
+        a = [linspace(new_cp(1), top_active(1), 192)', ...
+            linspace(new_cp(2), top_active(2), 192)', ...
+            linspace(new_cp(3), top_active(3), 192)'];
+        probe_contact_points = zeros(384, 3);
+        for j = 1:192
+            probe_contact_points(2*j-1,:) = a(j,:);
+            probe_contact_points(2*j,:) = a(j,:);
+        end
+        clear a
+
+        c_t_contacts = cell(384,1);
+
+        theta = acos(p(2)); % Assuming p(2) corresponds to the DV direction
+
+        for j = 1:384
+            c_t_contacts{j} = apdvml2info(probe_contact_points(j,:), av, st, plane);
+            c_t_contacts{j}.contact_id = repmat(j,height(c_t_contacts{j}));
+            c_t_contacts{j}.probe_id = repmat(probe_id,height(c_t_contacts{j}));
+            c_t_contacts{j}.depth_mm = tip2surface_mm - 0.020 * floor((j-1)/2);
+
+            % Project the depth along the line
+            projected_depth_mm = c_t_contacts{j}.depth_mm * cos(theta);
+
+            % Convert using the transformation for the chosen plane
+            projected_depth_mm_paxinos = accf2pxs_mm(projected_depth_mm, plane, 'distance');
+
+            c_t_contacts{j}.depth_mm_paxinos = projected_depth_mm_paxinos;
+        end
+
+        Tapdvml_contacts_new = vertcat(c_t_contacts{:});
+        clear c_t_contacts
+
+        %% update the relevant rows of Tapdvml_contacts
+
+        %% update values
+        for j = 1:height(Tapdvml_contacts_new)
+            probe_id = Tapdvml_contacts_new{j,"probe_id"};
+            contact_id = Tapdvml_contacts_new{j,"contact_id"};
+
+            cols = ["ap_mm","dv_mm","dv_mm_paxinos","ml_mm","annotation",...
+                "name","acronym","contact_id","probe_id","depth_mm","depth_mm_paxinos"];
+            Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id ...
+                & Tapdvml_contacts.contact_id == contact_id,  cols) = ...
+                Tapdvml_contacts_new(j, cols);
+        end
+
+        writetable(Tapdvml_contacts, fullfile(imaging_session_dir,"Tapdvml_contacts.xlsx"),'FileType','spreadsheet')
+        fprintf("Tapdvml_contacts.xlsx has been updated with %.3f mm shift from the original for %s of %s (%d).\n", YLim_shift_mm, probeAB, session_id, probe_id)
+        % save the value of YLim_shift_mm
+        T_Y_shift.YLim_shift_mm(probe_id) = YLim_shift_mm;
+        save(Y_shift_path, 'T_Y_shift');
+
+
     end
-end
-
-
-%% save the backup
-
-assert(endsWith(Tapdvml_contacts_path,'.xlsx'))
-
-assert(isfile(Tapdvml_contacts_path))
-
-f_info = dir(Tapdvml_contacts_path);
-
-dt = datetime(f_info.date, 'InputFormat', 'dd-MMM-yyyy HH:mm:ss');
-
-dt.Format = 'yyyy-MM-dd_HH-mm-ss';
-suffix = string(dt);
-
-new_file_path = regexprep(Tapdvml_contacts_path, '\.xlsx$' , "_" + suffix + ".xlsx");
-
-if isfile(original_backup_path)
-    % save a backup file for the latest
-
-    copyfile(Tapdvml_contacts_path, new_file_path)
-
-else
-    % this is the first time you change the Excel file
-    % save a backup file
-
-    copyfile(Tapdvml_contacts_path, original_backup_path)
-
-end
-
-%% Job
-% see plot_and_compute_probe_positions_from_ccf.m
-% I need the eigen vector, to be saved in T_probes?
-
-switch probeAB
-    case "ProbeA"
-        probeAB_ = "A";
-    case "ProbeB"
-        probeAB_ = "B";
-    case "optic fiber"
-        probeAB_ = "optic fiber";
-end
-
-% eigen vector
-tf = T_probes.session_id == session_id & ...
-    T_probes.probe_AB == probeAB_;
-
-assert(nnz(tf) == 1)
-
-p = T_probes{T_probes.session_id == session_id & ...
-    T_probes.probe_AB == probeAB_, ["p_1","p_2","p_3"]};
-
-m = T_probes{T_probes.session_id == session_id & ...
-    T_probes.probe_AB == probeAB_, ["m_1","m_2","m_3"]};
-
-processed_images_folder = fullfile(image_folder, 'processed');
-
-probePoints = load(fullfile(processed_images_folder, ['probe_points' probe_save_name_suffix]));
-
-% get the probe points for the currently analyzed probe
-
-if strcmp(plane,'coronal')
-    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [3 2 1]);
-elseif strcmp(plane,'sagittal')
-    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 2 3]);
-elseif strcmp(plane,'transverse')
-    curr_probePoints = probePoints.pointList.pointList{probe_id,1}(:, [1 3 2]);
-end
-
-% m is the brain entry point
-
-% modifiy the m and curr_probePoints(tip_index,:) by YLim_shift_mm
-% p is in 10 µm
-
-if strcmp(probe_insertion_direction, 'down')
-    [depth, tip_index] = max(curr_probePoints(:,2));
-elseif strcmp(probe_insertion_direction, 'up')
-    [depth, tip_index] = min(curr_probePoints(:,2));
-end
-
-% curr_probePoints(tip_index,:) either to get it from the ProbePoints or
-% from Tapdvml_contacts.xlsx (convert ap_mm, dv_mm, ml_mm back to allen coordinates)
-% opposite of apdvml2info
-
-
-% Tapdvml_contacts.session_id
-
-% tip_mm = 
-
-YLim_shift_mm = uax1.UserData.YLim_shift_mm;
-new_cp = curr_probePoints(tip_index,:) - YLim_shift_mm*100; % minus to move up
-%NOTE always read the original Excel and saved value of YLim_shift_mm
-% YLim_shift_mm should represent the gap from the original
-
-Tapdvml_m = apdvml2info(m, av, st, plane);
-
-Tapdvml_tip = apdvml2info(new_cp, av, st, plane);
-
-
-
-%% measure the distance 
-
-tip2surface_mm = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
-    (Tapdvml_tip.dv_mm - Tapdvml_m.dv_mm)^2 + ...
-    (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
-
-% tip2surface_mm_paxinos = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
-%     (Tapdvml_tip.dv_mm_paxinos - Tapdvml_m.dv_mm_paxinos)^2 + ...
-%     (Tapdvml_tip.ml_mm - Tapdvml_m.ml_mm)^2);
-
-top_active = (m * active_probe_length + ...
-    new_cp * (tip2surface_mm - active_probe_length))...
-    /tip2surface_mm;
-
-%% obtain the information for all the 384 channels
-
-a = [linspace(new_cp(1), top_active(1), 192)', ...
-    linspace(new_cp(2), top_active(2), 192)', ...
-    linspace(new_cp(3), top_active(3), 192)'];
-probe_contact_points = zeros(384, 3);
-for j = 1:192
-    probe_contact_points(2*j-1,:) = a(j,:);
-    probe_contact_points(2*j,:) = a(j,:);
-end
-clear a
-
-c_t_contacts = cell(384,1);
-
-theta = acos(p(2)); % Assuming p(2) corresponds to the DV direction
-
-for j = 1:384
-    c_t_contacts{j} = apdvml2info(probe_contact_points(j,:), av, st, plane);
-    c_t_contacts{j}.contact_id = repmat(j,height(c_t_contacts{j}));
-    c_t_contacts{j}.probe_id = repmat(probe_id,height(c_t_contacts{j}));
-    c_t_contacts{j}.depth_mm = tip2surface_mm - 0.020 * floor((j-1)/2);
-    
-    % Project the depth along the line
-    projected_depth_mm = c_t_contacts{j}.depth_mm * cos(theta);
-
-    % Convert using the transformation for the chosen plane
-    projected_depth_mm_paxinos = accf2pxs_mm(projected_depth_mm, plane, 'distance');
-
-    c_t_contacts{j}.depth_mm_paxinos = projected_depth_mm_paxinos;
-end
-
-Tapdvml_contacts_new = vertcat(c_t_contacts{:});
-clear c_t_contacts
-
-%% update the relevant rows of Tapdvml_contacts
-
-%% update values
-for j = 1:height(Tapdvml_contacts_new)
-    probe_id = Tapdvml_contacts_new{j,"probe_id"};
-    contact_id = Tapdvml_contacts_new{j,"contact_id"};
-
-    cols = ["ap_mm","dv_mm","dv_mm_paxinos","ml_mm","annotation",...
-        "name","acronym","contact_id","probe_id","depth_mm","depth_mm_paxinos"];
-    Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id ...
-        & Tapdvml_contacts.contact_id == contact_id,  cols) = ...
-        Tapdvml_contacts_new(j, cols);   
-end
-
-writetable(Tapdvml_contacts, fullfile(imaging_session_dir,"Tapdvml_contacts.xlsx"),'FileType','spreadsheet')
-fprintf("Tapdvml_contacts.xlsx has been updated with %.3f mm shift from the original for %s of %s (%d).\n", YLim_shift_mm, probeAB, session_id, probe_id)
-% save the value of YLim_shift_mm
-save(YLim_shift_mm_path, 'YLim_shift_mm');
-
-end
 
 end
 
@@ -615,3 +653,25 @@ this.color = this.color_255/255;
 end
 
 
+function Tanc = compute_Tanc(Tapdvml_contacts_this, st, depth_level)
+
+anc = preallocatestruct(["index", "anc_id", "anc_name", "anc_color_hex", "anc_color_255", "anc_color"], [height(Tapdvml_contacts_this), 1]);
+
+st.name = regexprep(st.name, '["'']',''); % remove clutters
+
+f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
+    'CreateCancelBtn','setappdata(gcbf,''canceling'',1)');
+
+for i = 1:height(Tapdvml_contacts_this) % SLOW
+    waitbar( i/height(Tapdvml_contacts_this), f, ...
+        sprintf("%d of %d", i, height(Tapdvml_contacts_this)));
+    name = Tapdvml_contacts_this.name{i};
+    [anc(i)] = find_name_for_depth(st, depth_level, name);
+end
+
+delete(f)
+beep();
+
+Tanc = struct2table(anc, AsArray=true);
+
+end
