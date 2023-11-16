@@ -37,9 +37,6 @@ arguments
 end
 
 %TODO add button to go next and previous probe
-%TODO use probe_id
-% related, use animal_id
-% make session_id, probeAB
 
 %TODO what if optic fiber data is chosen?
 
@@ -51,7 +48,7 @@ recording_cell_metrics_path = fullfile(sorter_output_dir, "recording.cell_metric
 s = load(recording_cell_metrics_path);
 recording_cell_metrics = s.cell_metrics;
 
-image_folder =fullfile(imaging_session_dir, image_folder_name);  %TODO
+image_folder =fullfile(imaging_session_dir, image_folder_name);
 
 probe_save_name_suffix = '_probe';
 
@@ -149,9 +146,6 @@ bt6.Position = [10, 75, 50, 30];
 bt7 = uibutton(ufig, "Text","Save", "ButtonPushedFcn", @(src, event) save_updown_to_table(uax1));
 bt7.Position = [150, 30, 300, 50];
 
-tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.5 0.1],  'String', session_id +"/" + probeAB,...
-    HorizontalAlignment='center',FontSize=18,LineStyle='none');
-
 
 %% Plot cells
 n = length(recording_cell_metrics.firingRate);
@@ -234,6 +228,10 @@ probe_id = T_probes{tf, "probe_id"};
 
 Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
 
+tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
+    sprintf("%s/%s (%d)", session_id, probeAB, probe_id),...
+    HorizontalAlignment='center',FontSize=18,LineStyle='none');
+
 %%
 anc = preallocatestruct(["index", "anc_id", "anc_name", "anc_color_hex", "anc_color_255", "anc_color"], [height(Tapdvml_contacts_this), 1]);
 
@@ -244,17 +242,15 @@ f = waitbar(0,'1','Name','Analysing structure hierarchy...',...
 
 for i = 1:height(Tapdvml_contacts_this) % SLOW
     waitbar( i/height(Tapdvml_contacts_this), f, ...
-        sprintf("%d of %d", i, height(Tapdvml_contacts_this))) %TODO not shown properly
+        sprintf("%d of %d", i, height(Tapdvml_contacts_this)));
     name = Tapdvml_contacts_this.name{i};
-    [anc(i)] = find_name_for_depth(st, depth_level, name); %TODO stopped working for i = 61, i = 1327
+    [anc(i)] = find_name_for_depth(st, depth_level, name);
 end
 
 delete(f)
 
 %%
 Tanc = struct2table(anc, AsArray=true);
-%TODO save a cache file??
-
 
 Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc];
 
@@ -384,7 +380,7 @@ if isempty(uax1.UserData)
     return
 else
     if isfield(uax1.UserData, 'YLim_shift_mm')
-        %TODO move
+        % move
     else
         disp('YLim_shift_mm is not found. No change made.')
         return
@@ -392,7 +388,7 @@ else
 end
 
 
-%TODO save the backup
+%% save the backup
 
 assert(endsWith(Tapdvml_contacts_path,'.xlsx'))
 
@@ -461,7 +457,7 @@ end
 
 % m is the brain entry point
 
-%TODO modifiy the m and curr_probePoints(tip_index,:) by YLim_shift_mm
+% modifiy the m and curr_probePoints(tip_index,:) by YLim_shift_mm
 % p is in 10 µm
 
 if strcmp(probe_insertion_direction, 'down')
@@ -481,15 +477,8 @@ end
 
 YLim_shift_mm = uax1.UserData.YLim_shift_mm;
 new_cp = curr_probePoints(tip_index,:) - YLim_shift_mm*100; % minus to move up
-%TODO in case the probe has already moved prevously, YLim_shift_mm won't be
-% accurate
-%
-% always read both the original and the latest Excel
+%NOTE always read the original Excel and saved value of YLim_shift_mm
 % YLim_shift_mm should represent the gap from the original
-
-%GOOD always read the original Excel and saved value of YLim_shift_mm
-% YLim_shift_mm should represent the gap from the original
-
 
 Tapdvml_m = apdvml2info(m, av, st, plane);
 
@@ -497,7 +486,7 @@ Tapdvml_tip = apdvml2info(new_cp, av, st, plane);
 
 
 
-% measure the distance 
+%% measure the distance 
 
 tip2surface_mm = sqrt((Tapdvml_tip.ap_mm - Tapdvml_m.ap_mm)^2 + ...
     (Tapdvml_tip.dv_mm - Tapdvml_m.dv_mm)^2 + ...
@@ -511,8 +500,7 @@ top_active = (m * active_probe_length + ...
     new_cp * (tip2surface_mm - active_probe_length))...
     /tip2surface_mm;
 
-% obtained the information for all the 384 channels
-
+%% obtain the information for all the 384 channels
 
 a = [linspace(new_cp(1), top_active(1), 192)', ...
     linspace(new_cp(2), top_active(2), 192)', ...
@@ -553,14 +541,15 @@ for j = 1:height(Tapdvml_contacts_new)
     probe_id = Tapdvml_contacts_new{j,"probe_id"};
     contact_id = Tapdvml_contacts_new{j,"contact_id"};
 
-    cols = ["ap_mm","dv_mm","dv_mm_paxinos","ml_mm","annotation","name","acronym","contact_id","probe_id","depth_mm","depth_mm_paxinos"];
+    cols = ["ap_mm","dv_mm","dv_mm_paxinos","ml_mm","annotation",...
+        "name","acronym","contact_id","probe_id","depth_mm","depth_mm_paxinos"];
     Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id ...
         & Tapdvml_contacts.contact_id == contact_id,  cols) = ...
         Tapdvml_contacts_new(j, cols);   
 end
 
 writetable(Tapdvml_contacts, fullfile(imaging_session_dir,"Tapdvml_contacts.xlsx"),'FileType','spreadsheet')
-fprintf("Tapdvml_contacts.xlsx has been updated with %.3f mm shift from the original.\n", YLim_shift_mm)
+fprintf("Tapdvml_contacts.xlsx has been updated with %.3f mm shift from the original for %s of %s (%d).\n", YLim_shift_mm, probeAB, session_id, probe_id)
 % save the value of YLim_shift_mm
 save(YLim_shift_mm_path, 'YLim_shift_mm');
 
