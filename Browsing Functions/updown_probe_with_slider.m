@@ -110,6 +110,12 @@ if isfile(original_backup_path)
         T_Y_shift = S.T_Y_shift;
         YLim_shift_mm = S.T_Y_shift.YLim_shift_mm(probe_id);
         Tanc = S.T_Y_shift.Tanc{probe_id};
+        if isempty(Tanc)
+            Tanc = compute_Tanc(Tapdvml_contacts_this, st, depth_level);
+            T_Y_shift.Tanc{probe_id} = Tanc;
+            save(Y_shift_path, 'T_Y_shift');
+        end
+
         clear S
     else
         % cache file is not found
