@@ -4,6 +4,56 @@ function updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_d
 % Move up and down a probe using a slider to match the anatomical borders
 % to the changes in the firing rates of neurons
 %
+% SYNTAX
+% updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_dir,...
+%    task_dir_name, imaging_session_dir, image_folder_name, depth_level, ...
+%    active_probe_length, probe_insertion_direction)
+%
+%
+% INPUT ARGUMENTS
+% av          uint16
+%             part of Allen CCF data    
+%
+% st          table
+%             part of Allen CCF data
+%
+% session_id  string
+%             eg. "kms058-2023-03-25-184034"
+%
+% probeAB     "ProbeA" | "ProbeB"
+%
+% plane       "coronal" | "sagittal" | "transverse"
+%
+% sessions_dir
+%             folder path
+%             "\\ettina\Magill_Lab\Julien\Data\head-fixed\by_sessions"
+%
+% task_dir_name
+%             folder name
+%             "reaching_go_spout_bar_nov22"
+%
+% imaging_session_dir
+%             folder_path
+%             "\\ettina\Magill_Lab\Kouichi Nakamura\Analysis\Images from Otto\20230406 kms058"
+%
+% image_folder_name
+%             "RGB" (default)
+%             folder_name
+%
+% depth_level
+%             6 (default)
+%             The hierarchical level of the anatomical structures to be
+%             shown.
+%
+% active_probe_length
+%             3.840 (default)    
+%
+% probe_insertion_direction 
+%             "down" (default) | "up"
+%
+%
+%
+%
 % EXAMPLE USAGE
 %
 % session_id = "kms058-2023-03-25-184034"
@@ -21,6 +71,16 @@ function updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_d
 %     st = loadStructureTree(structure_tree_location);
 %     tv = readNPY(template_volume_location);
 % end
+%
+%
+% Written by Kouichi C. Nakamura Ph.D.
+% MRC Brain Network Dynamics Unit
+% University of Oxford
+% kouichi.c.nakamura@gmail.com
+% 17-Nov-2023 09:07:25
+%
+% See also
+% plot_and_compute_probe_positions_from_ccf
 
 arguments
     av uint16
@@ -241,17 +301,30 @@ ticklengthcm(cb1, 0.2)
 cla(uax2,'reset')
 
 movingaverageval = zeros(384,1);
+celldensity = zeros(384,1);
 
 for i = 1:384
 
     % moving average of five channels
-    chans = i - 1 : i + 3;
+    chans = i - 2 : i + 2;
+    
     ind = ismember(recording_cell_metrics.maxWaveformCh, chans);
+    celldensity(i) = nnz(ind)/(length(chans)*10); % cells per micrometers
     movingaverageval(i) = mean(recording_cell_metrics.firingRate(ind));
 
 end
 
-isc1 = imagesc(uax2, 1, (1:384)'*0.01, movingaverageval);
+for i = 1:384
+
+    % ten channels
+    chans = i - 4 : i + 5;
+    
+    ind = ismember(recording_cell_metrics.maxWaveformCh, chans);
+    celldensity(i) = nnz(ind)/(length(chans)*10); % cells per micrometers
+
+end
+
+isc1 = imagesc(uax2, [0 1], (1:384)'*0.01, movingaverageval);
 
 uax2.YDir = 'normal';
 ylim(uax2, [-0.100, 3.940])
@@ -261,18 +334,14 @@ uax2.Color = 'k';
 
 uax3.CLim = uax2.CLim; % same color scale
 
-
-
-% Tapdvml_contacts_this = Tapdvml_contacts(Tapdvml_contacts.probe_id == probe_id, :);
+ln1 = line(uax2, celldensity/max(celldensity), (1:384)'*0.01, 'Color', 'w');
+xlim(uax2,[0 1])
 
 tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
     sprintf("%s/%s (%d)", session_id, probeAB, probe_id),...
     HorizontalAlignment='center',FontSize=18,LineStyle='none');
 
-% Tapdvml_contacts_this = [Tapdvml_contacts_this, Tanc]; %TODO
-
-
-% Sample data
+%% 
 anc_id = Tapdvml_contacts_this.anc_id;
 
 anc_name = Tapdvml_contacts_this.anc_name;
