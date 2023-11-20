@@ -91,7 +91,7 @@ arguments
     sessions_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Julien\Data\head-fixed\by_sessions"
     task_dir_name (1,1) string % eg. "reaching_go_spout_bar_nov22"
     imaging_session_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Kouichi Nakamura\Analysis\Images from Otto\20230406 kms058"
-    image_folder_name (1,1) string {mustBeFolder} = "RGB"
+    image_folder_name (1,1) string = "RGB"
     depth_level (1,1) double {mustBePositive, mustBeInteger} = 6
     active_probe_length (1,1) double = 3.84 % in mm
     probe_insertion_direction (1,1) string {mustBeMember(probe_insertion_direction, ["down","up"])} = "down"
@@ -112,6 +112,8 @@ s = load(recording_cell_metrics_path);
 recording_cell_metrics = s.cell_metrics;
 
 image_folder =fullfile(imaging_session_dir, image_folder_name);
+
+assert(isfolder(image_folder), "Check the name of image_folder_name")
 
 probe_save_name_suffix = '_probe';
 
