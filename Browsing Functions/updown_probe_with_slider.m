@@ -91,7 +91,7 @@ arguments
     sessions_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Julien\Data\head-fixed\by_sessions"
     task_dir_name (1,1) string % eg. "reaching_go_spout_bar_nov22"
     imaging_session_dir (1,1) string  {mustBeFolder} % eg. "\\ettina\Magill_Lab\Kouichi Nakamura\Analysis\Images from Otto\20230406 kms058"
-    image_folder_name (1,1) string = "RGB"
+    image_folder_name (1,1) string {mustBeFolder} = "RGB"
     depth_level (1,1) double {mustBePositive, mustBeInteger} = 6
     active_probe_length (1,1) double = 3.84 % in mm
     probe_insertion_direction (1,1) string {mustBeMember(probe_insertion_direction, ["down","up"])} = "down"
@@ -546,9 +546,18 @@ end
 
         assert(nnz(tf) == 1)
 
-        p = T_probes{T_probes.session_id == session_id & ...
-            T_probes.probe_AB == probeAB_, ["p_1","p_2","p_3"]};
-
+        try
+            p = T_probes{T_probes.session_id == session_id & ...
+                T_probes.probe_AB == probeAB_, ["p_1","p_2","p_3"]};
+        catch ME
+            if ME.identifier == "MATLAB:table:UnrecognizedVarName"
+                error("It looks like m you have to run plot_and_compute_probe_positions_from_ccf()" ...
+                    + " and then save T_probes with p and m values. " + ...
+                    "See scr20230727_112451_SharpTrackIgnore_kms058.mlx for example.")
+            else
+                throw(ME);
+            end
+        end
         m = T_probes{T_probes.session_id == session_id & ...
             T_probes.probe_AB == probeAB_, ["m_1","m_2","m_3"]};
 
