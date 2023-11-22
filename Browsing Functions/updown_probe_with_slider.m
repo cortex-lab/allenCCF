@@ -19,6 +19,8 @@ function updown_probe_with_slider(av, st, session_id, probeAB, plane, sessions_d
 %
 % session_id  string
 %             eg. "kms058-2023-03-25-184034"
+%                  "JC318L-2022-12-14-164509, JC318L-2022-12-14-174050"
+%                  multiple sessions, separated by commas
 %
 % probeAB     "ProbeA" | "ProbeB"
 %
@@ -97,11 +99,22 @@ arguments
     probe_insertion_direction (1,1) string {mustBeMember(probe_insertion_direction, ["down","up"])} = "down"
 end
 
+%TODO in order to move upwards, we need to load strucural data for the
+% region below the tip of the probe, eg. 1 mm beyond the tip
+% This will need p and m and retrieving the anatomical labels from st.
+
+
 %TODO add button to go next and previous probe
 
 %TODO what if optic fiber data is chosen?
 
 
+% accept multiple sessions separated by comma
+session_ids = strip(strsplit(session_id,","));
+
+if length(session_ids) > 1
+    session_id = session_ids(1);
+end
 
 
 sorter_output_dir = fullfile(sessions_dir, task_dir_name,  ...
@@ -339,10 +352,15 @@ uax3.CLim = uax2.CLim; % same color scale
 ln1 = line(uax2, celldensity/max(celldensity), (1:384)'*0.01, 'Color', 'w');
 xlim(uax2,[0 1])
 
-tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
-    sprintf("%s/%s (%d)", session_id, probeAB, probe_id),...
-    HorizontalAlignment='center',FontSize=18,LineStyle='none');
-
+if length(session_ids) > 1
+    tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
+        sprintf("%s/%s (%d)", session_ids, probeAB, probe_id),...
+        HorizontalAlignment='center',FontSize=18,LineStyle='none');
+else
+    tx1 = annotation(ufig, 'textbox', [0.2 0.85 0.8 0.1],  'String', ...
+        sprintf("%s/%s (%d)", session_id, probeAB, probe_id),...
+        HorizontalAlignment='center',FontSize=18,LineStyle='none');
+end
 %% 
 anc_id = Tapdvml_contacts_this.anc_id;
 
@@ -360,6 +378,9 @@ end_ind = [start_ind(2:end) - 1; length(anc_id)];
 block_names = anc_name(start_ind);
 
 block_colors = anc_color(start_ind, :);
+
+%TODO show names for regions below the tip as well
+% may take 1- 2 hrs
 
 
 Tblocks = table(block_names, start_ind, end_ind, block_colors, ...
@@ -381,6 +402,8 @@ for i = 1:height(Tblocks)
         Tblocks.block_names(i),...
         'FontSize',14,...
         'HorizontalAlignment','center', Clipping='on');
+
+    %TODO show names for regions below the tip as well
 end
 
 horzline = line(uax1, [0 1], [0 0], 'Color','r'); % distance from the tip 0 mm
@@ -498,6 +521,13 @@ end
                 disp('YLim_shift_mm is not found. No change made.')
                 return
             end
+        end
+
+        if length(session_ids) > 1
+            %TODO
+            warning('Save for multilpe sessions not implemented yet.')
+            keyboard
+
         end
 
 
