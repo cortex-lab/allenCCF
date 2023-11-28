@@ -161,10 +161,14 @@ switch probeAB
     case "ProbeB"
         probeAB_short = "B";
     otherwise
-
+        probeAB_short = "optic fiber";
 end
 
-tf = T_probes.session_id == session_id & T_probes.probe_AB == probeAB_short;
+T_probes.session_ids = (cellfun(@(x) string(strsplit(x, ', ')), ...
+    T_probes.session_id, UniformOutput=false)); % handling multiple session_ids for one probe
+
+tf = cellfun(@(x) ismember(session_id, x), T_probes.session_ids) ...
+    & T_probes.probe_AB == probeAB_short;
 
 probe_id = T_probes{tf, "probe_id"};
 
@@ -563,24 +567,11 @@ end
         % see plot_and_compute_probe_positions_from_ccf.m
         % I need the eigen vector, to be saved in T_probes?
 
-        switch probeAB
-            case "ProbeA"
-                probeAB_ = "A";
-            case "ProbeB"
-                probeAB_ = "B";
-            case "optic fiber"
-                probeAB_ = "optic fiber";
-        end
-
         % eigen vector
-        tf = T_probes.session_id == session_id & ...
-            T_probes.probe_AB == probeAB_;
-
         assert(nnz(tf) == 1)
 
         try
-            p = T_probes{T_probes.session_id == session_id & ...
-                T_probes.probe_AB == probeAB_, ["p_1","p_2","p_3"]};
+            p = T_probes{tf, ["p_1","p_2","p_3"]};
         catch ME
             if ME.identifier == "MATLAB:table:UnrecognizedVarName"
                 error("It looks like m you have to run plot_and_compute_probe_positions_from_ccf()" ...
@@ -590,8 +581,7 @@ end
                 throw(ME);
             end
         end
-        m = T_probes{T_probes.session_id == session_id & ...
-            T_probes.probe_AB == probeAB_, ["m_1","m_2","m_3"]};
+        m = T_probes{tf, ["m_1","m_2","m_3"]};
 
         processed_images_folder = fullfile(image_folder, 'processed');
 
