@@ -8,7 +8,7 @@ Some code to work with the Allen Inst Mouse Brain CCF data, specifically the 10Â
 - MATLAB (R2017 on a Windows computer was used for all testing)
 - This repository (add all folders and subfolders to your MATLAB path)
 - [The npy-matlab repository](http://github.com/kwikteam/npy-matlab)
-- [The Allen Mouse Brain Atlas volume and annotations](http://data.cortexlab.net/allenCCF/) (download all 4 files from this link)
+- [The Allen Mouse Brain Atlas volume and annotations](https://dx.doi.org/10.6084/m9.figshare.25365829) (download both files from this link)
 If you have access, you could also locate the data files at //zserver/Lab/Atlas/allenCCF. Alternatively, see setup_utils to download and preprocess the files yourself. See also https://alleninstitute.github.io/AllenSDK/reference_space.html to access the data directly via the Allen Inst python API.
 
 ## Neuropixels trajectory GUI (allen_ccf_npx)
