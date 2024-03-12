@@ -21,7 +21,15 @@ imshow(ud.current_slice_image + ud.grid)
 title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 set(slice_figure, 'UserData', ud);
 
-     
+
+out = update_file_status(folder_processed_images, ud, 0); %TODO
+if out == 0
+    fprintf("Aborted\n")
+    close();
+    return
+end
+
+
 
 % key function for slice
 set(slice_figure, 'KeyPressFcn', @(slice_figure,keydata)SliceCropHotkeyFcn(keydata, slice_figure, folder_processed_images));
@@ -52,12 +60,14 @@ ud = get(slice_figure, 'UserData');
 
 switch lower(keydata.Key)   
     case 'leftarrow' % save and previous slice
-        imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))        
+        imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))
+        update_file_status(folder_processed_images, ud, 2) %TODO
         ud.slice_num = ud.slice_num - 1*(ud.slice_num>1);
         ud = load_next_slice(ud,folder_processed_images);
 
     case 'rightarrow' % save and next slice      
         imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name))
+        update_file_status(folder_processed_images, ud, 2) %TODO
         ud.slice_num = ud.slice_num + 1*(ud.slice_num < length(ud.processed_image_names));
         ud = load_next_slice(ud,folder_processed_images);
         
@@ -136,6 +146,8 @@ title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 
 set(slice_figure, 'UserData', ud);
 
+end
+
 function ud = load_next_slice(ud,folder_processed_images)
     ud.processed_image_name = ud.processed_image_names{ud.slice_num};
     ud.current_slice_image = imread(fullfile(folder_processed_images, ud.processed_image_name));
@@ -157,7 +169,8 @@ function ud = load_next_slice(ud,folder_processed_images)
     ud.rotate_angle = 0;
     
     imwrite(ud.current_slice_image, fullfile(folder_processed_images, ud.processed_image_name)) 
-
+    update_file_status(folder_processed_images, ud, 2) %TODO
+end
 
 % function to rotate slice by scrolling
 function SliceScrollFcn(fig, evt)
@@ -173,5 +186,63 @@ title(['Slice ' num2str(ud.slice_num) ' / ' num2str(ud.total_num_files)])
 
 set(fig, 'UserData', ud);
 
+end
+
+end
 
 
+function out = update_file_status(folder_processed_images, ud, status)
+
+proc_file_names = ud.processed_image_names;
+this_image_name = ud.processed_image_name;
+
+K = find(proc_file_names == string(this_image_name));
+
+T_files = table(proc_file_names', zeros(length(proc_file_names),1),'VariableNames',{'file_names','status'});
+
+if isfile(fullfile(folder_processed_images, 'file_status.mat'))
+
+    S = load(fullfile(folder_processed_images, 'file_status.mat'));
+    for i = 1:height(T_files)
+        % apply saved values for the existing images
+        T_files.status(i) = S.T_files{S.T_files.file_names == string(T_files.file_names{i}) , 2};
+    end
+
+end
+T_files.Properties.VariableDescriptions = ["",...
+    "0, raw; 1, HistologyBrowser; 2, SliceFlipper"];
+
+if status == 0 % check this for the first run only
+    if all(T_files.status == 2)
+        answer  = questdlg("All the files have been processed by SliceFlipper. Would you like to do it again?",...
+            "HistologyBrowser",...
+            "Yes", "No", "No");
+
+        switch answer
+            case "Yes"
+                % proceed
+                out = 1;
+                return
+            case "No"
+                % quit the function
+                out = 0;
+                return
+        end
+    end
+
+    out = 1;
+    return
+end
+
+switch T_files.status(K)
+    case 0
+        error('You have to run HistologyBrowser first for the image %s', this_image_name)
+    case 1
+        T_files.status(K) = status;
+    case 2
+        T_files.status(K) = status;
+end
+
+save(fullfile(folder_processed_images, 'file_status.mat'),'T_files')
+out = 1;
+end

@@ -1,4 +1,4 @@
-function f = allenAtlasBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
+function f = AtlasTransformBrowser(f, templateVolume, annotationVolume, structureTree, slice_figure, save_location, save_suffix, plane)
 % ------------------------------------------------
 % Browser for the allen atlas ccf data in matlab.
 % ------------------------------------------------
@@ -36,7 +36,8 @@ ud.pointHands = cell(1,3);
 ud.probe_view_mode = false;
 ud.currentProbe = 0; ud.ProbeColors = [1 1 1; 1 .75 0;  .3 1 1; .4 .6 .2; 1 .35 .65; .7 .7 1; .65 .4 .25; .7 .95 .3; .7 0 0; .5 0 .6; 1 .6 0]; 
 ud.ProbeColor =  {'white','gold','turquoise','fern','bubble gum','overcast sky','rawhide', 'green apple','red','purple','orange'};
-ud.getPoint_for_transform =false; ud.pointList_for_transform = zeros(0,2); ud.pointHands_for_transform = [];
+ud.getPoint_for_transform =false; ud.pointList_for_transform = zeros(0,2); 
+ud.pointHands_for_transform = gobjects(0);
 ud.current_pointList_for_transform = zeros(0,2); ud.curr_slice_num = 1;
 ud.clicked = false;
 ud.showAtlas = false;
@@ -69,6 +70,10 @@ ud.bregmaText = annotation('textbox', [0 0.95 0.4 0.05], ...
 ud.angleText = annotation('textbox', [.7 0.95 0.4 0.05], ...
     'EdgeColor', 'none', 'Color', 'k');
 
+ud.pointsText = annotation('textbox', [0.88 0.03 0.1 0.05], ...
+    'String', '0 point', 'EdgeColor', 'none', 'Color', 'k', 'HorizontalAlignment', 'right');
+ud.pointsText.Visible = 'off';
+
 allData.tv = templateVolume;
 allData.av = annotationVolume;
 allData.st = structureTree;
@@ -78,6 +83,15 @@ set(f, 'UserData', ud);
 set(f, 'KeyPressFcn', @(f,k)hotkeyFcn(f, slice_figure, k, allData, save_location, save_suffix));
 set(f, 'WindowScrollWheelFcn', @(src,evt)updateSlice(f, evt, allData, slice_figure, save_location))
 set(f, 'WindowButtonMotionFcn',@(f,k)fh_wbmfcn(f, allData, slice_figure, save_location)); % Set the motion detector.
+
+ud.atlasAx.XLabel.Visible = 'on';
+if strcmp(ud.plane,'coronal')
+    xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+elseif strcmp(ud.plane,'sagittal')
+    xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+elseif strcmp(ud.plane,'transverse')
+    xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+end
 
 % display user controls in the console
 function display_controls(plane)
@@ -176,6 +190,11 @@ switch key_letter
                         
             disp(['probe point mode -- selecting probe ' num2str(ud.currentProbe) ' (' ud.ProbeColor{ud.currentProbe} ')']); 
             ud.getPoint_for_transform = false; 
+            try
+                set(ud.pointHands_for_transform(:), 'Visible', 'off');
+                ud.pointsText.Visible = 'off';
+            catch
+            end
             
             % show Transformed Slice & Probage Viewer, if not already showing
             if ~ud.slice_at_shift_start; add = 1; else; add = 0; end
@@ -348,18 +367,38 @@ switch key_letter
         if ud.getPoint_for_transform
             disp('transform point mode on'); 
 
+            % set(ud.pointHands_for_transform(:), 'Visible', 'on') %TODO
+            ud.pointsText.Visible = 'on';
+            ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
             ud.currentProbe = 0;
 
             % launch transform point mode
             if ~size(ud.current_pointList_for_transform,1)% ) (ud.curr_slice_num ~= (ud.slice_at_shift_start+ud.slice_shift) ||  && ~ud.loaded 
                 ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift; %ud_slice.slice_num;
                 ud.current_pointList_for_transform = zeros(0,2);
+                try
                 set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+                catch
+                end
                 num_hist_points = size(ud_slice.pointList,1);
                 template_point = 1; template_points_shown = 0;
                 updateBoundaries(f,ud, allData); ud = get(f, 'UserData');
+            else
+                try
+                set(ud.pointHands_for_transform(:), 'Visible', 'on'); 
+                catch
+                end
             end
-        else; disp('transform point mode OFF');    
+        else; disp('transform point mode OFF');
+            % hide transform points
+
+            try 
+                set(ud.pointHands_for_transform(:), 'Visible', 'off');
+                ud.pointsText.Visible = 'off';
+            catch
+            end
+
         end     
 % a -- toggle viewing of annotation boundaries  
     case 'a' 
@@ -402,37 +441,56 @@ switch key_letter
         ud.scrollMode = 1;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt D/V')
+            xlabel(ud.atlasAx, 'Scroll to tilt D/V')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         end
     case 'rightarrow' % scroll angles along A/P axis
         ud.scrollMode = 2;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- tilt M/L')
+            xlabel(ud.atlasAx, 'Scroll to tilt M/L')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- tilt A/P')
+            xlabel(ud.atlasAx, 'Scroll to tilt A/P')
+
         end
         
     case 'downarrow' % scroll along A/P axis
         ud.scrollMode = 0;
         if strcmp(ud.plane,'coronal')
             disp('switch scroll mode -- scroll along A/P axis')
+            xlabel(ud.atlasAx, 'Scroll slices along A/P axis')
+
         elseif strcmp(ud.plane,'sagittal')
             disp('switch scroll mode -- scroll along M/L axis')
+            xlabel(ud.atlasAx, 'Scroll slices along M/L axis')
+
         elseif strcmp(ud.plane,'transverse')
             disp('switch scroll mode -- scroll along D/V axis')
+            xlabel(ud.atlasAx, 'Scroll slices along D/V axis')
+
         end
-    case 'leftarrow' % scroll along A/P axis
+    case 'leftarrow' % scroll along along slice images
         ud.scrollMode = 3;
         if ~ud.slice_at_shift_start
             ud.slice_at_shift_start = ud_slice.slice_num;
             ud.slice_shift = 0;
         end
-        disp('switch scroll mode -- scroll along slice images')     
+        disp('switch scroll mode -- scroll along slice images')
+        xlabel(ud.atlasAx, 'Scroll along slice images')
 % h -- toggle viewing of histology / histology overlay
     case 'h'
         disp('  ');
@@ -491,11 +549,18 @@ switch key_letter
                     ud.curr_im = ud.curr_slice_trans;
                 end
             % if wrong number of points clicked
-            catch
+            catch mexc1
+                if mexc1.identifier == "images:geotrans:requiredNonCollinearPoints"
+                    disp(['Unable to transform -- ', mexc1.message])
+
+                else
+
                 ref_mode = true;
                 disp(['Unable to transform -- ' num2str(size(ud_slice.pointList,1)) ...
                      ' slice points and ' num2str(size(ud.current_pointList_for_transform,1)) ' reference points']);
                 key_letter = 'h'; 
+
+                end
             end
         end
         % if not doing transform, just show reference atlas
@@ -588,7 +653,8 @@ switch key_letter
             disp('transform loaded -- press ''l'' again now to load probe points');
         else % load probe points
             if ~size(ud.pointList{1,1},1)
-                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  disp('probe points loaded')
+                probe_points = load(fullfile(save_location, ['probe_points' save_suffix]));  
+                fprintf('%d probe points loaded\n', length(probe_points.pointList.pointList))
                 ud.pointList = probe_points.pointList.pointList;
                 ud.pointHands = probe_points.pointList.pointHands;
             else
@@ -629,20 +695,41 @@ switch key_letter
 %             disp('current transform erased');
             
             % Try to delete only the most recent point
+            if isempty(ud.pointHands_for_transform)
+                disp('There is no transform point to delete.')
+            else
+
             ud.current_pointList_for_transform = ud.current_pointList_for_transform(1:end-1,:);
-            ud_slice.pointList = ud_slice.pointList(1:end-1,:); 
+                ud_slice.pointList = ud_slice.pointList(1:end-1,:); %TODO this should be accompanied by deleting circles on Slice Viewer
             set(slice_figure, 'UserData', ud_slice);
-            if ud.pointHands_for_transform
+            if ~isempty(ud.pointHands_for_transform)
                 % remove circle for most revent point
-                set(ud.pointHands_for_transform(end), 'Visible', 'off');
+                set(ud.pointHands_for_transform(end), 'Visible', 'off');%TODO why hiding rather than deleting???
                 ud.pointHands_for_transform = ud.pointHands_for_transform(1:end-1); 
-                if ud.pointHands_for_transform
+                if  ~isempty(ud.pointHands_for_transform)
                     % recolor points
                     set(ud.pointHands_for_transform(end), 'color', [0 .9 0]);
                 end
             end
             
             disp('transform point deleted');
+            ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
+            if abs(length(ud.pointHands_for_transform) - length(ud_slice.pointHands)) >= 2
+                % beep
+                if length(ud.pointHands_for_transform) - length(ud_slice.pointHands) >= 2
+                    ud.pointsText.Color = 'red';
+                    ud_slice.pointsText.Color = 'blue';
+                else
+                    ud.pointsText.Color = 'blue';
+                    ud_slice.pointsText.Color = 'red';
+                end
+            else
+                ud.pointsText.Color = 'black';
+                ud_slice.pointsText.Color = 'black';
+            end 
+
+            end
             
         elseif ud.currentProbe
             ud.pointList{ud.currentProbe,1} = ud.pointList{ud.currentProbe,1}(1:end-1,:);
@@ -693,8 +780,9 @@ if strcmp(key_letter,'x')
         disp('atlas location saved')
         
         % save transformed histology image
-        current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));
-%         current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+        % current_slice_image = imread(fullfile(save_location, [slice_name '.tif']));%TODO no imreisze() used, size mismatch creates a huge error in transform
+        current_slice_image = flip(get(ud_slice.im, 'CData'),1);
+
         R = imref2d(size(ud.ref));
         curr_slice_trans = imwarp(current_slice_image, ud.transform, 'OutputView',R);
         imwrite(curr_slice_trans, fullfile(folder_transformations, [slice_name '_transformed.tif']))
@@ -732,7 +820,10 @@ elseif ud.scrollMode==2 %&&  abs(ud.currentAngle(2)) < 130
   
 % scroll through slices (left arrow pressed)
 elseif ud.scrollMode == 3
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+    try
+        set(ud.pointHands_for_transform(:), 'Visible', 'off');
+    catch
+    end
   ud.showOverlay = 0;
   delete(ud.overlayAx); ud.overlayAx = [];  
   ud_slice = get(slice_figure, 'UserData');
@@ -774,12 +865,30 @@ elseif ud.scrollMode == 3
         
         if ~isempty(transform_data.transform_points{1}) && ~isempty(transform_data.transform_points{2})
             ud.current_pointList_for_transform = transform_data.transform_points{1};
+            delete(ud.pointHands_for_transform);% delete them %TODO not working
+            ud.pointHands_for_transform = gobjects(0);% initialize
+            for i = 1:size(ud.current_pointList_for_transform,1)
+                ud.pointHands_for_transform(i) = plot(ud.atlasAx, ...
+                    ud.current_pointList_for_transform(i,1), ...
+                    ud.current_pointList_for_transform(i,2), ...
+                    'ro', 'color', [.7 .3 .3],'LineWidth',2,'markers',4);
+            end
+            set(ud.pointHands_for_transform(end),'color', [0 .9 0]);
+
             ud_slice.pointList = transform_data.transform_points{2};
         else
-            ud_slice.pointList = [];           
+            ud_slice.pointList = [];
+            ud.pointHands_for_transform = gobjects(0);
         end
-        set(slice_figure, 'UserData', ud_slice);
-        
+        % set(slice_figure, 'UserData', ud_slice);
+        %TODO causing a bug of mismatching numbers of points
+
+        if ud.getPoint_for_transform
+            set(ud.pointHands_for_transform, 'Visible', 'on')
+        else
+            set(ud.pointHands_for_transform, 'Visible', 'off')
+        end
+
         % load allen ref location
         ud.currentSlice = transform_data.allen_location{1}; ud.currentAngle = transform_data.allen_location{2};
 
@@ -793,6 +902,9 @@ elseif ud.scrollMode == 3
         ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
         
         ud.histology_overlay = 1;
+
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
         
         set(ud.text,'Visible','off');
         fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift)],'color','white');
@@ -800,10 +912,14 @@ elseif ud.scrollMode == 3
         % if no transform, just show reference
         ud.histology_overlay = 0;
         ud.current_pointList_for_transform = zeros(0,2);
+        delete(ud.pointHands_for_transform);% delete them %TODO not working
+        ud.pointHands_for_transform = gobjects(0);% initialize
         set(ud.im, 'CData', ud.ref);
         ud.curr_im = ud.ref; set(f, 'UserData', ud);   
         set(ud.text,'Visible','off');
-        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white');        
+        fill([5 5 250 250],[5 50 50 5],[0 0 0]); ud.text(end+1) = text(5,15,['Slice ' num2str(ud.slice_at_shift_start+ud.slice_shift) ' - no transform'],'color','white'); 
+        ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
     end  
         
 end  
@@ -834,7 +950,10 @@ if ud.currentAngle(1) == 0 && ud.currentAngle(2) == 0
         updateOverlay(f, allData, ann, slice_figure, save_location);
     end  
     ud.ref = uint8(reference_slice);
-    set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+%     try 
+%         set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+%     catch
+%     end
     ud.offset_map = zeros(ud.ref_size); 
     set(f, 'UserData', ud);
     
@@ -901,7 +1020,7 @@ else
   end  
 
   ud.ref = uint8(angle_slice);
-  set(ud.pointHands_for_transform(:), 'Visible', 'off'); 
+  % set(ud.pointHands_for_transform(:), 'Visible', 'off'); %TODO is this needed???
 end
 
 
@@ -1060,7 +1179,10 @@ elseif ud.getPoint_for_transform
     end
     ud.pointList_for_transform(end+1, :) = [clickX, clickY];
     ud.current_pointList_for_transform(end+1, :) = [clickX, clickY];
+    try
     set(ud.pointHands_for_transform(:), 'color', [.7 .3 .3]);
+    catch
+    end
     ud.pointHands_for_transform(end+1) = plot(ud.atlasAx, clickX, clickY, 'ro', 'color', [0 .9 0],'LineWidth',2,'markers',4);    
         
     ud.slice_at_shift_start = ud_slice.slice_num;
@@ -1068,6 +1190,24 @@ elseif ud.getPoint_for_transform
     ud.curr_slice_num = ud.slice_at_shift_start+ud.slice_shift;
     ud.loaded = 0;
     ud.clicked = true;
+
+    ud.pointsText.String = sprintf('%d point(s)', length(ud.pointHands_for_transform));
+
+    if abs(length(ud.pointHands_for_transform) - length(ud_slice.pointHands)) >= 2
+        beep
+        if length(ud.pointHands_for_transform) - length(ud_slice.pointHands) >= 2
+            ud.pointsText.Color = 'red';
+            ud_slice.pointsText.Color = 'blue';
+
+        else
+            ud.pointsText.Color = 'blue';
+            ud_slice.pointsText.Color = 'red';            
+        end
+    else
+        ud.pointsText.Color = 'black';
+        ud_slice.pointsText.Color = 'black';
+    end    
+
 end
 set(f, 'UserData', ud);
 
