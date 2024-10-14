@@ -1,7 +1,7 @@
 
 
 function plotAsProbe(data, ann_percents, yc, cm, cm2, sqSizeY, active_site_start, rpl)
-% data is vector, same lenght as xc and yc
+% data is vector, same length as xc and yc
 % cm is colormap, size [n x 3]
 %
 % other usage: if data is empty and cm's first dimension is the same length

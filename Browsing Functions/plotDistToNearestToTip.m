@@ -102,7 +102,7 @@ for ind = 1:length(t)
         cur_annotation_square = squeeze(annotation_square(ind,:,:));
         currSqVec = cur_annotation_square(:);
         
-        % find where the annotation isn't equal to that at the curent point
+        % find where the annotation isn't equal to that at the current point
         otherInd = find(currSqVec(distOrder)~=currSqVec(distOrder(1)),1); 
         if isempty(otherInd)
             otherDist(ind) = dists(end);
