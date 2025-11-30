@@ -94,7 +94,7 @@ assert(size(rois,1)==800&size(rois,2)==1140&size(rois,3)==1,'roi image is not th
 
 
 % initialize array of locations (AP, DV, ML relative to bregma) in reference space
-% and the correponding region annotations
+% and the corresponding region annotations
 roi_location = zeros(sum(rois(:)>0),3);
 roi_annotation = cell(sum(rois(:)>0),3);
 

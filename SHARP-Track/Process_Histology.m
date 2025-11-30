@@ -125,7 +125,7 @@ close all
 % it also pads images smaller than the reference_size and requests that you
 % crop images larger than this size
 %
-% note -- presssing left or right arrow saves the modified image, so be
+% note -- pressing left or right arrow saves the modified image, so be
 % sure to do this even after modifying the last slice in the folder
 slice_figure = figure('Name','Slice Viewer');
 SliceFlipper(slice_figure, folder_processed_images, atlas_reference_size)

@@ -540,7 +540,7 @@ if strcmp(gui_data.handles.slice_plot(1).Visible,'on')
             
     end
     
-    % Get the coordiates on the plane
+    % Get the coordinates on the plane
     x_idx = round(plane_x);
     y_idx = round(plane_y);
     z_idx = round(plane_z);

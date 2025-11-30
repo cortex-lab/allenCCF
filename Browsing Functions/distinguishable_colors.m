@@ -61,7 +61,7 @@ function colors = distinguishable_colors(n_colors,bg,func)
     bg = [1 1 1];  % default white background
   else
     if iscell(bg)
-      % User specified a list of colors as a cell aray
+      % User specified a list of colors as a cell array
       bgc = bg;
       for i = 1:length(bgc)
 	bgc{i} = parsecolor(bgc{i});
