@@ -33,6 +33,14 @@ ud.file_name_suffix = '_processed';
 ud.channel = min( 3, size(image,3));
 original_image = image(:,:,1:ud.channel)*gain;
 
+out = update_file_status(ud, image_file_names, 0, 0);
+if out == 0
+    fprintf("Aborted\n")
+    close();
+    return
+end
+
+
 imshow(original_image);
 title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num) ' / ' num2str(ud.num_files)],...
                     'color',[1==ud.channel 2==ud.channel 3==ud.channel])
@@ -41,6 +49,7 @@ ud.original_image = original_image;
 ud.adjusted_image = original_image;
 
 imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+update_file_status(ud, image_file_names, ud.file_num, 1);
 
 set(histology_figure, 'UserData', ud);
 
@@ -96,11 +105,13 @@ elseif ~ud.adjusting_contrast
         case 's' % save image
             disp(['saving processed image ' num2str(ud.file_num)]);
             imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+            update_file_status(ud, image_file_names, ud.file_num, 1);            
             imshow(ud.adjusted_image)
         case 'leftarrow' % save image and move to previous image
             disp(['saving processed image ' num2str(ud.file_num)]);
             imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
-        
+            update_file_status(ud, image_file_names, ud.file_num, 1);
+
             if ud.file_num > 1
                 ud.file_num = ud.file_num - 1;
                 move_on = true;
@@ -110,6 +121,7 @@ elseif ~ud.adjusting_contrast
         case 'rightarrow' % save image and move to next image
             disp(['saving processed image ' num2str(ud.file_num)]);
             imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+            update_file_status(ud, image_file_names, ud.file_num, 1);
              
             if ud.file_num < ud.num_files;
                 ud.file_num = ud.file_num + 1;
@@ -138,6 +150,7 @@ elseif ~ud.adjusting_contrast
 
         % save immediately
         imwrite(ud.adjusted_image, fullfile(ud.save_folder, [image_file_names{ud.file_num}(1:end-4) ud.file_name_suffix '.tif']))
+        update_file_status(ud, image_file_names, ud.file_num, 1);
 
     end
 else % if pressing commands while adjusting contrast
@@ -158,4 +171,64 @@ title(['Adjusting channel ' num2str(ud.channel) ' on image ' num2str(ud.file_num
 
 set(fig, 'UserData', ud);
 
+end
 
+function out = update_file_status(ud, image_file_names, K, status)
+
+    proc_file_names = strings(length(image_file_names),1);
+    for i = 1:length(image_file_names)
+        proc_file_names{i} = [image_file_names{i}(1:end-4) ud.file_name_suffix '.tif'];
+    end
+    T_files = table(proc_file_names, zeros(length(image_file_names),1),'VariableNames',{'file_names','status'});
+
+    if isfile(fullfile(ud.save_folder, 'file_status.mat'))
+
+        S = load(fullfile(ud.save_folder, 'file_status.mat'));
+        for i = 1:height(T_files)
+            % apply saved values for the existing images
+            if nnz(S.T_files.file_names == string(T_files.file_names{i})) == 1
+                T_files.status(i) = S.T_files{S.T_files.file_names == string(T_files.file_names{i}) , 2};
+            elseif nnz(S.T_files.file_names == string(T_files.file_names{i})) > 1
+                warning('multiple hits')
+            else
+                % ignore
+            end
+        end
+
+    end
+    T_files.Properties.VariableDescriptions = ["",...
+        "0, raw; 1, HistologyBrowser; 2, SliceFlipper"];
+
+    if K == 0 % check this for the first run only
+        if ~any(T_files.status == 0)
+            answer  = questdlg("All the files have been processed by HistologyBrowser. Would you like to do it again?",...
+                "HistologyBrowser",...
+                "Yes", "No", "No");
+
+            switch answer
+                case "Yes"
+                    % proceed
+                    out = 1;
+                    return
+                case "No"
+                    % quit the function
+                    out = 0;
+                    return
+            end
+        end
+
+        out = 1;
+        return
+    end
+
+    T_files.status(K) = status;
+
+    save(fullfile(ud.save_folder, 'file_status.mat'),'T_files')
+
+    out = 1;
+end
+
+
+
+
+end
